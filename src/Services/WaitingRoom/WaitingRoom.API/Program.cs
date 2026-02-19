@@ -98,7 +98,7 @@ services.AddScoped<CheckInPatientCommandHandler>();
 // ==============================================================================
 
 services.AddEndpointsApiExplorer();
-services.AddSwaggerGen();
+services.AddOpenApi();  // Use native .NET 10 OpenAPI instead of Swagger
 
 // Health Checks
 services.AddHealthChecks()
@@ -118,12 +118,7 @@ app.UseMiddleware<ExceptionHandlerMiddleware>();
 // Development tools
 if (app.Environment.IsDevelopment())
 {
-    app.UseSwagger();
-    app.UseSwaggerUI(options =>
-    {
-        options.SwaggerEndpoint("/swagger/v1/swagger.json", "WaitingRoom API v1");
-        options.RoutePrefix = string.Empty; // Serve Swagger at root
-    });
+    app.MapOpenApi();  // Serve OpenAPI schema at /openapi/v1.json
 }
 
 app.UseHttpsRedirection();

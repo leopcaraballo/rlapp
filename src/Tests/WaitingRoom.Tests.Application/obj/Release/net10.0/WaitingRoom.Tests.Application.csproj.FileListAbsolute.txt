@@ -1,10 +1,5 @@
 /home/lcaraballo/Documentos/Sofka Projects/Projects/rlapp-backend/src/Tests/WaitingRoom.Tests.Application/bin/Release/net10.0/.msCoverageSourceRootsMapping_WaitingRoom.Tests.Application
 /home/lcaraballo/Documentos/Sofka Projects/Projects/rlapp-backend/src/Tests/WaitingRoom.Tests.Application/bin/Release/net10.0/CoverletSourceRootsMapping_WaitingRoom.Tests.Application
-/home/lcaraballo/Documentos/Sofka Projects/Projects/rlapp-backend/src/Tests/WaitingRoom.Tests.Application/obj/Release/net10.0/WaitingRoom.Tests.Application.csproj.AssemblyReference.cache
-/home/lcaraballo/Documentos/Sofka Projects/Projects/rlapp-backend/src/Tests/WaitingRoom.Tests.Application/obj/Release/net10.0/WaitingRoom.Tests.Application.GeneratedMSBuildEditorConfig.editorconfig
-/home/lcaraballo/Documentos/Sofka Projects/Projects/rlapp-backend/src/Tests/WaitingRoom.Tests.Application/obj/Release/net10.0/WaitingRoom.Tests.Application.AssemblyInfoInputs.cache
-/home/lcaraballo/Documentos/Sofka Projects/Projects/rlapp-backend/src/Tests/WaitingRoom.Tests.Application/obj/Release/net10.0/WaitingRoom.Tests.Application.AssemblyInfo.cs
-/home/lcaraballo/Documentos/Sofka Projects/Projects/rlapp-backend/src/Tests/WaitingRoom.Tests.Application/obj/Release/net10.0/WaitingRoom.Tests.Application.csproj.CoreCompileInputs.cache
 /home/lcaraballo/Documentos/Sofka Projects/Projects/rlapp-backend/src/Tests/WaitingRoom.Tests.Application/bin/Release/net10.0/xunit.abstractions.dll
 /home/lcaraballo/Documentos/Sofka Projects/Projects/rlapp-backend/src/Tests/WaitingRoom.Tests.Application/bin/Release/net10.0/xunit.runner.visualstudio.testadapter.dll
 /home/lcaraballo/Documentos/Sofka Projects/Projects/rlapp-backend/src/Tests/WaitingRoom.Tests.Application/bin/Release/net10.0/WaitingRoom.Tests.Application.deps.json
@@ -101,6 +96,11 @@
 /home/lcaraballo/Documentos/Sofka Projects/Projects/rlapp-backend/src/Tests/WaitingRoom.Tests.Application/bin/Release/net10.0/WaitingRoom.Domain.pdb
 /home/lcaraballo/Documentos/Sofka Projects/Projects/rlapp-backend/src/Tests/WaitingRoom.Tests.Application/bin/Release/net10.0/WaitingRoom.Application.pdb
 /home/lcaraballo/Documentos/Sofka Projects/Projects/rlapp-backend/src/Tests/WaitingRoom.Tests.Application/bin/Release/net10.0/BuildingBlocks.EventSourcing.pdb
+/home/lcaraballo/Documentos/Sofka Projects/Projects/rlapp-backend/src/Tests/WaitingRoom.Tests.Application/obj/Release/net10.0/WaitingRoom.Tests.Application.csproj.AssemblyReference.cache
+/home/lcaraballo/Documentos/Sofka Projects/Projects/rlapp-backend/src/Tests/WaitingRoom.Tests.Application/obj/Release/net10.0/WaitingRoom.Tests.Application.GeneratedMSBuildEditorConfig.editorconfig
+/home/lcaraballo/Documentos/Sofka Projects/Projects/rlapp-backend/src/Tests/WaitingRoom.Tests.Application/obj/Release/net10.0/WaitingRoom.Tests.Application.AssemblyInfoInputs.cache
+/home/lcaraballo/Documentos/Sofka Projects/Projects/rlapp-backend/src/Tests/WaitingRoom.Tests.Application/obj/Release/net10.0/WaitingRoom.Tests.Application.AssemblyInfo.cs
+/home/lcaraballo/Documentos/Sofka Projects/Projects/rlapp-backend/src/Tests/WaitingRoom.Tests.Application/obj/Release/net10.0/WaitingRoom.Tests.Application.csproj.CoreCompileInputs.cache
 /home/lcaraballo/Documentos/Sofka Projects/Projects/rlapp-backend/src/Tests/WaitingRoom.Tests.Application/obj/Release/net10.0/WaitingR.7784899A.Up2Date
 /home/lcaraballo/Documentos/Sofka Projects/Projects/rlapp-backend/src/Tests/WaitingRoom.Tests.Application/obj/Release/net10.0/WaitingRoom.Tests.Application.dll
 /home/lcaraballo/Documentos/Sofka Projects/Projects/rlapp-backend/src/Tests/WaitingRoom.Tests.Application/obj/Release/net10.0/refint/WaitingRoom.Tests.Application.dll

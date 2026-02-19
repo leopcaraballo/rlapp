@@ -4,12 +4,12 @@
 -- =============================================================================
 
 -- Create databases
-CREATE DATABASE waitingroom_eventstore;
-CREATE DATABASE waitingroom_read_models;
-CREATE DATABASE waitingroom_test;
+CREATE DATABASE rlapp_waitingroom;
+CREATE DATABASE rlapp_waitingroom_read;
+CREATE DATABASE rlapp_waitingroom_test;
 
 -- Connect to eventstore database
-\c waitingroom_eventstore
+\c rlapp_waitingroom
 
 -- =============================================================================
 -- EVENT STORE SCHEMA
@@ -97,7 +97,7 @@ CREATE UNIQUE INDEX IF NOT EXISTS ux_projection_checkpoints_idempotency
     ON projection_checkpoints (idempotency_key);
 
 -- Connect to test database
-\c waitingroom_test
+\c rlapp_waitingroom_test
 
 -- =============================================================================
 -- EVENT STORE SCHEMA (TEST)
@@ -185,7 +185,7 @@ CREATE UNIQUE INDEX IF NOT EXISTS ux_projection_checkpoints_idempotency
     ON projection_checkpoints (idempotency_key);
 
 -- Connect to read_models database
-\c waitingroom_read_models
+\c rlapp_waitingroom_read
 
 -- =============================================================================
 -- READ MODELS / PROJECTIONS
@@ -244,18 +244,18 @@ CREATE INDEX IF NOT EXISTS idx_event_name_metrics ON event_lag_metrics(event_nam
 -- GRANT PERMISSIONS
 -- =============================================================================
 
-GRANT ALL PRIVILEGES ON DATABASE waitingroom_eventstore TO rlapp;
-GRANT ALL PRIVILEGES ON DATABASE waitingroom_read_models TO rlapp;
-GRANT ALL PRIVILEGES ON DATABASE waitingroom_test TO rlapp;
+GRANT ALL PRIVILEGES ON DATABASE rlapp_waitingroom TO rlapp;
+GRANT ALL PRIVILEGES ON DATABASE rlapp_waitingroom_read TO rlapp;
+GRANT ALL PRIVILEGES ON DATABASE rlapp_waitingroom_test TO rlapp;
 
-\c waitingroom_eventstore
+\c rlapp_waitingroom
 GRANT ALL PRIVILEGES ON SCHEMA public TO rlapp;
 GRANT ALL PRIVILEGES ON ALL TABLES IN SCHEMA public TO rlapp;
 
-\c waitingroom_test
+\c rlapp_waitingroom_test
 GRANT ALL PRIVILEGES ON SCHEMA public TO rlapp;
 GRANT ALL PRIVILEGES ON ALL TABLES IN SCHEMA public TO rlapp;
 
-\c waitingroom_read_models
+\c rlapp_waitingroom_read
 GRANT ALL PRIVILEGES ON SCHEMA public TO rlapp;
 GRANT ALL PRIVILEGES ON ALL TABLES IN SCHEMA public TO rlapp;
