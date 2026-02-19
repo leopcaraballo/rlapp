@@ -1,0 +1,7 @@
+{
+  "github.copilot.chat.codeGeneration.useInstructionFiles": true,
+  "github.copilot.chat.codeGeneration.instructions": [
+    ".ai/AGENT_BIBLE.md",
+    ".ai/AGENT_RUNTIME.md"
+  ]
+}
