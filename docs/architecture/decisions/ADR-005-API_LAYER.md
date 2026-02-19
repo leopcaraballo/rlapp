@@ -85,18 +85,21 @@ All infrastructure implementations are hidden behind Application ports (interfac
 ### 3. Middleware Pipeline
 
 **CorrelationIdMiddleware:**
+
 - Extracts `X-Correlation-Id` header from request
 - Generates new GUID if not provided
 - Injects into HttpContext for access in handlers
 - Returns in response headers for traceability
 
 **ExceptionHandlerMiddleware:**
+
 - Catches all unhandled exceptions
 - Maps domain/application exceptions to HTTP status codes
 - Returns standardized error responses with CorrelationId
 - Prevents internal exception details leaking to clients
 
 **Order matters:**
+
 ```csharp
 app.UseCorrelationId();           // Must be first to inject CorrelationId
 app.UseMiddleware<ExceptionHandlerMiddleware>();
@@ -136,6 +139,7 @@ app.MapPost("/api/waiting-room/check-in", async (
 ```
 
 **Why Minimal API:**
+
 - Modern, lightweight, zero boilerplate
 - Direct integration with DI
 - OpenAPI/Swagger support built-in
@@ -160,6 +164,7 @@ app.MapHealthChecks("/health/ready", options =>
 ```
 
 Supports container orchestration:
+
 - `/health/live` → used for liveness probe (restart pod if fails)
 - `/health/ready` → used for readiness probe (remove from load balancer if fails)
 
@@ -254,6 +259,7 @@ Exceptions are systematically mapped to HTTP status codes:
 ### Why Minimal API over Traditional Controllers?
 
 **Minimal API:**
+
 - ✅ Zero boilerplate
 - ✅ Route handler is a method in Program.cs
 - ✅ DI parameters injected directly
@@ -262,6 +268,7 @@ Exceptions are systematically mapped to HTTP status codes:
 - ✅ Modern ASP.NET recommendation
 
 **Traditional Controllers:**
+
 - ❌ Class per entity
 - ❌ More files to manage
 - ❌ Convention-based routing (harder to understand)
@@ -270,12 +277,14 @@ Exceptions are systematically mapped to HTTP status codes:
 ### Why Middleware for Correlation ID?
 
 **Global Middleware:**
+
 - ✅ Every request automatically tracked
 - ✅ No per-endpoint code duplication
 - ✅ Cross-cutting concern handled once
 - ✅ Works with all endpoints uniformly
 
 **Per-Endpoint Approach:**
+
 - ❌ Requires manual injection in each handler
 - ❌ Easy to forget
 - ❌ Code duplication
@@ -284,6 +293,7 @@ Exceptions are systematically mapped to HTTP status codes:
 ### Why Exception Middleware?
 
 **Centralized Exception Handler:**
+
 - ✅ Consistent error responses
 - ✅ Prevents internal exceptions leaking
 - ✅ Single place to change error format
@@ -291,6 +301,7 @@ Exceptions are systematically mapped to HTTP status codes:
 - ✅ Error logging with correlation
 
 **Per-Endpoint Try-Catch:**
+
 - ❌ Boilerplate in every handler
 - ❌ Inconsistent error responses
 - ❌ Risk of exposing sensitive details
@@ -326,6 +337,7 @@ Dependencies:
 ### Configuration Strategy
 
 **appsettings.json:**
+
 ```json
 {
   "ConnectionStrings": {
@@ -344,6 +356,7 @@ Dependencies:
 ```
 
 **appsettings.Development.json:**
+
 - Overrides for local development (localhost, debug logging)
 
 ---
@@ -401,7 +414,8 @@ public class WaitingRoomController : ControllerBase
 }
 ```
 
-**Rejected:** 
+**Rejected:**
+
 - More boilerplate
 - Convention-based routing obscures behavior
 - Legacy pattern
@@ -416,6 +430,7 @@ service WaitingRoomService {
 ```
 
 **Rejected:**
+
 - Good for microservices, but RLAPP is modular monolith initially
 - HTTP REST is more compatible with existing tooling
 - gRPC adds infrastructure overhead
@@ -442,6 +457,7 @@ app.MapPost("/api/waiting-room/check-in", async (dto, handler) =>
 ```
 
 **Rejected:**
+
 - Boilerplate in every handler
 - Inconsistent error responses
 - Code duplication
@@ -452,21 +468,25 @@ app.MapPost("/api/waiting-room/check-in", async (dto, handler) =>
 ## Acceptance Criteria
 
 ✅ **API layer created and compiling**
+
 - ✅ `dotnet build` succeeds with no warnings
 - ✅ All projects reference correctly
 
 ✅ **DI composition root working**
+
 - ✅ All infrastructure registered in Program.cs
 - ✅ Handlers receive port dependencies (IEventStore, IEventPublisher, IClock)
 - ✅ No public static instances
 
 ✅ **Endpoint implemented**
+
 - ✅ POST /api/waiting-room/check-in accepts CheckInPatientDto
 - ✅ Maps to CheckInPatientCommand
 - ✅ Calls handler and persists events
 - ✅ Returns 200 on success
 
 ✅ **Error handling working**
+
 - ✅ DomainException → 400
 - ✅ AggregateNotFoundException → 404
 - ✅ EventConflictException → 409
@@ -474,17 +494,20 @@ app.MapPost("/api/waiting-room/check-in", async (dto, handler) =>
 - ✅ All errors include CorrelationId
 
 ✅ **Observability built-in**
+
 - ✅ CorrelationId tracked across request
 - ✅ Structured logging with Serilog
 - ✅ Health checks available at /health/live and /health/ready
 
 ✅ **Tests passing**
+
 - ✅ Domain tests: 39/39 passing
 - ✅ Application tests: 7/7 passing
 - ✅ Integration tests: 6/6 passing
 - ✅ No regressions
 
 ✅ **Architecture integrity maintained**
+
 - ✅ Domain purity: ZERO infrastructure dependencies
 - ✅ Application purity: only port dependencies
 - ✅ Hexagonal architecture: clear dependency direction
