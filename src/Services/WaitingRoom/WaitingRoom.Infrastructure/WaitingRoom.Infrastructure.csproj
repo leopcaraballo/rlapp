@@ -14,6 +14,7 @@
   </ItemGroup>
 
   <ItemGroup>
+    <InternalsVisibleTo Include="WaitingRoom.API" />
     <InternalsVisibleTo Include="WaitingRoom.Worker" />
     <InternalsVisibleTo Include="WaitingRoom.Tests.Integration" />
   </ItemGroup>
