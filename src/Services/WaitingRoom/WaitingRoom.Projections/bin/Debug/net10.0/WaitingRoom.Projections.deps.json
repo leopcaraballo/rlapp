@@ -8,6 +8,7 @@
     ".NETCoreApp,Version=v10.0": {
       "WaitingRoom.Projections/1.0.0": {
         "dependencies": {
+          "BuildingBlocks.EventSourcing": "1.0.0",
           "Microsoft.Extensions.Logging.Abstractions": "8.0.0",
           "WaitingRoom.Application": "1.0.0",
           "WaitingRoom.Domain": "1.0.0"

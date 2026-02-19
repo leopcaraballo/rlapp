@@ -199,6 +199,7 @@
   },
   "projectFileDependencyGroups": {
     "net10.0": [
+      "BuildingBlocks.EventSourcing >= 1.0.0",
       "Microsoft.Extensions.Logging.Abstractions >= 8.0.0",
       "WaitingRoom.Application >= 1.0.0",
       "WaitingRoom.Domain >= 1.0.0"
@@ -230,6 +231,9 @@
         "net10.0": {
           "targetAlias": "net10.0",
           "projectReferences": {
+            "/home/lcaraballo/Documentos/Sofka Projects/Projects/rlapp-backend/src/BuildingBlocks/BuildingBlocks.EventSourcing/BuildingBlocks.EventSourcing.csproj": {
+              "projectPath": "/home/lcaraballo/Documentos/Sofka Projects/Projects/rlapp-backend/src/BuildingBlocks/BuildingBlocks.EventSourcing/BuildingBlocks.EventSourcing.csproj"
+            },
             "/home/lcaraballo/Documentos/Sofka Projects/Projects/rlapp-backend/src/Services/WaitingRoom/WaitingRoom.Application/WaitingRoom.Application.csproj": {
               "projectPath": "/home/lcaraballo/Documentos/Sofka Projects/Projects/rlapp-backend/src/Services/WaitingRoom/WaitingRoom.Application/WaitingRoom.Application.csproj"
             },

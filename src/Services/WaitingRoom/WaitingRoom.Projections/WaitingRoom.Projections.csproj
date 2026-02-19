@@ -13,7 +13,7 @@
   <ItemGroup>
     <ProjectReference Include="../WaitingRoom.Application/WaitingRoom.Application.csproj" />
     <ProjectReference Include="../WaitingRoom.Domain/WaitingRoom.Domain.csproj" />
-    <ProjectReference Include="../../BuildingBlocks/BuildingBlocks.EventSourcing/BuildingBlocks.EventSourcing.csproj" />
+    <ProjectReference Include="../../../BuildingBlocks/BuildingBlocks.EventSourcing/BuildingBlocks.EventSourcing.csproj" />
   </ItemGroup>
 
   <ItemGroup>

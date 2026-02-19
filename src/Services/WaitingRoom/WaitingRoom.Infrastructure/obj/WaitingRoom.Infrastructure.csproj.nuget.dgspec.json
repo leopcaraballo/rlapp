@@ -1402,6 +1402,9 @@
           "net10.0": {
             "targetAlias": "net10.0",
             "projectReferences": {
+              "/home/lcaraballo/Documentos/Sofka Projects/Projects/rlapp-backend/src/BuildingBlocks/BuildingBlocks.EventSourcing/BuildingBlocks.EventSourcing.csproj": {
+                "projectPath": "/home/lcaraballo/Documentos/Sofka Projects/Projects/rlapp-backend/src/BuildingBlocks/BuildingBlocks.EventSourcing/BuildingBlocks.EventSourcing.csproj"
+              },
               "/home/lcaraballo/Documentos/Sofka Projects/Projects/rlapp-backend/src/Services/WaitingRoom/WaitingRoom.Application/WaitingRoom.Application.csproj": {
                 "projectPath": "/home/lcaraballo/Documentos/Sofka Projects/Projects/rlapp-backend/src/Services/WaitingRoom/WaitingRoom.Application/WaitingRoom.Application.csproj"
               },
