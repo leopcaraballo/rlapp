@@ -1,7 +1,9 @@
-namespace WaitingRoom.Infrastructure.Observability;
+namespace BuildingBlocks.Observability;
 
 using System;
 using System.Collections.Generic;
+using System.Threading;
+using System.Threading.Tasks;
 
 /// <summary>
 /// Event processing lag metrics.
@@ -9,7 +11,7 @@ using System.Collections.Generic;
 /// Tracks the time taken for an event to:
 /// 1. Be created in the domain
 /// 2. Be published to the outbox
-/// 3. Be dispatched from outbox to RabbitMQ
+/// 3. Be dispatched from outbox to broker
 /// 4. Be processed by projections
 ///
 /// Used for monitoring event-driven architecture health and identifying bottlenecks.

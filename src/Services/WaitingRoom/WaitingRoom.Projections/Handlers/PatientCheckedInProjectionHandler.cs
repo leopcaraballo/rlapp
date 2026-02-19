@@ -64,7 +64,7 @@ public sealed class PatientCheckedInProjectionHandler : IProjectionHandler
         // Increment counters based on priority
         await waitingContext.UpdateMonitorViewAsync(
             queueId: evt.QueueId,
-            priority: evt.Priority,
+            priority: NormalizePriority(evt.Priority),
             operation: "increment",
             cancellationToken);
 
@@ -76,7 +76,7 @@ public sealed class PatientCheckedInProjectionHandler : IProjectionHandler
             {
                 PatientId = evt.PatientId,
                 PatientName = evt.PatientName,
-                Priority = evt.Priority,
+                Priority = NormalizePriority(evt.Priority),
                 CheckInTime = evt.Metadata.OccurredAt,
                 WaitTimeMinutes = 0
             },
@@ -93,4 +93,19 @@ public sealed class PatientCheckedInProjectionHandler : IProjectionHandler
     /// </summary>
     private static string GenerateIdempotencyKey(PatientCheckedIn evt)
         => $"patient-checked-in:{evt.QueueId}:{evt.Metadata.AggregateId}:{evt.Metadata.EventId}";
+
+    private static string NormalizePriority(string priority)
+    {
+        var normalized = priority.Trim().ToLowerInvariant();
+
+        return normalized switch
+        {
+            "urgent" => "high",
+            "high" => "high",
+            "medium" => "normal",
+            "normal" => "normal",
+            "low" => "low",
+            _ => normalized
+        };
+    }
 }

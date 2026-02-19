@@ -39,6 +39,7 @@ public sealed class EventTypeRegistry
 
     public static EventTypeRegistry CreateDefault() =>
         new([
+            typeof(WaitingQueueCreated),
             typeof(PatientCheckedIn)
         ]);
 }

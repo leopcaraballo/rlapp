@@ -9,11 +9,13 @@
       "WaitingRoom.Tests.Integration/1.0.0": {
         "dependencies": {
           "BuildingBlocks.EventSourcing": "1.0.0",
+          "BuildingBlocks.Observability": "1.0.0",
           "FluentAssertions": "6.12.0",
           "Microsoft.Extensions.Logging.Abstractions": "9.0.0",
           "Microsoft.NET.Test.Sdk": "17.11.1",
           "Moq": "4.20.70",
           "WaitingRoom.Infrastructure": "1.0.0",
+          "WaitingRoom.Projections": "1.0.0",
           "WaitingRoom.Worker": "1.0.0",
           "xunit": "2.9.0"
         },
@@ -812,6 +814,25 @@
           }
         }
       },
+      "BuildingBlocks.Messaging/1.0.0": {
+        "dependencies": {
+          "BuildingBlocks.EventSourcing": "1.0.0"
+        },
+        "runtime": {
+          "BuildingBlocks.Messaging.dll": {
+            "assemblyVersion": "1.0.0.0",
+            "fileVersion": "1.0.0.0"
+          }
+        }
+      },
+      "BuildingBlocks.Observability/1.0.0": {
+        "runtime": {
+          "BuildingBlocks.Observability.dll": {
+            "assemblyVersion": "1.0.0.0",
+            "fileVersion": "1.0.0.0"
+          }
+        }
+      },
       "WaitingRoom.Application/1.0.0": {
         "dependencies": {
           "WaitingRoom.Domain": "1.0.0"
@@ -837,6 +858,8 @@
       "WaitingRoom.Infrastructure/1.0.0": {
         "dependencies": {
           "BuildingBlocks.EventSourcing": "1.0.0",
+          "BuildingBlocks.Messaging": "1.0.0",
+          "BuildingBlocks.Observability": "1.0.0",
           "Dapper": "2.1.35",
           "Newtonsoft.Json": "13.0.3",
           "Npgsql": "8.0.5",
@@ -846,6 +869,24 @@
         },
         "runtime": {
           "WaitingRoom.Infrastructure.dll": {
+            "assemblyVersion": "1.0.0.0",
+            "fileVersion": "1.0.0.0"
+          }
+        }
+      },
+      "WaitingRoom.Projections/1.0.0": {
+        "dependencies": {
+          "BuildingBlocks.EventSourcing": "1.0.0",
+          "BuildingBlocks.Messaging": "1.0.0",
+          "BuildingBlocks.Observability": "1.0.0",
+          "Microsoft.Extensions.Hosting": "9.0.0",
+          "Microsoft.Extensions.Logging.Abstractions": "9.0.0",
+          "RabbitMQ.Client": "6.8.1",
+          "WaitingRoom.Application": "1.0.0",
+          "WaitingRoom.Domain": "1.0.0"
+        },
+        "runtime": {
+          "WaitingRoom.Projections.dll": {
             "assemblyVersion": "1.0.0.0",
             "fileVersion": "1.0.0.0"
           }
@@ -1211,6 +1252,16 @@
       "serviceable": false,
       "sha512": ""
     },
+    "BuildingBlocks.Messaging/1.0.0": {
+      "type": "project",
+      "serviceable": false,
+      "sha512": ""
+    },
+    "BuildingBlocks.Observability/1.0.0": {
+      "type": "project",
+      "serviceable": false,
+      "sha512": ""
+    },
     "WaitingRoom.Application/1.0.0": {
       "type": "project",
       "serviceable": false,
@@ -1222,6 +1273,11 @@
       "sha512": ""
     },
     "WaitingRoom.Infrastructure/1.0.0": {
+      "type": "project",
+      "serviceable": false,
+      "sha512": ""
+    },
+    "WaitingRoom.Projections/1.0.0": {
       "type": "project",
       "serviceable": false,
       "sha512": ""

@@ -71,16 +71,18 @@ public sealed class WaitingQueue : AggregateRoot
         if (maxCapacity <= 0)
             throw new DomainException("MaxCapacity must be greater than 0");
 
-        var queue = new WaitingQueue
+        var queue = new WaitingQueue();
+
+        var @event = new WaitingQueueCreated
         {
-            Id = queueId,
+            Metadata = metadata.WithVersion(queue.Version + 1),
+            QueueId = queueId,
             QueueName = queueName,
             MaxCapacity = maxCapacity,
-            CreatedAt = metadata.OccurredAt,
-            LastModifiedAt = metadata.OccurredAt,
-            Version = 0
+            CreatedAt = metadata.OccurredAt
         };
 
+        queue.RaiseEvent(@event);
         return queue;
     }
 
@@ -149,6 +151,15 @@ public sealed class WaitingQueue : AggregateRoot
 
         Patients.Add(patient);
         LastModifiedAt = @event.Metadata.OccurredAt;
+    }
+
+    private void When(WaitingQueueCreated @event)
+    {
+        Id = @event.QueueId;
+        QueueName = @event.QueueName;
+        MaxCapacity = @event.MaxCapacity;
+        CreatedAt = @event.CreatedAt;
+        LastModifiedAt = @event.CreatedAt;
     }
 
     /// <summary>

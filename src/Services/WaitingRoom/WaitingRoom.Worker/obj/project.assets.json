@@ -669,6 +669,29 @@
           "bin/placeholder/BuildingBlocks.EventSourcing.dll": {}
         }
       },
+      "BuildingBlocks.Messaging/1.0.0": {
+        "type": "project",
+        "framework": ".NETCoreApp,Version=v10.0",
+        "dependencies": {
+          "BuildingBlocks.EventSourcing": "1.0.0"
+        },
+        "compile": {
+          "bin/placeholder/BuildingBlocks.Messaging.dll": {}
+        },
+        "runtime": {
+          "bin/placeholder/BuildingBlocks.Messaging.dll": {}
+        }
+      },
+      "BuildingBlocks.Observability/1.0.0": {
+        "type": "project",
+        "framework": ".NETCoreApp,Version=v10.0",
+        "compile": {
+          "bin/placeholder/BuildingBlocks.Observability.dll": {}
+        },
+        "runtime": {
+          "bin/placeholder/BuildingBlocks.Observability.dll": {}
+        }
+      },
       "WaitingRoom.Application/1.0.0": {
         "type": "project",
         "framework": ".NETCoreApp,Version=v10.0",
@@ -700,6 +723,8 @@
         "framework": ".NETCoreApp,Version=v10.0",
         "dependencies": {
           "BuildingBlocks.EventSourcing": "1.0.0",
+          "BuildingBlocks.Messaging": "1.0.0",
+          "BuildingBlocks.Observability": "1.0.0",
           "Dapper": "2.1.35",
           "Newtonsoft.Json": "13.0.3",
           "Npgsql": "8.0.5",
@@ -1684,6 +1709,16 @@
       "type": "project",
       "path": "../../../BuildingBlocks/BuildingBlocks.EventSourcing/BuildingBlocks.EventSourcing.csproj",
       "msbuildProject": "../../../BuildingBlocks/BuildingBlocks.EventSourcing/BuildingBlocks.EventSourcing.csproj"
+    },
+    "BuildingBlocks.Messaging/1.0.0": {
+      "type": "project",
+      "path": "../../../BuildingBlocks/BuildingBlocks.Messaging/BuildingBlocks.Messaging.csproj",
+      "msbuildProject": "../../../BuildingBlocks/BuildingBlocks.Messaging/BuildingBlocks.Messaging.csproj"
+    },
+    "BuildingBlocks.Observability/1.0.0": {
+      "type": "project",
+      "path": "../../../BuildingBlocks/BuildingBlocks.Observability/BuildingBlocks.Observability.csproj",
+      "msbuildProject": "../../../BuildingBlocks/BuildingBlocks.Observability/BuildingBlocks.Observability.csproj"
     },
     "WaitingRoom.Application/1.0.0": {
       "type": "project",

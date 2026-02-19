@@ -5,10 +5,12 @@ using Microsoft.Extensions.Logging;
 using WaitingRoom.Application.Ports;
 using WaitingRoom.Domain.Events;
 using WaitingRoom.Infrastructure.Messaging;
+using WaitingRoom.Infrastructure.Observability;
 using WaitingRoom.Infrastructure.Persistence.Outbox;
 using WaitingRoom.Infrastructure.Serialization;
 using WaitingRoom.Worker;
 using WaitingRoom.Worker.Services;
+using BuildingBlocks.Observability;
 
 var host = Host.CreateDefaultBuilder(args)
     .ConfigureAppConfiguration((context, config) =>
@@ -37,6 +39,10 @@ var host = Host.CreateDefaultBuilder(args)
 
         // Infrastructure Services
         services.AddSingleton<IOutboxStore>(sp => new PostgresOutboxStore(connectionString));
+
+        // Lag Tracker
+        services.AddSingleton<PostgresEventLagTracker>(sp => new PostgresEventLagTracker(connectionString));
+        services.AddSingleton<IEventLagTracker>(sp => sp.GetRequiredService<PostgresEventLagTracker>());
 
         // Event Type Registry (register all domain events)
         services.AddSingleton(sp =>

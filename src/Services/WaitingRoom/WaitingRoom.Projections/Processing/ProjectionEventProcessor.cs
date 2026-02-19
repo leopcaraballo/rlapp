@@ -1,8 +1,8 @@
 namespace WaitingRoom.Projections.Processing;
 
 using BuildingBlocks.EventSourcing;
+using BuildingBlocks.Observability;
 using Microsoft.Extensions.Logging;
-using WaitingRoom.Infrastructure.Observability;
 using WaitingRoom.Projections.Abstractions;
 
 /// <summary>
@@ -60,8 +60,15 @@ public sealed class ProjectionEventProcessor
             _logger.LogDebug(
                 "Processing event {EventType} (aggregate: {AggregateId}) for projection {ProjectionId}",
                 eventType,
-                @event.AggregateId,
+                @event.Metadata.AggregateId,
                 _projection.ProjectionId);
+
+            await _lagTracker.RecordEventCreatedAsync(
+                eventId: @event.Metadata.EventId,
+                eventName: @event.EventName,
+                aggregateId: @event.Metadata.AggregateId,
+                createdAt: @event.Metadata.OccurredAt,
+                cancellation: cancellation);
 
             // Delegate processing to projection engine
             await _projection.ProcessEventAsync(@event, cancellation);
@@ -70,7 +77,7 @@ public sealed class ProjectionEventProcessor
 
             // Record lag metrics
             await _lagTracker.RecordEventProcessedAsync(
-                eventId: @event.EventId,
+                eventId: @event.Metadata.EventId,
                 processedAt: DateTime.UtcNow,
                 processingDurationMs: processingDurationMs,
                 cancellation: cancellation);
@@ -91,7 +98,7 @@ public sealed class ProjectionEventProcessor
 
             // Record failure for monitoring
             await _lagTracker.RecordEventFailedAsync(
-                eventId: @event.EventId,
+                eventId: @event.Metadata.EventId,
                 reason: ex.Message,
                 cancellation: cancellation);
 
@@ -150,13 +157,13 @@ public sealed class ProjectionEventProcessor
             long? lagMs = null;
             if (checkpoint != null)
             {
-                lagMs = (long)(DateTime.UtcNow - checkpoint.LastProcessedAt).TotalMilliseconds;
+                lagMs = (long)(DateTime.UtcNow - checkpoint.CheckpointedAt).TotalMilliseconds;
             }
 
             return new ProjectionHealth
             {
                 IsHealthy = checkpoint != null && lagMs < 30000, // Healthy if <30s lag
-                LastUpdatedAt = checkpoint?.LastProcessedAt ?? DateTime.UtcNow,
+                LastUpdatedAt = checkpoint?.CheckpointedAt.UtcDateTime ?? DateTime.UtcNow,
                 LagMs = lagMs,
                 ErrorMessage = null
             };

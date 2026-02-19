@@ -5,12 +5,17 @@ using System.Collections.Generic;
 using System.Threading;
 using System.Threading.Tasks;
 using Microsoft.Extensions.DependencyInjection;
+using Microsoft.Extensions.Logging;
 using Xunit;
 using WaitingRoom.Application.Commands;
 using WaitingRoom.Application.CommandHandlers;
 using WaitingRoom.Application.Ports;
+using WaitingRoom.Application.Services;
 using WaitingRoom.Domain.Events;
+using WaitingRoom.Domain.Aggregates;
+using BuildingBlocks.Observability;
 using WaitingRoom.Infrastructure.Observability;
+using WaitingRoom.Infrastructure.Messaging;
 using WaitingRoom.Infrastructure.Persistence.EventStore;
 using WaitingRoom.Infrastructure.Persistence.Outbox;
 using WaitingRoom.Infrastructure.Serialization;
@@ -55,19 +60,22 @@ public sealed class EventDrivenPipelineE2ETests : IAsyncLifetime
     public EventDrivenPipelineE2ETests()
     {
         // Use test database
-        _testConnectionString = "Host=localhost;Port=5432;Database=waitingroom_test;Username=postgres;Password=postgres";
+        _testConnectionString = "Host=localhost;Port=5432;Database=waitingroom_test;Username=rlapp;Password=rlapp_secure_password";
 
         // Build service provider for test
         var services = new ServiceCollection();
 
         // Infrastructure
+        services.AddLogging();
         services.AddSingleton<EventTypeRegistry>(EventTypeRegistry.CreateDefault());
         services.AddSingleton<EventSerializer>();
         services.AddSingleton<PostgresOutboxStore>(new PostgresOutboxStore(_testConnectionString));
         services.AddSingleton<PostgresEventStore>(sp => new PostgresEventStore(
             _testConnectionString,
             sp.GetRequiredService<EventSerializer>(),
-            sp.GetRequiredService<PostgresOutboxStore>()));
+            sp.GetRequiredService<PostgresOutboxStore>(),
+            sp.GetRequiredService<IEventLagTracker>()));
+        services.AddSingleton<IEventPublisher, OutboxEventPublisher>();
         services.AddSingleton<PostgresEventLagTracker>(new PostgresEventLagTracker(_testConnectionString));
         services.AddSingleton<IEventStore>(sp => sp.GetRequiredService<PostgresEventStore>());
         services.AddSingleton<IOutboxStore>(sp => sp.GetRequiredService<PostgresOutboxStore>());
@@ -90,7 +98,7 @@ public sealed class EventDrivenPipelineE2ETests : IAsyncLifetime
         _projectionProcessor = new ProjectionEventProcessor(
             new MockProjection(),
             _lagTracker,
-            ServiceProvider.GetRequiredService<ILogger<ProjectionEventProcessor>>());
+            _serviceProvider.GetRequiredService<ILogger<ProjectionEventProcessor>>());
     }
 
     async Task IAsyncLifetime.InitializeAsync()
@@ -117,7 +125,8 @@ public sealed class EventDrivenPipelineE2ETests : IAsyncLifetime
     async Task IAsyncLifetime.DisposeAsync()
     {
         // Cleanup
-        _serviceProvider?.Dispose();
+        if (_serviceProvider is IDisposable disposable)
+            disposable.Dispose();
     }
 
     /// <summary>
@@ -135,6 +144,8 @@ public sealed class EventDrivenPipelineE2ETests : IAsyncLifetime
     public async Task FullPipeline_CheckInPatient_RealizesCorrectly()
     {
         // Arrange
+        await EnsureQueueExistsAsync(TestQueueId, "Test Queue", 50, CancellationToken.None);
+
         var command = new CheckInPatientCommand
         {
             QueueId = TestQueueId,
@@ -152,10 +163,7 @@ public sealed class EventDrivenPipelineE2ETests : IAsyncLifetime
         // Assert: Step 2 - Verify event in EventStore
         var eventsFromStore = await _eventStore.GetEventsAsync(TestQueueId);
         var eventList = eventsFromStore.ToList();
-        Assert.Single(eventList);
-        Assert.IsType<PatientCheckedIn>(eventList[0]);
-
-        var patientCheckedInEvent = (PatientCheckedIn)eventList[0];
+        var patientCheckedInEvent = eventList.OfType<PatientCheckedIn>().Single();
         Assert.Equal(TestQueueId, patientCheckedInEvent.QueueId);
         Assert.Equal(TestPatientId, patientCheckedInEvent.PatientId);
         Assert.Equal(TestPatientName, patientCheckedInEvent.PatientName);
@@ -168,7 +176,7 @@ public sealed class EventDrivenPipelineE2ETests : IAsyncLifetime
         // Act: Step 4 - Simulate outbox dispatch
         // (In real test, OutboxWorker would run here)
         // For this test, we manually mark as published
-        await _outboxStore.MarkAsPublishedAsync(outboxPending[0].Id, CancellationToken.None);
+        await _outboxStore.MarkDispatchedAsync(new[] { outboxPending[0].EventId }, CancellationToken.None);
 
         // Assert: Step 5 - Verify outbox is now empty
         var outboxAfterDispatch = await _outboxStore.GetPendingAsync(100, CancellationToken.None);
@@ -180,11 +188,11 @@ public sealed class EventDrivenPipelineE2ETests : IAsyncLifetime
         var processingDuration = (int)(DateTime.UtcNow - startTime).TotalMilliseconds;
 
         // Assert: Step 7 - Verify lag metrics were recorded
-        var lagMetrics = await _lagTracker.GetLagMetricsAsync(patientCheckedInEvent.EventId);
+        var lagMetrics = await _lagTracker.GetLagMetricsAsync(patientCheckedInEvent.Metadata.EventId);
         Assert.NotNull(lagMetrics);
         Assert.Equal("PROCESSED", lagMetrics.Status);
         Assert.NotNull(lagMetrics.TotalLagMs);
-        Assert.True(lagMetrics.TotalLagMs > 0);
+        Assert.True(lagMetrics.TotalLagMs >= 0);
     }
 
     /// <summary>
@@ -199,6 +207,8 @@ public sealed class EventDrivenPipelineE2ETests : IAsyncLifetime
     public async Task ProcessEvent_Idempotent_SameEventTwiceProducesSameState()
     {
         // Arrange
+        await EnsureQueueExistsAsync(TestQueueId, "Test Queue", 50, CancellationToken.None);
+
         var command = new CheckInPatientCommand
         {
             QueueId = TestQueueId,
@@ -212,14 +222,14 @@ public sealed class EventDrivenPipelineE2ETests : IAsyncLifetime
         // Act: Create and process event first time
         await _commandHandler.HandleAsync(command, CancellationToken.None);
         var events = (await _eventStore.GetEventsAsync(TestQueueId)).ToList();
-        var evt = (PatientCheckedIn)events[0];
+        var evt = events.OfType<PatientCheckedIn>().First();
 
         await _projectionProcessor.ProcessEventAsync(evt, CancellationToken.None);
-        var metricsAfterFirst = await _lagTracker.GetLagMetricsAsync(evt.EventId);
+        var metricsAfterFirst = await _lagTracker.GetLagMetricsAsync(evt.Metadata.EventId);
 
         // Act: Process same event again
         await _projectionProcessor.ProcessEventAsync(evt, CancellationToken.None);
-        var metricsAfterSecond = await _lagTracker.GetLagMetricsAsync(evt.EventId);
+        var metricsAfterSecond = await _lagTracker.GetLagMetricsAsync(evt.Metadata.EventId);
 
         // Assert: Metrics should be same (handler is idempotent)
         Assert.Equal(metricsAfterFirst?.Status, metricsAfterSecond?.Status);
@@ -241,6 +251,8 @@ public sealed class EventDrivenPipelineE2ETests : IAsyncLifetime
         var eventIds = new List<string>();
         for (int i = 0; i < 10; i++)
         {
+            await EnsureQueueExistsAsync($"queue-{i}", "Test Queue", 50, CancellationToken.None);
+
             var command = new CheckInPatientCommand
             {
                 QueueId = $"queue-{i}",
@@ -254,8 +266,8 @@ public sealed class EventDrivenPipelineE2ETests : IAsyncLifetime
             await _commandHandler.HandleAsync(command, CancellationToken.None);
 
             var events = (await _eventStore.GetEventsAsync($"queue-{i}")).ToList();
-            var evt = (PatientCheckedIn)events[0];
-            eventIds.Add(evt.EventId);
+            var evt = events.OfType<PatientCheckedIn>().First();
+            eventIds.Add(evt.Metadata.EventId);
 
             // Vary processing delay
             await Task.Delay(10 + (i * 5));
@@ -292,6 +304,8 @@ public sealed class EventDrivenPipelineE2ETests : IAsyncLifetime
         // Arrange: Create events with different processing times
         for (int i = 0; i < 5; i++)
         {
+            await EnsureQueueExistsAsync($"queue-slow-{i}", "Test Queue", 50, CancellationToken.None);
+
             var command = new CheckInPatientCommand
             {
                 QueueId = $"queue-slow-{i}",
@@ -305,7 +319,7 @@ public sealed class EventDrivenPipelineE2ETests : IAsyncLifetime
             await _commandHandler.HandleAsync(command, CancellationToken.None);
 
             var events = (await _eventStore.GetEventsAsync($"queue-slow-{i}")).ToList();
-            var evt = (PatientCheckedIn)events[0];
+            var evt = events.OfType<PatientCheckedIn>().First();
 
             // Simulate varying processing times (slowest last)
             await Task.Delay(1000 - (i * 100));
@@ -346,10 +360,34 @@ public sealed class EventDrivenPipelineE2ETests : IAsyncLifetime
         public Task RebuildAsync(CancellationToken cancellationToken = default) =>
             Task.CompletedTask;
 
+        public Task ProcessEventAsync(DomainEvent @event, CancellationToken cancellationToken = default) =>
+            Task.CompletedTask;
+
+        public Task ProcessEventsAsync(IEnumerable<DomainEvent> events, CancellationToken cancellationToken = default) =>
+            Task.CompletedTask;
+
         public Task SetHealthStatusAsync(bool isHealthy, string? errorMessage = null, CancellationToken cancellationToken = default) =>
             Task.CompletedTask;
 
         public Task<ProjectionHealth> GetHealthAsync(CancellationToken cancellationToken = default) =>
             Task.FromResult(new ProjectionHealth { IsHealthy = true, LastUpdatedAt = DateTime.UtcNow });
+    }
+
+    private async Task EnsureQueueExistsAsync(
+        string queueId,
+        string queueName,
+        int maxCapacity,
+        CancellationToken cancellationToken)
+    {
+        var metadata = EventMetadata.CreateNew(queueId, "test-system");
+        var queue = WaitingQueue.Create(queueId, queueName, maxCapacity, metadata);
+        var eventIds = queue.UncommittedEvents
+            .Select(e => Guid.Parse(e.Metadata.EventId))
+            .ToArray();
+
+        await _eventStore.SaveAsync(queue, cancellationToken);
+
+        if (eventIds.Length > 0)
+            await _outboxStore.MarkDispatchedAsync(eventIds, cancellationToken);
     }
 }

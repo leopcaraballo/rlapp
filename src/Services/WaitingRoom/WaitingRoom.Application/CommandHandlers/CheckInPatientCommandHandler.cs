@@ -90,18 +90,18 @@ public sealed class CheckInPatientCommandHandler
         // STEP 3: Persist events atomically
         // All new events (in UncommittedEvents) are saved in single transaction
         // Version conflict is detected here if another handler modified same aggregate
+        var eventsToPublish = queue.UncommittedEvents.ToList();
         await _eventStore.SaveAsync(queue, cancellationToken);
 
         // STEP 4: Publish events
         // After successful persistence, publish all new events
         // This triggers projections and external subscribers
-        if (queue.HasUncommittedEvents)
+        if (eventsToPublish.Count > 0)
         {
-            await _eventPublisher.PublishAsync(queue.UncommittedEvents, cancellationToken);
+            await _eventPublisher.PublishAsync(eventsToPublish, cancellationToken);
         }
 
         // STEP 5: Return result
-        var eventCount = queue.UncommittedEvents.Count;
-        return eventCount;
+        return eventsToPublish.Count;
     }
 }

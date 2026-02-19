@@ -2,6 +2,7 @@ namespace WaitingRoom.Worker.Services;
 
 using Microsoft.Extensions.Logging;
 using BuildingBlocks.EventSourcing;
+using BuildingBlocks.Observability;
 using WaitingRoom.Application.Ports;
 using WaitingRoom.Infrastructure.Persistence.Outbox;
 using WaitingRoom.Infrastructure.Serialization;
@@ -32,19 +33,22 @@ internal sealed class OutboxDispatcher
     private readonly EventSerializer _serializer;
     private readonly OutboxDispatcherOptions _options;
     private readonly ILogger<OutboxDispatcher> _logger;
+    private readonly IEventLagTracker? _lagTracker;
 
     public OutboxDispatcher(
         IOutboxStore outboxStore,
         IEventPublisher publisher,
         EventSerializer serializer,
         OutboxDispatcherOptions options,
-        ILogger<OutboxDispatcher> logger)
+        ILogger<OutboxDispatcher> logger,
+        IEventLagTracker? lagTracker = null)
     {
         _outboxStore = outboxStore ?? throw new ArgumentNullException(nameof(outboxStore));
         _publisher = publisher ?? throw new ArgumentNullException(nameof(publisher));
         _serializer = serializer ?? throw new ArgumentNullException(nameof(serializer));
         _options = options ?? throw new ArgumentNullException(nameof(options));
         _logger = logger ?? throw new ArgumentNullException(nameof(logger));
+        _lagTracker = lagTracker;
     }
 
     /// <summary>
@@ -121,6 +125,8 @@ internal sealed class OutboxDispatcher
             message.EventId,
             message.EventName);
 
+        var dispatchStart = DateTime.UtcNow;
+
         // Deserialize event
         var domainEvent = _serializer.Deserialize(message.EventName, message.Payload);
 
@@ -129,6 +135,16 @@ internal sealed class OutboxDispatcher
 
         // Mark as dispatched in outbox
         await _outboxStore.MarkDispatchedAsync(new[] { message.EventId }, cancellationToken);
+
+        if (_lagTracker != null)
+        {
+            var dispatchDurationMs = (int)(DateTime.UtcNow - dispatchStart).TotalMilliseconds;
+            await _lagTracker.RecordEventPublishedAsync(
+                eventId: message.EventId.ToString(),
+                publishedAt: DateTime.UtcNow,
+                dispatchDurationMs: dispatchDurationMs,
+                cancellation: cancellationToken);
+        }
 
         _logger.LogInformation(
             "Successfully dispatched event {EventId} - {EventName}",

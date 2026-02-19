@@ -392,6 +392,29 @@
           "bin/placeholder/BuildingBlocks.EventSourcing.dll": {}
         }
       },
+      "BuildingBlocks.Messaging/1.0.0": {
+        "type": "project",
+        "framework": ".NETCoreApp,Version=v10.0",
+        "dependencies": {
+          "BuildingBlocks.EventSourcing": "1.0.0"
+        },
+        "compile": {
+          "bin/placeholder/BuildingBlocks.Messaging.dll": {}
+        },
+        "runtime": {
+          "bin/placeholder/BuildingBlocks.Messaging.dll": {}
+        }
+      },
+      "BuildingBlocks.Observability/1.0.0": {
+        "type": "project",
+        "framework": ".NETCoreApp,Version=v10.0",
+        "compile": {
+          "bin/placeholder/BuildingBlocks.Observability.dll": {}
+        },
+        "runtime": {
+          "bin/placeholder/BuildingBlocks.Observability.dll": {}
+        }
+      },
       "WaitingRoom.Application/1.0.0": {
         "type": "project",
         "framework": ".NETCoreApp,Version=v10.0",
@@ -423,6 +446,8 @@
         "framework": ".NETCoreApp,Version=v10.0",
         "dependencies": {
           "BuildingBlocks.EventSourcing": "1.0.0",
+          "BuildingBlocks.Messaging": "1.0.0",
+          "BuildingBlocks.Observability": "1.0.0",
           "Dapper": "2.1.35",
           "Newtonsoft.Json": "13.0.3",
           "Npgsql": "8.0.5",
@@ -435,6 +460,24 @@
         },
         "runtime": {
           "bin/placeholder/WaitingRoom.Infrastructure.dll": {}
+        }
+      },
+      "WaitingRoom.Projections/1.0.0": {
+        "type": "project",
+        "framework": ".NETCoreApp,Version=v10.0",
+        "dependencies": {
+          "BuildingBlocks.EventSourcing": "1.0.0",
+          "BuildingBlocks.Messaging": "1.0.0",
+          "BuildingBlocks.Observability": "1.0.0",
+          "RabbitMQ.Client": "6.8.1",
+          "WaitingRoom.Application": "1.0.0",
+          "WaitingRoom.Domain": "1.0.0"
+        },
+        "compile": {
+          "bin/placeholder/WaitingRoom.Projections.dll": {}
+        },
+        "runtime": {
+          "bin/placeholder/WaitingRoom.Projections.dll": {}
         }
       }
     }
@@ -1196,6 +1239,16 @@
       "path": "../../../BuildingBlocks/BuildingBlocks.EventSourcing/BuildingBlocks.EventSourcing.csproj",
       "msbuildProject": "../../../BuildingBlocks/BuildingBlocks.EventSourcing/BuildingBlocks.EventSourcing.csproj"
     },
+    "BuildingBlocks.Messaging/1.0.0": {
+      "type": "project",
+      "path": "../../../BuildingBlocks/BuildingBlocks.Messaging/BuildingBlocks.Messaging.csproj",
+      "msbuildProject": "../../../BuildingBlocks/BuildingBlocks.Messaging/BuildingBlocks.Messaging.csproj"
+    },
+    "BuildingBlocks.Observability/1.0.0": {
+      "type": "project",
+      "path": "../../../BuildingBlocks/BuildingBlocks.Observability/BuildingBlocks.Observability.csproj",
+      "msbuildProject": "../../../BuildingBlocks/BuildingBlocks.Observability/BuildingBlocks.Observability.csproj"
+    },
     "WaitingRoom.Application/1.0.0": {
       "type": "project",
       "path": "../WaitingRoom.Application/WaitingRoom.Application.csproj",
@@ -1210,6 +1263,11 @@
       "type": "project",
       "path": "../WaitingRoom.Infrastructure/WaitingRoom.Infrastructure.csproj",
       "msbuildProject": "../WaitingRoom.Infrastructure/WaitingRoom.Infrastructure.csproj"
+    },
+    "WaitingRoom.Projections/1.0.0": {
+      "type": "project",
+      "path": "../WaitingRoom.Projections/WaitingRoom.Projections.csproj",
+      "msbuildProject": "../WaitingRoom.Projections/WaitingRoom.Projections.csproj"
     }
   },
   "projectFileDependencyGroups": {
@@ -1224,7 +1282,8 @@
       "Swashbuckle.AspNetCore >= 7.2.0",
       "WaitingRoom.Application >= 1.0.0",
       "WaitingRoom.Domain >= 1.0.0",
-      "WaitingRoom.Infrastructure >= 1.0.0"
+      "WaitingRoom.Infrastructure >= 1.0.0",
+      "WaitingRoom.Projections >= 1.0.0"
     ]
   },
   "packageFolders": {
@@ -1264,6 +1323,9 @@
             },
             "/home/lcaraballo/Documentos/Sofka Projects/Projects/rlapp-backend/src/Services/WaitingRoom/WaitingRoom.Infrastructure/WaitingRoom.Infrastructure.csproj": {
               "projectPath": "/home/lcaraballo/Documentos/Sofka Projects/Projects/rlapp-backend/src/Services/WaitingRoom/WaitingRoom.Infrastructure/WaitingRoom.Infrastructure.csproj"
+            },
+            "/home/lcaraballo/Documentos/Sofka Projects/Projects/rlapp-backend/src/Services/WaitingRoom/WaitingRoom.Projections/WaitingRoom.Projections.csproj": {
+              "projectPath": "/home/lcaraballo/Documentos/Sofka Projects/Projects/rlapp-backend/src/Services/WaitingRoom/WaitingRoom.Projections/WaitingRoom.Projections.csproj"
             }
           }
         }

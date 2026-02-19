@@ -9,8 +9,10 @@ using WaitingRoom.Domain.Events;
 using WaitingRoom.Infrastructure.Messaging;
 using WaitingRoom.Infrastructure.Persistence.EventStore;
 using WaitingRoom.Infrastructure.Persistence.Outbox;
+using WaitingRoom.Infrastructure.Observability;
 using WaitingRoom.Infrastructure.Serialization;
 using BuildingBlocks.EventSourcing;
+using BuildingBlocks.Observability;
 
 // ==============================================================================
 // RLAPP — WaitingRoom.API
@@ -63,26 +65,26 @@ var services = builder.Services;
 services.AddSingleton<PostgresOutboxStore>(sp => new PostgresOutboxStore(connectionString));
 services.AddSingleton<IOutboxStore>(sp => sp.GetRequiredService<PostgresOutboxStore>());
 
+// Infrastructure — Lag Tracker
+services.AddSingleton<PostgresEventLagTracker>(sp => new PostgresEventLagTracker(connectionString));
+services.AddSingleton<IEventLagTracker>(sp => sp.GetRequiredService<PostgresEventLagTracker>());
+
 // Infrastructure — Event Type Registry
 services.AddSingleton<EventTypeRegistry>(sp => EventTypeRegistry.CreateDefault());
 
 // Infrastructure — Event Serializer
 services.AddSingleton<EventSerializer>();
 
-// Infrastructure — Event Publisher (RabbitMQ)
-services.AddSingleton<IEventPublisher>(sp =>
-{
-    var serializer = sp.GetRequiredService<EventSerializer>();
-    var outboxStore = sp.GetRequiredService<PostgresOutboxStore>();
-    return new RabbitMqEventPublisher(rabbitMqOptions, serializer, outboxStore);
-});
+// Infrastructure — Event Publisher (Outbox only; Worker dispatches)
+services.AddSingleton<IEventPublisher, OutboxEventPublisher>();
 
 // Infrastructure — Event Store (PostgreSQL)
 services.AddSingleton<IEventStore>(sp =>
 {
     var serializer = sp.GetRequiredService<EventSerializer>();
     var outboxStore = sp.GetRequiredService<PostgresOutboxStore>();
-    return new PostgresEventStore(connectionString, serializer, outboxStore);
+    var lagTracker = sp.GetRequiredService<IEventLagTracker>();
+    return new PostgresEventStore(connectionString, serializer, outboxStore, lagTracker);
 });
 
 // Application — Clock

@@ -6,6 +6,7 @@ using System.Data;
 using System.Linq;
 using System.Threading;
 using System.Threading.Tasks;
+using BuildingBlocks.Observability;
 using Dapper;
 using Npgsql;
 
@@ -38,11 +39,9 @@ internal sealed class PostgresEventLagTracker : IEventLagTracker
         CancellationToken cancellation = default)
     {
         const string sql = @"
-INSERT INTO event_processing_lag (event_name, aggregate_id, event_created_at, status, created_at)
-VALUES (@EventName, @AggregateId, @EventCreatedAt, 'CREATED', @CreatedAt)
-ON CONFLICT (event_id) DO UPDATE SET
-    status = 'CREATED',
-    event_created_at = @EventCreatedAt;";
+INSERT INTO event_processing_lag (event_id, event_name, aggregate_id, event_created_at, status, created_at)
+VALUES (@EventId, @EventName, @AggregateId, @EventCreatedAt, 'CREATED', @CreatedAt)
+ON CONFLICT (event_id) DO NOTHING;";
 
         try
         {
@@ -50,7 +49,14 @@ ON CONFLICT (event_id) DO UPDATE SET
             await connection.ExecuteAsync(
                 new CommandDefinition(
                     sql,
-                    new { EventName = eventName, AggregateId = aggregateId, EventCreatedAt = createdAt, CreatedAt = DateTime.UtcNow },
+                    new
+                    {
+                        EventId = Guid.Parse(eventId),
+                        EventName = eventName,
+                        AggregateId = aggregateId,
+                        EventCreatedAt = createdAt,
+                        CreatedAt = DateTime.UtcNow
+                    },
                     cancellationToken: cancellation));
         }
         catch (Exception ex)
@@ -79,7 +85,7 @@ WHERE event_id = @EventId;";
             await connection.ExecuteAsync(
                 new CommandDefinition(
                     sql,
-                    new { EventId = eventId, PublishedAt = publishedAt, DispatchDurationMs = dispatchDurationMs },
+                        new { EventId = Guid.Parse(eventId), PublishedAt = publishedAt, DispatchDurationMs = dispatchDurationMs },
                     cancellationToken: cancellation));
         }
         catch (Exception ex)
@@ -99,9 +105,10 @@ UPDATE event_processing_lag
 SET
     projection_processed_at = @ProcessedAt,
     projection_processing_duration_ms = @ProcessingDurationMs,
-    total_lag_ms = EXTRACT(EPOCH FROM (@ProcessedAt - event_created_at))::INT * 1000,
+    total_lag_ms = (EXTRACT(EPOCH FROM (@ProcessedAt - event_created_at)) * 1000)::INT,
     status = 'PROCESSED'
-WHERE event_id = @EventId;";
+WHERE event_id = @EventId
+  AND status != 'PROCESSED';";
 
         try
         {
@@ -109,7 +116,7 @@ WHERE event_id = @EventId;";
             await connection.ExecuteAsync(
                 new CommandDefinition(
                     sql,
-                    new { EventId = eventId, ProcessedAt = processedAt, ProcessingDurationMs = processingDurationMs },
+                        new { EventId = Guid.Parse(eventId), ProcessedAt = processedAt, ProcessingDurationMs = processingDurationMs },
                     cancellationToken: cancellation));
         }
         catch (Exception ex)
@@ -134,7 +141,7 @@ WHERE event_id = @EventId;";
             await connection.ExecuteAsync(
                 new CommandDefinition(
                     sql,
-                    new { EventId = eventId },
+                        new { EventId = Guid.Parse(eventId) },
                     cancellationToken: cancellation));
         }
         catch (Exception ex)
@@ -149,7 +156,7 @@ WHERE event_id = @EventId;";
     {
         const string sql = @"
 SELECT
-    event_id as EventId,
+    event_id::text as EventId,
     event_name as EventName,
     aggregate_id as AggregateId,
     event_created_at as EventCreatedAt,
@@ -168,7 +175,7 @@ WHERE event_id = @EventId;";
             var result = await connection.QueryFirstOrDefaultAsync<EventLagMetrics>(
                 new CommandDefinition(
                     sql,
-                    new { EventId = eventId },
+                    new { EventId = Guid.Parse(eventId) },
                     cancellationToken: cancellation));
             return result;
         }
@@ -212,18 +219,46 @@ WHERE event_name = @EventName
 
             if (result == null) return null;
 
+            var totalEventsProcessed = result.totaleventsprocessed is null
+                ? 0
+                : Convert.ToInt32(result.totaleventsprocessed);
+            var failedEventsCount = result.failedeventscount is null
+                ? 0
+                : Convert.ToInt32(result.failedeventscount);
+            var averageLagMs = result.averagelagms is null
+                ? 0m
+                : Convert.ToDecimal(result.averagelagms);
+            var maxLagMs = result.maxlagms is null
+                ? 0
+                : Convert.ToInt32(result.maxlagms);
+            var minLagMs = result.minlagms is null
+                ? 0
+                : Convert.ToInt32(result.minlagms);
+            var p50LagMs = result.p50lagms is null
+                ? 0
+                : Convert.ToInt32(result.p50lagms);
+            var p95LagMs = result.p95lagms is null
+                ? 0
+                : Convert.ToInt32(result.p95lagms);
+            var p99LagMs = result.p99lagms is null
+                ? 0
+                : Convert.ToInt32(result.p99lagms);
+            var eventsPerSecond = result.eventspersecond is null
+                ? 0m
+                : Convert.ToDecimal(result.eventspersecond);
+
             return new EventLagStatistics
             {
                 EventName = eventName,
-                TotalEventsProcessed = result.TotalEventsProcessed,
-                FailedEventsCount = result.FailedEventsCount,
-                AverageLagMs = result.AverageLagMs,
-                MaxLagMs = result.MaxLagMs,
-                MinLagMs = result.MinLagMs ?? 0,
-                P50LagMs = (int?)(result.P50LagMs ?? 0) ?? 0,
-                P95LagMs = (int?)(result.P95LagMs ?? 0) ?? 0,
-                P99LagMs = (int?)(result.P99LagMs ?? 0) ?? 0,
-                EventsPerSecond = result.EventsPerSecond ?? 0m,
+                TotalEventsProcessed = totalEventsProcessed,
+                FailedEventsCount = failedEventsCount,
+                AverageLagMs = averageLagMs,
+                MaxLagMs = maxLagMs,
+                MinLagMs = minLagMs,
+                P50LagMs = p50LagMs,
+                P95LagMs = p95LagMs,
+                P99LagMs = p99LagMs,
+                EventsPerSecond = eventsPerSecond,
                 Period = (from ?? DateTime.UtcNow.AddHours(-1), to ?? DateTime.UtcNow)
             };
         }
@@ -240,7 +275,7 @@ WHERE event_name = @EventName
     {
         var sql = @"
 SELECT
-    event_id as EventId,
+    event_id::text as EventId,
     event_name as EventName,
     aggregate_id as AggregateId,
     event_created_at as EventCreatedAt,

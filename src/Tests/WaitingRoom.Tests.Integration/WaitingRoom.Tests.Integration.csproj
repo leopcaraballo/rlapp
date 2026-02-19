@@ -23,7 +23,9 @@
   <ItemGroup>
     <ProjectReference Include="..\..\Services\WaitingRoom\WaitingRoom.Worker\WaitingRoom.Worker.csproj" />
     <ProjectReference Include="..\..\Services\WaitingRoom\WaitingRoom.Infrastructure\WaitingRoom.Infrastructure.csproj" />
+    <ProjectReference Include="..\..\Services\WaitingRoom\WaitingRoom.Projections\WaitingRoom.Projections.csproj" />
     <ProjectReference Include="..\..\BuildingBlocks\BuildingBlocks.EventSourcing\BuildingBlocks.EventSourcing.csproj" />
+    <ProjectReference Include="..\..\BuildingBlocks\BuildingBlocks.Observability\BuildingBlocks.Observability.csproj" />
   </ItemGroup>
 
 </Project>

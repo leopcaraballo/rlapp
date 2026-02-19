@@ -37,7 +37,6 @@ public static class WaitingRoomQueryEndpoints
     {
         group.MapGet("/{queueId}/monitor", GetMonitorAsync)
             .WithName("GetMonitor")
-            .WithOpenApi()
             .WithSummary("Get waiting room monitor (KPI dashboard)")
             .WithDescription("Returns high-level metrics: patient counts by priority, average wait time, utilization.")
             .Produces<WaitingRoomMonitorView>(StatusCodes.Status200OK)
@@ -45,7 +44,6 @@ public static class WaitingRoomQueryEndpoints
 
         group.MapGet("/{queueId}/queue-state", GetQueueStateAsync)
             .WithName("GetQueueState")
-            .WithOpenApi()
             .WithSummary("Get queue current state (detailed view)")
             .WithDescription("Returns detailed queue state: patient list, capacity info, wait times.")
             .Produces<QueueStateView>(StatusCodes.Status200OK)
@@ -53,7 +51,6 @@ public static class WaitingRoomQueryEndpoints
 
         group.MapPost("/{queueId}/rebuild", RebuildProjectionAsync)
             .WithName("RebuildProjection")
-            .WithOpenApi()
             .WithSummary("Rebuild projection from events (async)")
             .WithDescription("Initiates full projection rebuild from event store. Returns 202 Accepted. Use for recovery or schema migration.")
             .Produces(StatusCodes.Status202Accepted)
@@ -91,7 +88,7 @@ public static class WaitingRoomQueryEndpoints
 
             return Results.Ok(view);
         }
-        catch (Exception ex)
+        catch (Exception)
         {
             return Results.InternalServerError();
         }
@@ -128,7 +125,7 @@ public static class WaitingRoomQueryEndpoints
 
             return Results.Ok(view);
         }
-        catch (Exception ex)
+        catch (Exception)
         {
             return Results.InternalServerError();
         }
@@ -170,7 +167,7 @@ public static class WaitingRoomQueryEndpoints
                 $"/api/v1/waiting-room/{queueId}/monitor",
                 new { message = "Projection rebuild initiated", queueId });
         }
-        catch (Exception ex)
+        catch (Exception)
         {
             return Results.InternalServerError();
         }

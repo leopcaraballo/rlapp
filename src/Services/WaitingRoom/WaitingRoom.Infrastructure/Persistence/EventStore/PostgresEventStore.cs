@@ -2,6 +2,7 @@ namespace WaitingRoom.Infrastructure.Persistence.EventStore;
 
 using System.Data;
 using BuildingBlocks.EventSourcing;
+using BuildingBlocks.Observability;
 using Dapper;
 using Npgsql;
 using WaitingRoom.Application.Exceptions;
@@ -15,11 +16,13 @@ internal sealed class PostgresEventStore : IEventStore
     private readonly string _connectionString;
     private readonly EventSerializer _serializer;
     private readonly PostgresOutboxStore _outboxStore;
+    private readonly IEventLagTracker? _lagTracker;
 
     public PostgresEventStore(
         string connectionString,
         EventSerializer serializer,
-        PostgresOutboxStore outboxStore)
+        PostgresOutboxStore outboxStore,
+        IEventLagTracker? lagTracker = null)
     {
         if (string.IsNullOrWhiteSpace(connectionString))
             throw new ArgumentException("Connection string is required", nameof(connectionString));
@@ -27,6 +30,7 @@ internal sealed class PostgresEventStore : IEventStore
         _connectionString = connectionString;
         _serializer = serializer ?? throw new ArgumentNullException(nameof(serializer));
         _outboxStore = outboxStore ?? throw new ArgumentNullException(nameof(outboxStore));
+        _lagTracker = lagTracker;
     }
 
     public async Task EnsureSchemaAsync(CancellationToken cancellationToken = default)
@@ -175,7 +179,19 @@ ON CONFLICT (idempotency_key) DO NOTHING;
                 cancellationToken: cancellationToken));
 
             if (inserted > 0)
+            {
                 outboxMessages.Add(OutboxMessage.FromEvent(updatedEvent, payload));
+
+                if (_lagTracker != null)
+                {
+                    await _lagTracker.RecordEventCreatedAsync(
+                        eventId: updatedEvent.Metadata.EventId,
+                        eventName: updatedEvent.EventName,
+                        aggregateId: updatedEvent.Metadata.AggregateId,
+                        createdAt: updatedEvent.Metadata.OccurredAt,
+                        cancellation: cancellationToken);
+                }
+            }
         }
 
         if (outboxMessages.Count > 0)

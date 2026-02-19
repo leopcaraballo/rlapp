@@ -49,6 +49,7 @@ public class CheckInPatientCommandHandlerTests
         // Create a valid aggregate with existing event
         var metadata = EventMetadata.CreateNew(queueId, "system");
         var queue = WaitingQueue.Create(queueId, "Main Queue", 10, metadata);
+        queue.ClearUncommittedEvents();
 
         // Create mocks
         var eventStoreMock = new Mock<IEventStore>();
@@ -137,6 +138,7 @@ public class CheckInPatientCommandHandlerTests
         // Create queue with capacity 1
         var metadata = EventMetadata.CreateNew(queueId, "system");
         var queue = WaitingQueue.Create(queueId, "Small Queue", maxCapacity: 1, metadata);
+        queue.ClearUncommittedEvents();
 
         // Add first patient to fill capacity
         queue.CheckInPatient(
@@ -185,6 +187,7 @@ public class CheckInPatientCommandHandlerTests
 
         var metadata = EventMetadata.CreateNew(queueId, "system");
         var queue = WaitingQueue.Create(queueId, "Main Queue", 10, metadata);
+        queue.ClearUncommittedEvents();
 
         var eventStoreMock = new Mock<IEventStore>();
         var publisherMock = new Mock<IEventPublisher>();
@@ -232,6 +235,7 @@ public class CheckInPatientCommandHandlerTests
 
         var metadata = EventMetadata.CreateNew(queueId, "system");
         var queue = WaitingQueue.Create(queueId, "Main Queue", 10, metadata);
+        queue.ClearUncommittedEvents();
 
         var eventStoreMock = new Mock<IEventStore>();
         var publisherMock = new Mock<IEventPublisher>();
@@ -285,6 +289,7 @@ public class CheckInPatientCommandHandlerTests
 
         var metadata = EventMetadata.CreateNew(queueId, "system");
         var queue = WaitingQueue.Create(queueId, "Main Queue", 10, metadata);
+        queue.ClearUncommittedEvents();
 
         var eventStoreMock = new Mock<IEventStore>();
         var publisherMock = new Mock<IEventPublisher>();
@@ -332,6 +337,7 @@ public class CheckInPatientCommandHandlerTests
 
         var metadata = EventMetadata.CreateNew(queueId, "system");
         var queue = WaitingQueue.Create(queueId, "Main Queue", 10, metadata);
+        queue.ClearUncommittedEvents();
 
         var eventStoreMock = new Mock<IEventStore>();
         var publisherMock = new Mock<IEventPublisher>();

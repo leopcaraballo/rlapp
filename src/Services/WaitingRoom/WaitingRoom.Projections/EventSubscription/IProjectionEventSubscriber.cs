@@ -1,12 +1,12 @@
 namespace WaitingRoom.Projections.EventSubscription;
 
 using BuildingBlocks.EventSourcing;
+using BuildingBlocks.Messaging;
 using RabbitMQ.Client;
 using RabbitMQ.Client.Events;
 using System;
 using System.Text;
 using System.Text.Json;
-using WaitingRoom.Infrastructure.Serialization;
 
 /// <summary>
 /// RabbitMQ event subscriber for projections.
@@ -76,7 +76,7 @@ public sealed class ErrorOccurredArgs : EventArgs
 internal sealed class RabbitMqProjectionEventSubscriber : IProjectionEventSubscriber
 {
     private readonly IConnectionFactory _connectionFactory;
-    private readonly EventSerializer _eventSerializer;
+    private readonly IEventSerializer _eventSerializer;
     private readonly string _exchangeName;
     private readonly string _queueName;
     private readonly string[] _routingPatterns;
@@ -91,7 +91,7 @@ internal sealed class RabbitMqProjectionEventSubscriber : IProjectionEventSubscr
 
     public RabbitMqProjectionEventSubscriber(
         IConnectionFactory connectionFactory,
-        EventSerializer eventSerializer,
+        IEventSerializer eventSerializer,
         string exchangeName = "waiting_room_events",
         string queueName = "waiting-room-projection-queue",
         string[]? routingPatterns = null)

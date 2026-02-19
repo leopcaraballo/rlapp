@@ -9,6 +9,8 @@
       "WaitingRoom.Infrastructure/1.0.0": {
         "dependencies": {
           "BuildingBlocks.EventSourcing": "1.0.0",
+          "BuildingBlocks.Messaging": "1.0.0",
+          "BuildingBlocks.Observability": "1.0.0",
           "Dapper": "2.1.35",
           "Newtonsoft.Json": "13.0.3",
           "Npgsql": "8.0.5",
@@ -77,6 +79,25 @@
       "BuildingBlocks.EventSourcing/1.0.0": {
         "runtime": {
           "BuildingBlocks.EventSourcing.dll": {
+            "assemblyVersion": "1.0.0.0",
+            "fileVersion": "1.0.0.0"
+          }
+        }
+      },
+      "BuildingBlocks.Messaging/1.0.0": {
+        "dependencies": {
+          "BuildingBlocks.EventSourcing": "1.0.0"
+        },
+        "runtime": {
+          "BuildingBlocks.Messaging.dll": {
+            "assemblyVersion": "1.0.0.0",
+            "fileVersion": "1.0.0.0"
+          }
+        }
+      },
+      "BuildingBlocks.Observability/1.0.0": {
+        "runtime": {
+          "BuildingBlocks.Observability.dll": {
             "assemblyVersion": "1.0.0.0",
             "fileVersion": "1.0.0.0"
           }
@@ -155,6 +176,16 @@
       "hashPath": "rabbitmq.client.6.8.1.nupkg.sha512"
     },
     "BuildingBlocks.EventSourcing/1.0.0": {
+      "type": "project",
+      "serviceable": false,
+      "sha512": ""
+    },
+    "BuildingBlocks.Messaging/1.0.0": {
+      "type": "project",
+      "serviceable": false,
+      "sha512": ""
+    },
+    "BuildingBlocks.Observability/1.0.0": {
       "type": "project",
       "serviceable": false,
       "sha512": ""

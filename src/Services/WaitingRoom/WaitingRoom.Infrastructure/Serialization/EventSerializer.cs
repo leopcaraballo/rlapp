@@ -1,10 +1,11 @@
 namespace WaitingRoom.Infrastructure.Serialization;
 
 using BuildingBlocks.EventSourcing;
+using BuildingBlocks.Messaging;
 using Newtonsoft.Json;
 using Newtonsoft.Json.Serialization;
 
-public sealed class EventSerializer
+public sealed class EventSerializer : IEventSerializer
 {
     private readonly EventTypeRegistry _registry;
     private readonly JsonSerializerSettings _settings;

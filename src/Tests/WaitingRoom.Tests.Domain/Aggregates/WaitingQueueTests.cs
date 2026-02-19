@@ -16,7 +16,9 @@ public class WaitingQueueTests
         int maxCapacity = 10)
     {
         var metadata = EventMetadata.CreateNew(queueId, "system");
-        return WaitingQueue.Create(queueId, queueName, maxCapacity, metadata);
+        var queue = WaitingQueue.Create(queueId, queueName, maxCapacity, metadata);
+        queue.ClearUncommittedEvents();
+        return queue;
     }
 
     [Fact]
@@ -28,7 +30,7 @@ public class WaitingQueueTests
         queue.QueueName.Should().Be("Main Reception");
         queue.MaxCapacity.Should().Be(10);
         queue.CurrentCount.Should().Be(0);
-        queue.Version.Should().Be(0);
+        queue.Version.Should().Be(1);
     }
 
     [Fact]

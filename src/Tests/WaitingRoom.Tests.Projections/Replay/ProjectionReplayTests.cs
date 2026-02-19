@@ -174,6 +174,9 @@ public sealed class ProjectionReplayTests
             PatientId = patientId,
             PatientName = name ?? $"Patient {patientId}",
             Priority = priority,
+            ConsultationType = "General",
+            QueuePosition = 0,
+            CheckInTime = DateTime.UtcNow,
             Metadata = new EventMetadata
             {
                 AggregateId = queueId,
@@ -181,9 +184,8 @@ public sealed class ProjectionReplayTests
                 CorrelationId = Guid.NewGuid().ToString(),
                 CausationId = Guid.NewGuid().ToString(),
                 Actor = "system",
-                OccurredAt = DateTimeOffset.UtcNow,
-                Version = 1,
-                Timestamp = DateTime.UtcNow
+                OccurredAt = DateTime.UtcNow,
+                Version = 1
             }
         };
     }

@@ -6,6 +6,7 @@
 -- Create databases
 CREATE DATABASE waitingroom_eventstore;
 CREATE DATABASE waitingroom_read_models;
+CREATE DATABASE waitingroom_test;
 
 -- Connect to eventstore database
 \c waitingroom_eventstore
@@ -15,57 +16,65 @@ CREATE DATABASE waitingroom_read_models;
 -- =============================================================================
 
 CREATE TABLE IF NOT EXISTS waiting_room_events (
-    version BIGSERIAL PRIMARY KEY,
-    aggregate_id UUID NOT NULL,
-    event_name VARCHAR(255) NOT NULL,
-    payload JSONB NOT NULL,
-    metadata JSONB NOT NULL,
-    created_at TIMESTAMP NOT NULL DEFAULT CURRENT_TIMESTAMP
+    event_id UUID PRIMARY KEY,
+    aggregate_id TEXT NOT NULL,
+    version BIGINT NOT NULL,
+    event_name TEXT NOT NULL,
+    occurred_at TIMESTAMPTZ NOT NULL,
+    correlation_id TEXT NOT NULL,
+    causation_id TEXT NOT NULL,
+    actor TEXT NOT NULL,
+    idempotency_key TEXT NOT NULL,
+    schema_version INT NOT NULL,
+    payload JSONB NOT NULL
 );
 
-CREATE INDEX IF NOT EXISTS idx_aggregate_id ON waiting_room_events(aggregate_id);
-CREATE INDEX IF NOT EXISTS idx_event_name ON waiting_room_events(event_name);
-CREATE INDEX IF NOT EXISTS idx_created_at ON waiting_room_events(created_at);
+CREATE UNIQUE INDEX IF NOT EXISTS ux_waiting_room_events_aggregate_version
+    ON waiting_room_events (aggregate_id, version);
+
+CREATE UNIQUE INDEX IF NOT EXISTS ux_waiting_room_events_idempotency
+    ON waiting_room_events (idempotency_key);
 
 -- =============================================================================
 -- OUTBOX PATTERN TABLE
 -- =============================================================================
 
 CREATE TABLE IF NOT EXISTS waiting_room_outbox (
-    id BIGSERIAL PRIMARY KEY,
-    aggregate_id UUID NOT NULL,
-    event_name VARCHAR(255) NOT NULL,
+    outbox_id UUID PRIMARY KEY,
+    event_id UUID NOT NULL,
+    event_name TEXT NOT NULL,
+    occurred_at TIMESTAMPTZ NOT NULL,
+    correlation_id TEXT NOT NULL,
+    causation_id TEXT NOT NULL,
     payload JSONB NOT NULL,
-    metadata JSONB NOT NULL,
-    published BOOLEAN NOT NULL DEFAULT FALSE,
-    attempted_at TIMESTAMP,
-    last_failed_at TIMESTAMP,
-    retry_count INT NOT NULL DEFAULT 0,
-    exception_message TEXT,
-    created_at TIMESTAMP NOT NULL DEFAULT CURRENT_TIMESTAMP,
-    published_at TIMESTAMP
+    status TEXT NOT NULL,
+    attempts INT NOT NULL,
+    next_attempt_at TIMESTAMPTZ NULL,
+    last_error TEXT NULL
 );
 
-CREATE INDEX IF NOT EXISTS idx_published ON waiting_room_outbox(published);
-CREATE INDEX IF NOT EXISTS idx_created_at_outbox ON waiting_room_outbox(created_at);
-CREATE INDEX IF NOT EXISTS idx_retry_count ON waiting_room_outbox(retry_count);
+CREATE UNIQUE INDEX IF NOT EXISTS ux_waiting_room_outbox_event
+    ON waiting_room_outbox (event_id);
+
+CREATE INDEX IF NOT EXISTS ix_waiting_room_outbox_pending
+    ON waiting_room_outbox (status, next_attempt_at);
 
 -- =============================================================================
 -- LAG MONITORING TABLE (Observability)
 -- =============================================================================
 
 CREATE TABLE IF NOT EXISTS event_processing_lag (
-    id BIGSERIAL PRIMARY KEY,
-    event_name VARCHAR(255) NOT NULL,
-    aggregate_id UUID NOT NULL,
-    event_created_at TIMESTAMP NOT NULL,
-    event_published_at TIMESTAMP,
-    projection_processed_at TIMESTAMP,
+    event_id UUID PRIMARY KEY,
+    event_name TEXT NOT NULL,
+    aggregate_id TEXT NOT NULL,
+    event_created_at TIMESTAMPTZ NOT NULL,
+    event_published_at TIMESTAMPTZ,
+    projection_processed_at TIMESTAMPTZ,
     outbox_dispatch_duration_ms INT,
     projection_processing_duration_ms INT,
     total_lag_ms INT,
-    status VARCHAR(50) NOT NULL, -- CREATED, PUBLISHED, PROCESSED
-    created_at TIMESTAMP NOT NULL DEFAULT CURRENT_TIMESTAMP
+    status TEXT NOT NULL, -- CREATED, PUBLISHED, PROCESSED, FAILED
+    created_at TIMESTAMPTZ NOT NULL DEFAULT CURRENT_TIMESTAMP
 );
 
 CREATE INDEX IF NOT EXISTS idx_event_name_lag ON event_processing_lag(event_name);
@@ -77,13 +86,103 @@ CREATE INDEX IF NOT EXISTS idx_created_at_lag ON event_processing_lag(created_at
 -- =============================================================================
 
 CREATE TABLE IF NOT EXISTS projection_checkpoints (
-    projection_id VARCHAR(255) PRIMARY KEY,
-    last_processed_event_version BIGINT NOT NULL DEFAULT 0,
-    last_processed_at TIMESTAMP NOT NULL DEFAULT CURRENT_TIMESTAMP,
-    is_healthy BOOLEAN NOT NULL DEFAULT TRUE,
-    error_message TEXT,
-    updated_at TIMESTAMP NOT NULL DEFAULT CURRENT_TIMESTAMP
+    projection_id TEXT PRIMARY KEY,
+    last_event_version BIGINT NOT NULL DEFAULT 0,
+    checkpointed_at TIMESTAMPTZ NOT NULL DEFAULT CURRENT_TIMESTAMP,
+    idempotency_key TEXT NOT NULL,
+    status TEXT NULL
 );
+
+CREATE UNIQUE INDEX IF NOT EXISTS ux_projection_checkpoints_idempotency
+    ON projection_checkpoints (idempotency_key);
+
+-- Connect to test database
+\c waitingroom_test
+
+-- =============================================================================
+-- EVENT STORE SCHEMA (TEST)
+-- =============================================================================
+
+CREATE TABLE IF NOT EXISTS waiting_room_events (
+    event_id UUID PRIMARY KEY,
+    aggregate_id TEXT NOT NULL,
+    version BIGINT NOT NULL,
+    event_name TEXT NOT NULL,
+    occurred_at TIMESTAMPTZ NOT NULL,
+    correlation_id TEXT NOT NULL,
+    causation_id TEXT NOT NULL,
+    actor TEXT NOT NULL,
+    idempotency_key TEXT NOT NULL,
+    schema_version INT NOT NULL,
+    payload JSONB NOT NULL
+);
+
+CREATE UNIQUE INDEX IF NOT EXISTS ux_waiting_room_events_aggregate_version
+    ON waiting_room_events (aggregate_id, version);
+
+CREATE UNIQUE INDEX IF NOT EXISTS ux_waiting_room_events_idempotency
+    ON waiting_room_events (idempotency_key);
+
+-- =============================================================================
+-- OUTBOX PATTERN TABLE (TEST)
+-- =============================================================================
+
+CREATE TABLE IF NOT EXISTS waiting_room_outbox (
+    outbox_id UUID PRIMARY KEY,
+    event_id UUID NOT NULL,
+    event_name TEXT NOT NULL,
+    occurred_at TIMESTAMPTZ NOT NULL,
+    correlation_id TEXT NOT NULL,
+    causation_id TEXT NOT NULL,
+    payload JSONB NOT NULL,
+    status TEXT NOT NULL,
+    attempts INT NOT NULL,
+    next_attempt_at TIMESTAMPTZ NULL,
+    last_error TEXT NULL
+);
+
+CREATE UNIQUE INDEX IF NOT EXISTS ux_waiting_room_outbox_event
+    ON waiting_room_outbox (event_id);
+
+CREATE INDEX IF NOT EXISTS ix_waiting_room_outbox_pending
+    ON waiting_room_outbox (status, next_attempt_at);
+
+-- =============================================================================
+-- LAG MONITORING TABLE (TEST)
+-- =============================================================================
+
+CREATE TABLE IF NOT EXISTS event_processing_lag (
+    event_id UUID PRIMARY KEY,
+    event_name TEXT NOT NULL,
+    aggregate_id TEXT NOT NULL,
+    event_created_at TIMESTAMPTZ NOT NULL,
+    event_published_at TIMESTAMPTZ,
+    projection_processed_at TIMESTAMPTZ,
+    outbox_dispatch_duration_ms INT,
+    projection_processing_duration_ms INT,
+    total_lag_ms INT,
+    status TEXT NOT NULL,
+    created_at TIMESTAMPTZ NOT NULL DEFAULT CURRENT_TIMESTAMP
+);
+
+CREATE INDEX IF NOT EXISTS idx_event_name_lag ON event_processing_lag(event_name);
+CREATE INDEX IF NOT EXISTS idx_status_lag ON event_processing_lag(status);
+CREATE INDEX IF NOT EXISTS idx_created_at_lag ON event_processing_lag(created_at);
+
+-- =============================================================================
+-- PROJECTION STATE (TEST)
+-- =============================================================================
+
+CREATE TABLE IF NOT EXISTS projection_checkpoints (
+    projection_id TEXT PRIMARY KEY,
+    last_event_version BIGINT NOT NULL DEFAULT 0,
+    checkpointed_at TIMESTAMPTZ NOT NULL DEFAULT CURRENT_TIMESTAMP,
+    idempotency_key TEXT NOT NULL,
+    status TEXT NULL
+);
+
+CREATE UNIQUE INDEX IF NOT EXISTS ux_projection_checkpoints_idempotency
+    ON projection_checkpoints (idempotency_key);
 
 -- Connect to read_models database
 \c waitingroom_read_models
@@ -94,7 +193,7 @@ CREATE TABLE IF NOT EXISTS projection_checkpoints (
 
 -- Waiting Queue View (Read Model)
 CREATE TABLE IF NOT EXISTS waiting_queue_view (
-    queue_id UUID PRIMARY KEY,
+    queue_id TEXT PRIMARY KEY,
     queue_name VARCHAR(255) NOT NULL,
     max_capacity INT NOT NULL,
     current_patient_count INT NOT NULL DEFAULT 0,
@@ -105,8 +204,8 @@ CREATE TABLE IF NOT EXISTS waiting_queue_view (
 
 -- Waiting Patients View (Read Model)
 CREATE TABLE IF NOT EXISTS waiting_patients_view (
-    queue_id UUID NOT NULL,
-    patient_id UUID NOT NULL,
+    queue_id TEXT NOT NULL,
+    patient_id TEXT NOT NULL,
     patient_name VARCHAR(255) NOT NULL,
     priority VARCHAR(50) NOT NULL,
     consultation_type VARCHAR(255) NOT NULL,
@@ -147,5 +246,16 @@ CREATE INDEX IF NOT EXISTS idx_event_name_metrics ON event_lag_metrics(event_nam
 
 GRANT ALL PRIVILEGES ON DATABASE waitingroom_eventstore TO rlapp;
 GRANT ALL PRIVILEGES ON DATABASE waitingroom_read_models TO rlapp;
+GRANT ALL PRIVILEGES ON DATABASE waitingroom_test TO rlapp;
+
+\c waitingroom_eventstore
+GRANT ALL PRIVILEGES ON SCHEMA public TO rlapp;
+GRANT ALL PRIVILEGES ON ALL TABLES IN SCHEMA public TO rlapp;
+
+\c waitingroom_test
+GRANT ALL PRIVILEGES ON SCHEMA public TO rlapp;
+GRANT ALL PRIVILEGES ON ALL TABLES IN SCHEMA public TO rlapp;
+
+\c waitingroom_read_models
 GRANT ALL PRIVILEGES ON SCHEMA public TO rlapp;
 GRANT ALL PRIVILEGES ON ALL TABLES IN SCHEMA public TO rlapp;

@@ -41,9 +41,10 @@ public static class WaitingQueueInvariants
     /// </summary>
     public static void ValidatePriority(string priority)
     {
-        var validPriorities = new[] { "Low", "Medium", "High", "Urgent" };
+        var validPriorities = new[] { "low", "medium", "high", "urgent" };
+        var normalized = priority.Trim().ToLowerInvariant();
 
-        if (!validPriorities.Contains(priority))
+        if (!validPriorities.Contains(normalized))
             throw new DomainException($"Invalid priority: {priority}");
     }
 

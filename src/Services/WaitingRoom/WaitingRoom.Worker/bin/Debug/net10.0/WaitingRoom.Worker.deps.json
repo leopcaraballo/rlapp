@@ -445,6 +445,25 @@
           }
         }
       },
+      "BuildingBlocks.Messaging/1.0.0": {
+        "dependencies": {
+          "BuildingBlocks.EventSourcing": "1.0.0"
+        },
+        "runtime": {
+          "BuildingBlocks.Messaging.dll": {
+            "assemblyVersion": "1.0.0.0",
+            "fileVersion": "1.0.0.0"
+          }
+        }
+      },
+      "BuildingBlocks.Observability/1.0.0": {
+        "runtime": {
+          "BuildingBlocks.Observability.dll": {
+            "assemblyVersion": "1.0.0.0",
+            "fileVersion": "1.0.0.0"
+          }
+        }
+      },
       "WaitingRoom.Application/1.0.0": {
         "dependencies": {
           "WaitingRoom.Domain": "1.0.0"
@@ -470,6 +489,8 @@
       "WaitingRoom.Infrastructure/1.0.0": {
         "dependencies": {
           "BuildingBlocks.EventSourcing": "1.0.0",
+          "BuildingBlocks.Messaging": "1.0.0",
+          "BuildingBlocks.Observability": "1.0.0",
           "Dapper": "2.1.35",
           "Newtonsoft.Json": "13.0.3",
           "Npgsql": "8.0.5",
@@ -717,6 +738,16 @@
       "hashPath": "system.diagnostics.eventlog.9.0.0.nupkg.sha512"
     },
     "BuildingBlocks.EventSourcing/1.0.0": {
+      "type": "project",
+      "serviceable": false,
+      "sha512": ""
+    },
+    "BuildingBlocks.Messaging/1.0.0": {
+      "type": "project",
+      "serviceable": false,
+      "sha512": ""
+    },
+    "BuildingBlocks.Observability/1.0.0": {
       "type": "project",
       "serviceable": false,
       "sha512": ""

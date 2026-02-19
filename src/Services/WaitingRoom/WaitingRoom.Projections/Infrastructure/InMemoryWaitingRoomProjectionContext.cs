@@ -141,6 +141,8 @@ public sealed class InMemoryWaitingRoomProjectionContext : IWaitingRoomProjectio
         if (string.IsNullOrWhiteSpace(priority))
             throw new ArgumentException("Priority required", nameof(priority));
 
+        var normalizedPriority = NormalizePriority(priority);
+
         // Get or create monitor view
         var view = _monitorViews.GetOrAdd(queueId, CreateDefaultMonitorView);
 
@@ -150,13 +152,13 @@ public sealed class InMemoryWaitingRoomProjectionContext : IWaitingRoomProjectio
             "increment" => view with
             {
                 TotalPatientsWaiting = view.TotalPatientsWaiting + 1,
-                HighPriorityCount = priority == "high"
+                HighPriorityCount = normalizedPriority == "high"
                     ? view.HighPriorityCount + 1
                     : view.HighPriorityCount,
-                NormalPriorityCount = priority == "normal"
+                NormalPriorityCount = normalizedPriority == "normal"
                     ? view.NormalPriorityCount + 1
                     : view.NormalPriorityCount,
-                LowPriorityCount = priority == "low"
+                LowPriorityCount = normalizedPriority == "low"
                     ? view.LowPriorityCount + 1
                     : view.LowPriorityCount,
                 LastPatientCheckedInAt = DateTime.UtcNow,
@@ -165,13 +167,13 @@ public sealed class InMemoryWaitingRoomProjectionContext : IWaitingRoomProjectio
             "decrement" => view with
             {
                 TotalPatientsWaiting = Math.Max(0, view.TotalPatientsWaiting - 1),
-                HighPriorityCount = priority == "high"
+                HighPriorityCount = normalizedPriority == "high"
                     ? Math.Max(0, view.HighPriorityCount - 1)
                     : view.HighPriorityCount,
-                NormalPriorityCount = priority == "normal"
+                NormalPriorityCount = normalizedPriority == "normal"
                     ? Math.Max(0, view.NormalPriorityCount - 1)
                     : view.NormalPriorityCount,
-                LowPriorityCount = priority == "low"
+                LowPriorityCount = normalizedPriority == "low"
                     ? Math.Max(0, view.LowPriorityCount - 1)
                     : view.LowPriorityCount,
                 ProjectedAt = DateTimeOffset.UtcNow
@@ -217,8 +219,10 @@ public sealed class InMemoryWaitingRoomProjectionContext : IWaitingRoomProjectio
         {
             // Sort by priority (high first)
             var priorityOrder = new Dictionary<string, int> { ["high"] = 0, ["normal"] = 1, ["low"] = 2 };
-            var priorityCompare = priorityOrder.GetValueOrDefault(a.Priority, 3)
-                .CompareTo(priorityOrder.GetValueOrDefault(b.Priority, 3));
+            var priorityA = NormalizePriority(a.Priority);
+            var priorityB = NormalizePriority(b.Priority);
+            var priorityCompare = priorityOrder.GetValueOrDefault(priorityA, 3)
+                .CompareTo(priorityOrder.GetValueOrDefault(priorityB, 3));
 
             if (priorityCompare != 0)
                 return priorityCompare;
@@ -230,8 +234,9 @@ public sealed class InMemoryWaitingRoomProjectionContext : IWaitingRoomProjectio
         var updated = view with
         {
             PatientsInQueue = updatedQueue,
-            CurrentPatientCount = updatedQueue.Count,
-            UpdatedByEventVersion = view.UpdatedByEventVersion + 1,
+            CurrentCount = updatedQueue.Count,
+            IsAtCapacity = updatedQueue.Count >= view.MaxCapacity,
+            AvailableSpots = Math.Max(0, view.MaxCapacity - updatedQueue.Count),
             ProjectedAt = DateTimeOffset.UtcNow
         };
 
@@ -267,8 +272,9 @@ public sealed class InMemoryWaitingRoomProjectionContext : IWaitingRoomProjectio
         var updated = view with
         {
             PatientsInQueue = updatedQueue,
-            CurrentPatientCount = updatedQueue.Count,
-            UpdatedByEventVersion = view.UpdatedByEventVersion + 1,
+            CurrentCount = updatedQueue.Count,
+            IsAtCapacity = updatedQueue.Count >= view.MaxCapacity,
+            AvailableSpots = Math.Max(0, view.MaxCapacity - updatedQueue.Count),
             ProjectedAt = DateTimeOffset.UtcNow
         };
 
@@ -283,45 +289,6 @@ public sealed class InMemoryWaitingRoomProjectionContext : IWaitingRoomProjectio
         return Task.CompletedTask;
     }
 
-    public Task UpdatePatientStatusAsync(
-        string queueId,
-        string patientId,
-        string status,
-        CancellationToken cancellationToken = default)
-    {
-        if (string.IsNullOrWhiteSpace(queueId))
-            throw new ArgumentException("Queue ID required", nameof(queueId));
-
-        if (string.IsNullOrWhiteSpace(patientId))
-            throw new ArgumentException("Patient ID required", nameof(patientId));
-
-        if (string.IsNullOrWhiteSpace(status))
-            throw new ArgumentException("Status required", nameof(status));
-
-        if (!_queueStateViews.TryGetValue(queueId, out var view))
-            return Task.CompletedTask;
-
-        var updatedQueue = view.PatientsInQueue
-            .Select(p => p.PatientId == patientId ? p with { Status = status } : p)
-            .ToList();
-
-        var updated = view with
-        {
-            PatientsInQueue = updatedQueue,
-            UpdatedByEventVersion = view.UpdatedByEventVersion + 1,
-            ProjectedAt = DateTimeOffset.UtcNow
-        };
-
-        _queueStateViews[queueId] = updated;
-
-        _logger.LogDebug(
-            "Updated patient {PatientId} status in queue {QueueId} to {Status}",
-            patientId,
-            queueId,
-            status);
-
-        return Task.CompletedTask;
-    }
 
     public Task<WaitingRoomMonitorView?> GetMonitorViewAsync(
         string queueId,
@@ -376,7 +343,6 @@ public sealed class InMemoryWaitingRoomProjectionContext : IWaitingRoomProjectio
         new()
         {
             QueueId = queueId,
-            QueueName = "Default Queue",
             TotalPatientsWaiting = 0,
             HighPriorityCount = 0,
             NormalPriorityCount = 0,
@@ -391,18 +357,31 @@ public sealed class InMemoryWaitingRoomProjectionContext : IWaitingRoomProjectio
         new()
         {
             QueueId = queueId,
-            QueueName = "Default Queue",
             MaxCapacity = 50,
-            CurrentPatientCount = 0,
+            CurrentCount = 0,
             IsAtCapacity = false,
             AvailableSpots = 50,
             PatientsInQueue = [],
-            UpdatedByEventVersion = 0,
             ProjectedAt = DateTimeOffset.UtcNow
         };
 
     private sealed class NoOpTransaction : IAsyncDisposable
     {
         public ValueTask DisposeAsync() => ValueTask.CompletedTask;
+    }
+
+    private static string NormalizePriority(string priority)
+    {
+        var normalized = priority.Trim().ToLowerInvariant();
+
+        return normalized switch
+        {
+            "urgent" => "high",
+            "high" => "high",
+            "medium" => "normal",
+            "normal" => "normal",
+            "low" => "low",
+            _ => normalized
+        };
     }
 }

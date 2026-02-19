@@ -26,12 +26,22 @@ public sealed record Priority
             throw new DomainException("Priority cannot be empty");
 
         var normalized = value.Trim();
+        var key = normalized.ToLowerInvariant();
 
-        if (!ValidValues.Contains(normalized))
+        var canonical = key switch
+        {
+            "low" => Low,
+            "medium" => Medium,
+            "high" => High,
+            "urgent" => Urgent,
+            _ => string.Empty
+        };
+
+        if (string.IsNullOrEmpty(canonical))
             throw new DomainException(
                 $"Invalid priority '{normalized}'. Valid values: {string.Join(", ", ValidValues)}");
 
-        return new(normalized);
+        return new(canonical);
     }
 
     /// <summary>
