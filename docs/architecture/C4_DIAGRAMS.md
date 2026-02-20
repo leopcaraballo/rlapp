@@ -469,8 +469,8 @@ graph TB
 - **C4 Model:** <https://c4model.com>
 - **Simon Brown:** "Software Architecture for Developers"
 - **Mermaid Docs:** <https://mermaid.js.org>
-- [ARCHITECTURE.md](ARCHITECTURE.md) — Complete architecture documentation
-- [ADR-007: Hexagonal Architecture](.ai/ADR-007-HEXAGONAL_ARCHITECTURE.md)
+- [ARCHITECTURE.md](../ARCHITECTURE.md) — Complete architecture documentation
+- [ADR-007: Hexagonal Architecture](ADR-007-hexagonal-architecture.md)
 
 ---
 

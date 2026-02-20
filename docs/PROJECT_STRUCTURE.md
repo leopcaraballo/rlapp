@@ -167,7 +167,7 @@ State = Event1 → Event2 → Event3 → Event4 → Event5
 - ✅ Event replay (rebuild projections)
 - ✅ Debugging (see exact sequence of events)
 
-**Read more:** [ADR-004: Event Sourcing](.ai/ADR-004-EVENT_SOURCING.md)
+**Read more:** [ADR-004: Event Sourcing](architecture/ADR-004-event-sourcing.md)
 
 ---
 
@@ -215,7 +215,7 @@ var status = await _queryHandler.HandleAsync(query);
 // status: { QueueId: "Q1", PatientCount: 5, Patients: [...] }
 ```
 
-**Read more:** [ADR-005: CQRS](.ai/ADR-005-CQRS.md)
+**Read more:** [ADR-005: CQRS](architecture/ADR-005-cqrs.md)
 
 ---
 
@@ -250,7 +250,7 @@ await transaction.CommitAsync();  // Atomic!
 // If RabbitMQ is down, events stay in Outbox until it's back
 ```
 
-**Read more:** [ADR-006: Outbox Pattern](.ai/ADR-006-OUTBOX_PATTERN.md)
+**Read more:** [ADR-006: Outbox Pattern](architecture/ADR-006-outbox-pattern.md)
 
 ---
 
@@ -279,7 +279,7 @@ await transaction.CommitAsync();  // Atomic!
 
 **Key Benefit:** Domain is testable without infrastructure (no DB, no RabbitMQ).
 
-**Read more:** [ADR-007: Hexagonal Architecture](.ai/ADR-007-HEXAGONAL_ARCHITECTURE.md)
+**Read more:** [ADR-007: Hexagonal Architecture](architecture/ADR-007-hexagonal-architecture.md)
 
 ---
 
@@ -585,25 +585,24 @@ dotnet run --verbosity detailed
 ### Must-Read Documents (Priority Order)
 
 1. **[ARCHITECTURE.md](ARCHITECTURE.md)** — Overall architecture vision (15 min)
-2. **[DOMAIN_OVERVIEW.md](DOMAIN_OVERVIEW.md)** — Business rules and entities (10 min)
-3. **[ADR-004: Event Sourcing](.ai/ADR-004-EVENT_SOURCING.md)** — Why Event Sourcing (10 min)
-4. **[ADR-005: CQRS](.ai/ADR-005-CQRS.md)** — Write/Read separation (10 min)
-5. **[TESTING_GUIDE.md](TESTING_GUIDE.md)** — Testing philosophy (10 min)
+2. **[DOMAIN.md](DOMAIN.md)** — Business rules and entities (10 min)
+3. **[ADR-004: Event Sourcing](architecture/ADR-004-event-sourcing.md)** — Why Event Sourcing (10 min)
+4. **[ADR-005: CQRS](architecture/ADR-005-cqrs.md)** — Write/Read separation (10 min)
+5. **[TESTING.md](TESTING.md)** — Testing philosophy (10 min)
 
 ### Reference Documents
 
-- [ADR-006: Outbox Pattern](.ai/ADR-006-OUTBOX_PATTERN.md)
-- [ADR-007: Hexagonal Architecture](.ai/ADR-007-HEXAGONAL_ARCHITECTURE.md)
-- [ADR-008: No Snapshot Strategy](.ai/ADR-008-NO_SNAPSHOT_STRATEGY.md)
-- [ADR-009: Event Schema Versioning](.ai/ADR-009-EVENT_SCHEMA_VERSIONING.md)
-- [APPLICATION_FLOW.md](APPLICATION_FLOW.md) — Step-by-step flow
+- [ADR-006: Outbox Pattern](architecture/ADR-006-outbox-pattern.md)
+- [ADR-007: Hexagonal Architecture](architecture/ADR-007-hexagonal-architecture.md)
+- [ADR-008: No Snapshot Strategy](architecture/ADR-008-no-snapshot-strategy.md)
+- [ADR-009: Event Schema Versioning](architecture/ADR-009-event-schema-versioning.md)
+- [APPLICATION.md](APPLICATION.md) — Step-by-step flow
 - [INFRASTRUCTURE.md](INFRASTRUCTURE.md) — Persistence details
 
-### Audit Reports (Quality Metrics)
+### Architecture Decisions
 
-- [AUDIT_REPORT.md](AUDIT_REPORT.md) — FASE 0 (Emergency repair)
-- [PHASE1_REPORT.md](PHASE1_REPORT.md) — FASE 1 (Build validation)
-- [PHASE2_REPORT.md](PHASE2_REPORT.md) — FASE 2 (Architecture validation)
+- [ADR-001: Parameter Object Pattern](architecture/ADR-001-parameter-object-pattern.md)
+- [ADR-007: Hexagonal Architecture](architecture/ADR-007-hexagonal-architecture.md)
 
 ### External Resources
 
@@ -639,7 +638,7 @@ Before your first PR, ensure:
 - [x] Environment set up (Docker, .NET 10)
 - [x] All 75 tests passing locally
 - [x] Read ARCHITECTURE.md
-- [x] Read DOMAIN_OVERVIEW.md
+- [x] Read DOMAIN.md
 - [x] Read ADR-004, ADR-005
 - [x] Ran the application locally
 - [x] Explored RabbitMQ Management UI

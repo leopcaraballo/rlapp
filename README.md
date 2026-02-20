@@ -123,12 +123,16 @@ rlapp-backend/
 ├── docker-compose.yml               # Orquestación local
 ├── RLAPP.slnx                       # Solución (.NET 10)
 ├── README.md                        # Este archivo
-├── ARCHITECTURE.md                  # Diagrama y decisiones
-├── DOMAIN_OVERVIEW.md               # Entidades y reglas
-├── APPLICATION_FLOW.md              # Casos de uso paso a paso
-├── INFRASTRUCTURE.md                # Implementaciones
-├── TESTING_GUIDE.md                 # Estrategia de testing
-└── AUDIT_REPORT.md                  # Evaluación técnica
+└── docs/
+     ├── ARCHITECTURE.md              # Diagrama y decisiones
+     ├── DOMAIN.md                    # Entidades y reglas
+     ├── APPLICATION.md               # Casos de uso paso a paso
+     ├── INFRASTRUCTURE.md            # Implementaciones
+     ├── API.md                       # Contratos de API
+     ├── TESTING.md                   # Estrategia de testing
+     ├── PROJECT_STRUCTURE.md         # Guía para desarrolladores
+     └── architecture/
+          └── ADR-00X-*.md            # Decisiones arquitectónicas
 ```
 
 ---
@@ -457,32 +461,29 @@ logger.LogInformation(
 
 ### Architecture & Design
 
-- [**ARCHITECTURE.md**](ARCHITECTURE.md) - Decisiones arquitectónicas y patrones
-- [**DOMAIN_OVERVIEW.md**](DOMAIN_OVERVIEW.md) - Entidades, agregados, reglas de negocio
-- [**APPLICATION_FLOW.md**](APPLICATION_FLOW.md) - Flujo de ejecución paso a paso
-- [**INFRASTRUCTURE.md**](INFRASTRUCTURE.md) - Implementaciones concretas
+- [**ARCHITECTURE.md**](docs/ARCHITECTURE.md) - Decisiones arquitectónicas y patrones
+- [**DOMAIN.md**](docs/DOMAIN.md) - Entidades, agregados, reglas de negocio
+- [**APPLICATION.md**](docs/APPLICATION.md) - Flujo de ejecución paso a paso
+- [**INFRASTRUCTURE.md**](docs/INFRASTRUCTURE.md) - Implementaciones concretas
 
 ### Architectural Decision Records (ADRs)
 
-- [**ADR-001: Parameter Object Pattern**](.ai/ADR_DECISIONS.md) - Simplificación de parámetros
-- [**ADR-004: Event Sourcing**](.ai/ADR-004-EVENT_SOURCING.md) - Estrategia de persistencia basada en eventos
-- [**ADR-005: CQRS**](.ai/ADR-005-CQRS.md) - Separación de comandos y queries
-- [**ADR-006: Outbox Pattern**](.ai/ADR-006-OUTBOX_PATTERN.md) - Entrega garantizada de eventos
-- [**ADR-007: Hexagonal Architecture**](.ai/ADR-007-HEXAGONAL_ARCHITECTURE.md) - Ports & Adapters
-- [**ADR-008: No Snapshot Strategy**](.ai/ADR-008-NO_SNAPSHOT_STRATEGY.md) - Decisión de NO usar snapshots
-- [**ADR-009: Event Schema Versioning**](.ai/ADR-009-EVENT_SCHEMA_VERSIONING.md) - Evolución de esquemas
+- [**ADR-001: Parameter Object Pattern**](docs/architecture/ADR-001-parameter-object-pattern.md) - Simplificación de parámetros
+- [**ADR-004: Event Sourcing**](docs/architecture/ADR-004-event-sourcing.md) - Estrategia de persistencia basada en eventos
+- [**ADR-005: CQRS**](docs/architecture/ADR-005-cqrs.md) - Separación de comandos y queries
+- [**ADR-006: Outbox Pattern**](docs/architecture/ADR-006-outbox-pattern.md) - Entrega garantizada de eventos
+- [**ADR-007: Hexagonal Architecture**](docs/architecture/ADR-007-hexagonal-architecture.md) - Ports & Adapters
+- [**ADR-008: No Snapshot Strategy**](docs/architecture/ADR-008-no-snapshot-strategy.md) - Decisión de NO usar snapshots
+- [**ADR-009: Event Schema Versioning**](docs/architecture/ADR-009-event-schema-versioning.md) - Evolución de esquemas
 
 ### Testing & Quality
 
-- [**TESTING_GUIDE.md**](TESTING_GUIDE.md) - Estrategia y cobertura
-- [**TESTABILITY_IMPROVEMENTS.md**](TESTABILITY_IMPROVEMENTS.md) - Mejoras de testability
-- [**TESTING_STRATEGY.md**](TESTING_STRATEGY.md) - Estrategia completa de testing
+- [**TESTING.md**](docs/TESTING.md) - Estrategia y cobertura
 
-### Audit & Reports
+### Developer Guide
 
-- [**AUDIT_REPORT.md**](AUDIT_REPORT.md) - Evaluación técnica FASE 0
-- [**PHASE1_REPORT.md**](PHASE1_REPORT.md) - Build validation FASE 1 (13/13 proyectos ✅)
-- [**PHASE2_REPORT.md**](PHASE2_REPORT.md) - Architecture validation FASE 2 (9.43/10 ✅)
+- [**PROJECT_STRUCTURE.md**](docs/PROJECT_STRUCTURE.md) - Estructura de proyecto y onboarding
+- [**API.md**](docs/API.md) - Contratos y endpoints
 
 ---
 
@@ -500,7 +501,7 @@ logger.LogInformation(
 
 **Audit Date:** 2026-02-19
 **Auditor:** Enterprise Autonomous Agent
-**Report:** See [PHASE2_REPORT.md](PHASE2_REPORT.md)
+**Report:** See architecture ADRs in [docs/architecture](docs/architecture)
 
 ---
 
@@ -532,10 +533,10 @@ ADR: [ADR relacionado si aplica]
 
 Para preguntas técnicas sobre la arquitectura, consultar:
 
-- [Auditoría Técnica FASE 0](AUDIT_REPORT.md)
-- [Build Validation FASE 1](PHASE1_REPORT.md)
-- [Architecture Validation FASE 2](PHASE2_REPORT.md)
-- [ADRs](.ai/) - Decisiones arquitectónicas completas
+- [Architecture](docs/ARCHITECTURE.md)
+- [Domain](docs/DOMAIN.md)
+- [Application](docs/APPLICATION.md)
+- [ADRs](docs/architecture) - Decisiones arquitectónicas completas
 
 ---
 

@@ -557,9 +557,9 @@ http://localhost:4200
 ## 📚 Related Documentation
 
 - [ARCHITECTURE.md](ARCHITECTURE.md) — System architecture
-- [ADR-005: CQRS](.ai/ADR-005-CQRS.md) — Why commands and queries are separated
-- [APPLICATION_FLOW.md](APPLICATION_FLOW.md) — Request processing flow
-- [DEVELOPER_ONBOARDING.md](DEVELOPER_ONBOARDING.md) — Getting started guide
+- [ADR-005: CQRS](architecture/ADR-005-cqrs.md) — Why commands and queries are separated
+- [APPLICATION.md](APPLICATION.md) — Request processing flow
+- [PROJECT_STRUCTURE.md](PROJECT_STRUCTURE.md) — Getting started guide
 
 ---
 
