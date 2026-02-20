@@ -244,7 +244,7 @@ internal sealed class RabbitMqProjectionEventSubscriber : IProjectionEventSubscr
                 }
                 catch (Exception nackEx)
                 {
-                    // Nack failed - notify but don't throw  
+                    // Nack failed - notify but don't throw
                     // (already in error handler, message will be redelivered on reconnect)
                     ErrorOccurred?.Invoke(this, new ErrorOccurredArgs
                     {

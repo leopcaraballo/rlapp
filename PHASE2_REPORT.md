@@ -1,8 +1,8 @@
 # 📊 FASE 2: VALIDACIÓN ARQUITECTÓNICA — REPORTE COMPLETO
 
-**Fecha:** 19 de febrero de 2026  
-**Estado:** ✅ **COMPLETADA CON ÉXITO**  
-**Duración:** ~45 minutos  
+**Fecha:** 19 de febrero de 2026
+**Estado:** ✅ **COMPLETADA CON ÉXITO**
+**Duración:** ~45 minutos
 **Metodología:** Autonomous Enterprise Architect + AGENT_BIBLE.md
 
 ---
@@ -41,7 +41,7 @@ flowchart TD
     API[API<br/>→ All layers]
     Worker[Worker<br/>→ Infrastructure]
     Projections[Projections<br/>→ Application + Domain]
-    
+
     Application --> Domain
     Infrastructure --> Application
     Infrastructure --> Domain
@@ -52,7 +52,7 @@ flowchart TD
     Worker --> Infrastructure
     Projections --> Application
     Projections --> Domain
-    
+
     style Domain fill:#90EE90
     style Application fill:#87CEEB
     style Infrastructure fill:#FFD700
@@ -61,20 +61,25 @@ flowchart TD
 ### 📦 Dependencias Por Proyecto
 
 #### **WaitingRoom.Domain**
+
 ```xml
 <ProjectReference Include="BuildingBlocks.EventSourcing" />
 ```
-**Dependencias totales:** 1 (Solo building block compartido)  
+
+**Dependencias totales:** 1 (Solo building block compartido)
 **Estado:** ✅ **PERFECTO** - Domain puro
 
 #### **WaitingRoom.Application**
+
 ```xml
 <ProjectReference Include="WaitingRoom.Domain" />
 ```
-**Dependencias totales:** 1 (Solo Domain)  
+
+**Dependencias totales:** 1 (Solo Domain)
 **Estado:** ✅ **PERFECTO** - DIP respetado
 
 #### **WaitingRoom.Infrastructure**
+
 ```xml
 <ProjectReference Include="WaitingRoom.Application" />
 <ProjectReference Include="WaitingRoom.Domain" />
@@ -83,17 +88,20 @@ flowchart TD
 <PackageReference Include="RabbitMQ.Client" />
 <PackageReference Include="Dapper" />
 ```
-**Dependencias totales:** 8  
+
+**Dependencias totales:** 8
 **Estado:** ✅ **CORRECTO** - Implementa contratos de Application
 
 #### **WaitingRoom.API**
+
 ```xml
 <ProjectReference Include="WaitingRoom.Application" />
 <ProjectReference Include="WaitingRoom.Infrastructure" />
 <ProjectReference Include="WaitingRoom.Domain" />
 <ProjectReference Include="WaitingRoom.Projections" />
 ```
-**Dependencias totales:** 4 + libs AspNetCore  
+
+**Dependencias totales:** 4 + libs AspNetCore
 **Estado:** ✅ **CORRECTO** - Composition Root
 
 ### 🎯 Validación de Boundaries
@@ -118,12 +126,13 @@ flowchart TD
 // WaitingRoom.Application/Ports/
 
 ✅ IEventStore         - Persistencia de eventos
-✅ IEventPublisher     - Publicación de eventos  
+✅ IEventPublisher     - Publicación de eventos
 ✅ IOutboxStore        - Outbox pattern
 ✅ IClock              - Time abstraction
 ```
 
 **Características validadas:**
+
 - ✅ Interfaces definidas en Application
 - ✅ Implementaciones en Infrastructure
 - ✅ NO hay dependencias inversas
@@ -142,6 +151,7 @@ flowchart TD
 ```
 
 **Validación DIP:**
+
 - ✅ Application NO depende de Infrastructure
 - ✅ Infrastructure implementa contratos de Application
 - ✅ Domain NO conoce ningún puerto
@@ -165,6 +175,7 @@ flowchart TD
 | `WaitingRoomProjectionEngine` | Procesar proyecciones | 233 | ✅ |
 
 **Análisis:**
+
 - ✅ Ninguna clase supera 400 LOC
 - ✅ Cada clase tiene una responsabilidad clara
 - ✅ No se detectaron God Classes
@@ -239,6 +250,7 @@ InMemoryEventStore    ✅ Cumple contrato (tests)
 **Archivo:** [src/Services/WaitingRoom/WaitingRoom.Projections/EventSubscription/IProjectionEventSubscriber.cs](src/Services/WaitingRoom/WaitingRoom.Projections/EventSubscription/IProjectionEventSubscriber.cs#L245)
 
 **Código:**
+
 ```csharp
 try
 {
@@ -248,6 +260,7 @@ catch { }  // ⚠️ SILENT FAILURE
 ```
 
 **Problema:**
+
 - Excepción no loggeada
 - No se puede diagnosticar fallos
 - Viola principio de fail-fast
@@ -255,6 +268,7 @@ catch { }  // ⚠️ SILENT FAILURE
 **Impacto:** 🟡 **BAJO** - Solo afecta cleanup en error path
 
 **Recomendación:**
+
 ```csharp
 catch (Exception ex)
 {
@@ -298,6 +312,7 @@ catch (Exception ex)
 ```
 
 **Enforcement:**
+
 - ✅ Validaciones en métodos del Aggregate
 - ✅ Excepciones específicas (`DomainException`)
 - ✅ NO se puede violar invariantes desde fuera
@@ -312,13 +327,13 @@ public sealed class WaitingQueue : AggregateRoot
     public string QueueName { get; private set; }
     public int MaxCapacity { get; private set; }
     public List<WaitingPatient> Patients { get; private set; }
-    
+
     // ✅ Solo constructor privado
     private WaitingQueue() { }
-    
+
     // ✅ Factory method con validaciones
     public static WaitingQueue Create(...)
-    
+
     // ✅ Métodos de comportamiento protegen invariantes
     public void CheckInPatient(CheckInPatientRequest request)
     {
@@ -330,6 +345,7 @@ public sealed class WaitingQueue : AggregateRoot
 ```
 
 **Características:**
+
 - ✅ Encapsulación total
 - ✅ No hay setters públicos
 - ✅ Comportamiento > Datos
@@ -339,7 +355,7 @@ public sealed class WaitingQueue : AggregateRoot
 
 ```csharp
 PatientId          ✅ Record type, inmutable
-Priority           ✅ Record type, inmutable  
+Priority           ✅ Record type, inmutable
 ConsultationType   ✅ Record type, inmutable
 WaitingQueueId     ✅ Record type, inmutable
 ```
@@ -376,6 +392,7 @@ Top 10 archivos por tamaño:
 ```
 
 **Análisis:**
+
 - ✅ Ningún archivo supera 400 LOC
 - ✅ Mayoría de archivos < 250 LOC
 - ✅ Complejidad ciclomática baja (estimada <10)
@@ -384,6 +401,7 @@ Top 10 archivos por tamaño:
 ### ✅ Duplicación de Código
 
 **Búsqueda de duplicados:**
+
 - ✅ No se detectaron bloques duplicados significativos
 - ✅ Building Blocks reutilizados correctamente
 - ✅ Helpers y utilities bien abstraídos
@@ -408,6 +426,7 @@ Top 10 archivos por tamaño:
 ### ✅ Testability Features
 
 **Domain:**
+
 ```csharp
 // ✅ Fácil de testear - Sin dependencias
 [Fact]
@@ -420,16 +439,18 @@ public void CheckInPatient_WhenCapacityReached_ThrowsDomainException()
 ```
 
 **Application:**
+
 ```csharp
 // ✅ Ports permiten uso de fakes/mocks
 var fakeEventStore = new FakeEventStore();
 var handler = new CheckInPatientCommandHandler(
-    fakeEventStore, 
-    fakePublisher, 
+    fakeEventStore,
+    fakePublisher,
     fakeClock);
 ```
 
 **Infrastructure:**
+
 ```csharp
 // ✅ Integration tests con DB real
 [Fact]
@@ -521,6 +542,7 @@ public async Task FullPipeline_CheckInPatient_RealizesCorrectly()
 ### 🔴 ALTA PRIORIDAD
 
 #### 1. Fix Silent Failure
+
 ```csharp
 // File: IProjectionEventSubscriber.cs:245
 catch (Exception ex)
@@ -528,25 +550,29 @@ catch (Exception ex)
     _logger.LogWarning(ex, "Failed to nack message {DeliveryTag}", args.DeliveryTag);
 }
 ```
-**Esfuerzo:** 5 minutos  
+
+**Esfuerzo:** 5 minutos
 **Impacto:** Mejor diagnóstico de errores
 
 #### 2. Crear ADRs Faltantes
+
 - ADR-004: Event Sourcing
 - ADR-005: CQRS
 - ADR-006: Outbox Pattern
 
-**Esfuerzo:** 2-3 horas  
+**Esfuerzo:** 2-3 horas
 **Impacto:** Documentación arquitectónica completa
 
 #### 3. Agregar Prometheus Metrics
+
 ```csharp
 // Exponer métricas clave:
 - eventos_procesados_total
 - evento_lag_segundos
 - outbox_mensajes_pendientes
 ```
-**Esfuerzo:** 4-6 horas  
+
+**Esfuerzo:** 4-6 horas
 **Impacto:** Observabilidad production-grade
 
 ---
@@ -554,6 +580,7 @@ catch (Exception ex)
 ### 🟡 MEDIA PRIORIDAD
 
 #### 4. Event Schema Versioning
+
 ```csharp
 public abstract class DomainEvent
 {
@@ -561,12 +588,14 @@ public abstract class DomainEvent
     // Agregar upcasting strategy
 }
 ```
-**Esfuerzo:** 2-3 días  
+
+**Esfuerzo:** 2-3 días
 **Impacto:** Evolutibilidad del sistema
 
 #### 5. Snapshot Pattern (Futuro)
-**Cuando:** Agregados superen 100 eventos  
-**Esfuerzo:** 1-2 semanas  
+
+**Cuando:** Agregados superen 100 eventos
+**Esfuerzo:** 1-2 semanas
 **Impacto:** Performance de carga
 
 ---
@@ -574,13 +603,15 @@ public abstract class DomainEvent
 ### 🟢 BAJA PRIORIDAD
 
 #### 6. Saga Pattern
-**Cuando:** Procesos multi-agregado complejos  
-**Esfuerzo:** 2-3 semanas  
+
+**Cuando:** Procesos multi-agregado complejos
+**Esfuerzo:** 2-3 semanas
 **Impacto:** Orquestación de procesos largos
 
 #### 7. Read Replicas
-**Cuando:** >10K lecturas/seg  
-**Esfuerzo:** 1 semana  
+
+**Cuando:** >10K lecturas/seg
+**Esfuerzo:** 1 semana
 **Impacto:** Escalabilidad de lectura
 
 ---
@@ -710,6 +741,7 @@ flowchart TD
 **FASE 3: DOCUMENTACIÓN ENTERPRISE**
 
 **Incluirá:**
+
 - ADRs completos para decisiones clave
 - Diagramas C4 Model
 - README actualizado
