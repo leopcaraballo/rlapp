@@ -1,0 +1,68 @@
+#!/bin/bash
+# Commit Message Hook: Enforce Conventional Commits Format
+# Location: .githooks/commit-msg
+# Make executable: chmod +x .githooks/commit-msg
+
+# Regex pattern for conventional commits
+# Format: type(scope): description [optional body and footer]
+# Types: feat, fix, refactor, chore, docs, style, perf, test, ci
+# Scope: brief kebab-case identifier (domain, api, infra, etc.)
+
+COMMIT_MSG_PATTERN="^(feat|fix|refactor|chore|docs|style|perf|test|ci)(\(.+\))?:\s.{1,}"
+
+# Read commit message
+COMMIT_MSG=$(cat "$1" | head -1)
+
+echo "🔍 Validating commit message format..."
+echo "   Message: $COMMIT_MSG"
+
+# Check format
+if ! echo "$COMMIT_MSG" | grep -qE "$COMMIT_MSG_PATTERN"; then
+    echo ""
+    echo "❌ ERROR: Commit message does not follow Conventional Commits!"
+    echo ""
+    echo "Required format:"
+    echo "  type(scope): description"
+    echo ""
+    echo "Allowed types:"
+    echo "  - feat:     New feature"
+    echo "  - fix:      Bug fix"
+    echo "  - refactor: Code refactoring"
+    echo "  - chore:    Maintenance (deps, configs)"
+    echo "  - docs:     Documentation updates"
+    echo "  - style:    Code style (formatting, semicolons)"
+    echo "  - perf:     Performance optimization"
+    echo "  - test:     Test additions/modifications"
+    echo "  - ci:       CI/CD pipeline changes"
+    echo ""
+    echo "Scope examples: domain, api, infra, financial, appointment"
+    echo ""
+    echo "Valid examples:"
+    echo "  ✓ feat(financial): add manual validation endpoint"
+    echo "  ✓ fix(domain): prevent double approval"
+    echo "  ✓ refactor(api): extract controller logic"
+    echo "  ✓ chore(deps): update NestJS dependencies"
+    echo "  ✓ test(domain): add financial invariant tests"
+    echo ""
+    echo "Invalid examples:"
+    echo "  ✗ Financial validation endpoint"
+    echo "  ✗ UPPERCASE ARBITRARY MESSAGE"
+    echo "  ✗ Fix bug in approval flow (missing type)"
+    echo ""
+    exit 1
+fi
+
+# Check for BREAKING CHANGE
+if echo "$COMMIT_MSG" | grep -qE "BREAKING CHANGE"; then
+    echo "⚠️  WARNING: Commit contains BREAKING CHANGE marker"
+    echo "   This will trigger major version bump and requires additional review!"
+fi
+
+# Check message length  (first line < 72 chars for proper git log formatting)
+if [ ${#COMMIT_MSG} -gt 72 ]; then
+    echo "⚠️  WARNING: Commit message first line > 72 chars (${#COMMIT_MSG})"
+    echo "   Consider shortening for better git log visualization"
+fi
+
+echo "✅ Commit message format is valid!"
+exit 0

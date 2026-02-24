@@ -1,0 +1,155 @@
+#!/bin/bash
+# Pre-commit Hook: Enforce Governance Rules
+# Location: .githooks/pre-commit
+# Make executable: chmod +x .githooks/pre-commit
+
+set -e
+
+echo "🔒 Running pre-commit governance checks..."
+
+# Check 1: Verify GPG signature (if not in dry-run mode)
+if [ "$GIT_AUTHOR_NAME" != "CI/CD Bot" ]; then
+    # Note: Pre-commit scripts run BEFORE signing, so this check is informational
+    # Actual signature verification happens at push time (push hook)
+    if ! grep -q "signed_commit" .git/current_commit_info 2>/dev/null; then
+        echo "⚠️  WARNING: Commit not signed. Use: git commit -S"
+        echo "   Configure: git config --global commit.gpgsign true"
+    fi
+fi
+
+# Check 2: Detect secrets/credentials
+echo "🔐 Scanning for hardcoded secrets..."
+secrets_found=0
+
+# Patterns to detect
+patterns=(
+    "apiKey\s*=\s*['\"]"
+    "password\s*=\s*['\"]"
+    "secret\s*=\s*['\"]"
+    "token\s*=\s*['\"]"
+    "AKIA[0-9A-Z]\{16\}"  # AWS Access Key
+    "begin rsa private key"  # RSA keys
+    "begin openssh private key"
+)
+
+for pattern in "${patterns[@]}"; do
+    if git diff-index --cached HEAD | grep -E "$pattern" --ignore-case; then
+        echo "❌ BLOCKED: Hardcoded secret detected!"
+        echo "   Pattern: $pattern"
+        secrets_found=$((secrets_found + 1))
+    fi
+done
+
+if [ $secrets_found -gt 0 ]; then
+    echo ""
+    echo "❌ ERROR: $secrets_found hardcoded secret(s) found!"
+    echo ""
+    echo "HOW TO FIX:"
+    echo "1. Remove the secret from your code"
+    echo "2. Add to .gitignore or move to .env (not committed)"
+    echo "3. Configure Azure Key Vault or AWS Secrets Manager"
+    echo "4. Use git reset and recommit: git reset --soft HEAD~1"
+    echo ""
+    exit 1
+fi
+
+# Check 3: Prevent debugging code
+echo "🔍 Checking for debugging artifacts..."
+debug_patterns=(
+    "console\.log\("
+    "console\.debug\("
+    "debugger;"
+    "System\.Console\.WriteLine"
+    "Debug\.WriteLine"
+)
+
+debug_found=0
+for pattern in "${debug_patterns[@]}"; do
+    if git diff-index --cached HEAD -- '*.ts' '*.js' '*.cs' | grep "+.*$pattern" 2>/dev/null; then
+        echo "⚠️  WARNING: Debugging code detected: $pattern"
+        debug_found=$((debug_found + 1))
+    fi
+done
+
+# Check 4: Verify test files exist for modified source
+echo "📝 Verifying test coverage for source changes..."
+modified_sources=$(git diff-index --cached --name-only HEAD | grep -E '\.(cs|ts|js)$' | grep -v 'Tests\.cs$' | grep -v '\.test\.ts$' | grep -v '\.spec\.ts$' || true)
+
+if [ ! -z "$modified_sources" ]; then
+    for source_file in $modified_sources; do
+        # Skip if file is being deleted
+        if [ ! -f "$source_file" ]; then
+            continue
+        fi
+
+        # Check for corresponding test file
+        test_file="${source_file%.cs}Tests.cs"
+        test_file="${test_file%.ts}.test.ts"
+        test_file="${test_file%.js}.test.js"
+
+        if [ ! -f "$test_file" ] && [ "$source_file" != "Program.cs" ]; then
+            echo "⚠️  WARNING: No test file found for $source_file"
+        fi
+    done
+fi
+
+# Check 5: Conventional commit format
+echo "✅ Validating commit message format..."
+commit_msg_file="$1"
+commit_msg=$(cat "$commit_msg_file" | head -1)
+
+# Pattern: type(scope): description
+# Examples: feat(domain), fix(api), refactor(infra), chore(deps)
+if ! echo "$commit_msg" | grep -qE '^(feat|fix|refactor|chore|docs|style|perf|test|ci)\([a-z_-]+\):'; then
+    echo ""
+    echo "❌ ERROR: Invalid commit message format!"
+    echo ""
+    echo "Expected format: type(scope): description"
+    echo "Examples:"
+    echo "  ✓ feat(financial): add manual validation endpoint"
+    echo "  ✓ fix(domain): prevent double approval invariant"
+    echo "  ✓ refactor(api): extract financial validation controller"
+    echo "  ✓ chore(deps): upgrade NestJS to latest"
+    echo ""
+    echo "Allowed types: feat, fix, refactor, chore, docs, style, perf, test, ci"
+    echo ""
+    exit 1
+fi
+
+# Check 6: Verify no large files
+echo "📦 Checking for large files..."
+large_files=$(git diff-index --cached --name-only HEAD | while read file; do
+    size=$(git cat-file -s ":0:$file" 2>/dev/null || echo "0")
+    if [ $size -gt 10485760 ]; then  # 10MB
+        echo "$file ($((size / 1024 / 1024))MB)"
+    fi
+done)
+
+if [ ! -z "$large_files" ]; then
+    echo "❌ ERROR: Large files detected (> 10MB):"
+    echo "$large_files"
+    echo ""
+    echo "Use Git LFS for large binaries: git lfs track '*.bin'"
+    exit 1
+fi
+
+# Check 7: No direct commits to protected branches
+current_branch=$(git rev-parse --abbrev-ref HEAD 2>/dev/null || echo "unknown")
+if [[ "$current_branch" =~ ^(main|master|develop|qa)$ ]]; then
+    echo ""
+    echo "❌ ERROR: Cannot commit directly to $current_branch"
+    echo ""
+    echo "Correct workflow:"
+    echo "1. git checkout develop"
+    echo "2. git checkout -b feature/your-feature"
+    echo "3. Make changes & commit"
+    echo "4. git push origin feature/your-feature"
+    echo "5. Create Pull Request"
+    echo ""
+    exit 1
+fi
+
+echo ""
+echo "✅ All pre-commit checks passed!"
+echo ""
+exit 0
