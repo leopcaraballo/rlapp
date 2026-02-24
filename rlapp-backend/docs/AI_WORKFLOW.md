@@ -57,9 +57,21 @@ Este documento registra la colaboracion humano-IA para el backend. Es evidencia 
 - Tipo: Auditoria
 - Actor: IA
 - Solicitud: Reiniciar servicios backend e infraestructura y validar uno a uno
-- Resultado: Servicios backend levantados y verificados; PgAdmin no levanta por correo invalido
+- Resultado: Servicios backend levantados y verificados; PgAdmin corregido con correo valido
 - Archivos: N/A
 - Commits: N/A
-- Evidencia: docker compose ps, curl a endpoints de salud, pg_isready y rabbitmq-diagnostics
-- Observaciones: PgAdmin falla por PGADMIN_DEFAULT_EMAIL con dominio reservado "admin@rlapp.local". Frontend fuera de alcance.
-- Estado: In progress
+- Evidencia: docker compose ps, curl a endpoints de salud, pg_isready, rabbitmq-diagnostics y ping de PgAdmin
+- Observaciones: Se cambio PGADMIN_DEFAULT_EMAIL a un dominio valido. PgAdmin responde en 127.0.0.1:5050/misc/ping. Frontend fuera de alcance.
+- Estado: Done
+
+### 2026-02-24
+
+- Tipo: Correccion
+- Actor: IA
+- Solicitud: Corregir PgAdmin para completar auditoria del backend
+- Resultado: PgAdmin operativo con correo valido
+- Archivos: docker-compose.yml
+- Commits: N/A
+- Evidencia: docker compose up --force-recreate pgadmin, curl <http://127.0.0.1:5050/misc/ping>
+- Observaciones: Se utilizo <admin@rlapp.com> para evitar dominio reservado.
+- Estado: Done
