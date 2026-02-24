@@ -5,9 +5,7 @@ FROM node:20-slim
 WORKDIR /app
 
 COPY package*.json ./
-# Use legacy-peer-deps to avoid strict peer dependency resolution during image build
-# HUMAN CHECK: se aplica un parche mínimo para forzar la instalación en el contenedor.
-RUN npm install --legacy-peer-deps
+RUN npm install
 
 COPY . .
 

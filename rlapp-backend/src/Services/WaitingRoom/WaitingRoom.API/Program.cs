@@ -1,7 +1,6 @@
 using Serilog;
 using WaitingRoom.API.Middleware;
 using WaitingRoom.API.Endpoints;
-using WaitingRoom.API.Hubs;
 using WaitingRoom.Application.CommandHandlers;
 using WaitingRoom.Application.DTOs;
 using WaitingRoom.Application.Commands;
@@ -123,21 +122,15 @@ services.AddSingleton<IProjection>(sp =>
 
 services.AddEndpointsApiExplorer();
 services.AddOpenApi();  // Use native .NET 10 OpenAPI instead of Swagger
-services.AddSignalR();
 
 services.AddCors(options =>
 {
     options.AddPolicy("FrontendDev", policy =>
     {
         policy
-            .WithOrigins(
-                "http://localhost:3000",
-                "http://127.0.0.1:3000",
-                "http://localhost:3001",
-                "http://127.0.0.1:3001")
+            .WithOrigins("http://localhost:3000", "http://127.0.0.1:3000")
             .AllowAnyHeader()
-            .AllowAnyMethod()
-            .AllowCredentials();
+            .AllowAnyMethod();
     });
 });
 
@@ -181,8 +174,6 @@ app.MapHealthChecks("/health/ready", new Microsoft.AspNetCore.Diagnostics.Health
 var queryGroup = app.MapGroup("/api/v1/waiting-room")
     .WithTags("Waiting Room Queries");
 WaitingRoomQueryEndpoints.MapEndpoints(queryGroup);
-
-app.MapHub<WaitingRoomHub>("/ws/waiting-room");
 
 // ==============================================================================
 // API ENDPOINTS — Minimal API Pattern
