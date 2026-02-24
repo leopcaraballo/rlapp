@@ -34,8 +34,8 @@ Este documento registra la colaboracion humano-IA para el backend. Es evidencia 
 - Tipo: Ejecucion
 - Actor: IA
 - Solicitud: Consolidar cambios, respetar Git Flow, reinicio Docker y pruebas de integracion
-- Resultado: Commit firmado, rebase sobre origin/develop, push de rama, reinicio Docker completo
+- Resultado: Commit firmado, rebase sobre origin/develop, push de rama, reinicio Docker completo y pruebas ejecutadas
 - Archivos: rlapp-backend/**
 - Commits: 59b67b4 (chore(governance): add backend governance artifacts)
-- Observaciones: Docker compose levantado; warning de red existente. Pruebas con runTests no detectadas por el runner.
-- Estado: In progress
+- Observaciones: Docker compose levantado con advertencia de red existente. Frontend en estado unhealthy. Pruebas dotnet test: 96 OK, 0 fallos.
+- Estado: Done
