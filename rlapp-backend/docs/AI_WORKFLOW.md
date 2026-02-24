@@ -72,6 +72,6 @@ Este documento registra la colaboracion humano-IA para el backend. Es evidencia 
 - Resultado: PgAdmin operativo con correo valido
 - Archivos: docker-compose.yml
 - Commits: N/A
-- Evidencia: docker compose up --force-recreate pgadmin, curl http://127.0.0.1:5050/misc/ping
-- Observaciones: Se utilizo admin@rlapp.com para evitar dominio reservado.
+- Evidencia: docker compose up --force-recreate pgadmin, curl <http://127.0.0.1:5050/misc/ping>
+- Observaciones: Se utilizo <admin@rlapp.com> para evitar dominio reservado.
 - Estado: Done
