@@ -9,7 +9,7 @@
 3. Contratos de API (Detallado)
 4. Patrones de Implementación Frontend
 5. Guía de Estados y Transiciones
-6. Matriz de Endpoints por Rol
+6. Matriz de Endpoints por Roltest
 7. Manejo de Errores
 8. Casos de Uso Paso a Paso
 9. Observabilidad y Debugging

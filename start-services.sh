@@ -1,4 +1,4 @@
-#!/bin/bash
+rlapp-backend/start-services.sh#!/bin/bash
 
 set -e
 

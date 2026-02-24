@@ -6,7 +6,7 @@ Guía integral para implementar el frontend de RLAPP en Next.js, alineado al com
 
 ## 1. Objetivo y alcance
 
-Este documento define cómo debe interactuar el frontend con el backend para:
+Este documento define cómo debe interactuar el frontend contest el backend para:
 
 - Ejecutar comandos operativos (write model).
 - Leer estado materializado en proyecciones (read model).
