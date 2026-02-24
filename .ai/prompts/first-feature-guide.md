@@ -15,20 +15,7 @@ Inmutable
 
 Versionado
 
-Paso 2 — Crear AggregatePRINCIPIOS DE INGENIERÍA (OBLIGATORIOS)
-
-* Clean Code
-* SOLID
-* DRY
-* KISS
-* YAGNI
-* Explicit over implicit
-* Fail fast
-* Deterministic systems
-* Observable by design
-* Domain integrity first
-* Architecture > Convenience
-* Correctness > Speed
+Paso 2 — Crear Aggregate
 
 En Domain/Aggregates
 
