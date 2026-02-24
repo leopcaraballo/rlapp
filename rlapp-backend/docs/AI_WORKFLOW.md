@@ -48,6 +48,18 @@ Este documento registra la colaboracion humano-IA para el backend. Es evidencia 
 - Resultado: API saludable y servicios backend en estado healthy
 - Archivos: N/A
 - Commits: N/A
-- Evidencia: docker compose ps, curl http://localhost:5000/health/live
+- Evidencia: docker compose ps, curl <http://localhost:5000/health/live>
 - Observaciones: Frontend permanece unhealthy por healthcheck externo al backend.
 - Estado: Done
+
+### 2026-02-24
+
+- Tipo: Auditoria
+- Actor: IA
+- Solicitud: Reiniciar servicios backend e infraestructura y validar uno a uno
+- Resultado: Servicios backend levantados y verificados; PgAdmin no levanta por correo invalido
+- Archivos: N/A
+- Commits: N/A
+- Evidencia: docker compose ps, curl a endpoints de salud, pg_isready y rabbitmq-diagnostics
+- Observaciones: PgAdmin falla por PGADMIN_DEFAULT_EMAIL con dominio reservado "admin@rlapp.local". Frontend fuera de alcance.
+- Estado: In progress
