@@ -13,6 +13,7 @@ import { Appointment } from "@/domain/Appointment";
 import { useAppointmentsWebSocket } from "@/hooks/useAppointmentsWebSocket";
 import { audioService } from "@/services/AudioService";
 import styles from "@/styles/page.module.css";
+import WaitingRoomDemo from "@/components/WaitingRoomDemo";
 
 /**
  * Dashboard for completed appointments history.
@@ -156,6 +157,10 @@ export default function CompletedHistoryDashboard() {
       </section>
 
       {showToast && <div className={styles.toast}>✅ Turno completado</div>}
+      <section className={styles.sectionBlock}>
+        <h2 className={styles.sectionTitle}>Demo API — WaitingRoom</h2>
+        <WaitingRoomDemo queueId="demo-queue" />
+      </section>
     </main>
   );
 }

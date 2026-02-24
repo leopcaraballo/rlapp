@@ -16,15 +16,14 @@ export class SocketIoAdapter implements RealTimePort {
   private onErrorCallback: ((error: Error) => void) | null = null;
 
   connect(): void {
-    if (this.socket) return;
-
-    this.socket = io(`${env.WS_URL}/ws/appointments`, {
-      transports: ["websocket"],
-      reconnection: true,
-      reconnectionDelay: 1000,
-      reconnectionDelayMax: 5000,
-      reconnectionAttempts: Infinity,
-    });
+    // TEMPORAL: Deshabilitado para evitar intentos de conexión fallidos
+    // Razon: el backend expone SignalR en /ws/waiting-room, no Socket.IO.
+    // Esta implementación deja el adaptador como no-op hasta que se reemplace
+    // por un `SignalRAdapter` compatible con el backend.
+    // No modifica otras APIs del adaptador (disconnect/onSnapshot etc.).
+    console.info("[SocketIoAdapter] connect() disabled (temporary) - Socket.IO not available on backend");
+    this.isConnectedFlag = false;
+    return;
 
     this.setupListeners();
   }
@@ -75,6 +74,11 @@ export class SocketIoAdapter implements RealTimePort {
 
   onAppointmentUpdated(callback: (appointment: Appointment) => void): void {
     this.onUpdateCallback = callback;
+  }
+
+  // Backwards-compatible alias
+  onAppointmentCalled(callback: (appointment: Appointment) => void): void {
+    this.onAppointmentUpdated(callback);
   }
 
   onConnect(callback: () => void): void {

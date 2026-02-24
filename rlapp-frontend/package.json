@@ -12,10 +12,14 @@
     "test:cov": "jest --coverage"
   },
   "dependencies": {
+    "@hookform/resolvers": "^5.2.2",
+    "@microsoft/signalr": "^7.0.5",
     "next": "16.1.6",
     "react": "19.2.4",
     "react-dom": "19.2.4",
-    "socket.io-client": "^4.8.3"
+    "react-hook-form": "^7.71.2",
+    "socket.io-client": "^4.8.3",
+    "zod": "^4.3.6"
   },
   "devDependencies": {
     "@playwright/test": "^1.58.2",
