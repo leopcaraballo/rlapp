@@ -281,7 +281,7 @@ Infra se prueba en integración.
 Eventos:
 
 * Nunca se editan
-* Nunca se borrantest
+* Nunca se borran
 * Siempre versionados
 
 ---
