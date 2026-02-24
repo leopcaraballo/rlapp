@@ -169,7 +169,15 @@ services:
       - postgres
       - rabbitmq
     healthcheck:
-      test: ["CMD", "wget", "--quiet", "--tries=1", "--spider", "http://localhost:9090/-/healthy"]
+      test:
+        [
+          "CMD",
+          "wget",
+          "--quiet",
+          "--tries=1",
+          "--spider",
+          "http://localhost:9090/-/healthy",
+        ]
       interval: 10s
       timeout: 5s
       retries: 5
@@ -230,7 +238,7 @@ services:
     image: dpage/pgadmin4:latest
     container_name: rlapp-pgadmin
     environment:
-      PGADMIN_DEFAULT_EMAIL: admin@rlapp.local
+      PGADMIN_DEFAULT_EMAIL: admin@rlapp.com
       PGADMIN_DEFAULT_PASSWORD: admin123
     ports:
       - "5050:80"
