@@ -4,6 +4,7 @@ set -euo pipefail
 
 PHASE=""
 RUN_TESTS="true"
+SKIP_TDD="false"
 
 while [[ $# -gt 0 ]]; do
   case "$1" in
@@ -13,6 +14,10 @@ while [[ $# -gt 0 ]]; do
       ;;
     --no-tests)
       RUN_TESTS="false"
+      shift
+      ;;
+    --skip-tdd)
+      SKIP_TDD="true"
       shift
       ;;
     *)
@@ -61,20 +66,24 @@ fi
 COMMITS_RANGE="origin/develop..HEAD"
 COMMITS="$(git log --pretty=format:'%s' $COMMITS_RANGE || true)"
 
-if [[ -z "$COMMITS" ]]; then
-  echo "[WARN] No hay commits en la rama respecto a origin/develop."
+if [[ "$SKIP_TDD" == "true" ]]; then
+  echo "[WARN] Validacion TDD omitida por bandera --skip-tdd (solo inicializacion controlada)."
 else
-  if ! echo "$COMMITS" | grep -q '^test:'; then
-    echo "[BLOCKER] No se detecta commit tipo test:"
-    exit 1
-  fi
-  if ! echo "$COMMITS" | grep -q '^feat:'; then
-    echo "[BLOCKER] No se detecta commit tipo feat:"
-    exit 1
-  fi
-  if ! echo "$COMMITS" | grep -q '^refactor:'; then
-    echo "[BLOCKER] No se detecta commit tipo refactor:"
-    exit 1
+  if [[ -z "$COMMITS" ]]; then
+    echo "[WARN] No hay commits en la rama respecto a origin/develop."
+  else
+    if ! echo "$COMMITS" | grep -q '^test:'; then
+      echo "[BLOCKER] No se detecta commit tipo test:"
+      exit 1
+    fi
+    if ! echo "$COMMITS" | grep -q '^feat:'; then
+      echo "[BLOCKER] No se detecta commit tipo feat:"
+      exit 1
+    fi
+    if ! echo "$COMMITS" | grep -q '^refactor:'; then
+      echo "[BLOCKER] No se detecta commit tipo refactor:"
+      exit 1
+    fi
   fi
 fi
 
