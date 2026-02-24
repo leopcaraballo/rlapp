@@ -2,6 +2,7 @@
 
 import { useCallback, useEffect, useState } from "react";
 
+import Link from "next/link";
 import {
   CalledAppointmentCard,
   WaitingAppointmentCard,
@@ -61,6 +62,12 @@ export default function AppointmentsScreen() {
 
   return (
     <main className={styles.dashboardSplitLayout}>
+      <nav style={{padding:12,display:'flex',gap:12,justifyContent:'flex-end'}}>
+        <Link href="/reception">Recepción</Link>
+        <Link href="/cashier">Caja</Link>
+        <Link href="/medical">Médico</Link>
+        <Link href="/waiting-room/default-queue">Sala de espera</Link>
+      </nav>
       <section className={styles.leftPanel}>
         <header className={styles.stickyHeader}>
           <h1 className={styles.title}>Turnos Disponibles</h1>
