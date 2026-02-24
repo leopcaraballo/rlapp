@@ -1,0 +1,239 @@
+name: CI Governance - Build & Test
+
+on:
+  push:
+    branches:
+      - develop
+      - qa
+  pull_request:
+    branches:
+      - develop
+      - qa
+      - main
+
+jobs:
+  build:
+    name: Build Verification
+    runs-on: ubuntu-latest
+
+    steps:
+      - uses: actions/checkout@v3
+        with:
+          fetch-depth: 0
+
+      - name: Setup .NET
+        uses: actions/setup-dotnet@v3
+        with:
+          dotnet-version: "10.0.x"
+
+      - name: Restore dependencies
+        run: dotnet restore
+
+      - name: Build
+        run: dotnet build --configuration Release --no-restore
+
+      - name: Check build output
+        run: ls -la rlapp-backend/bin/Release/
+
+  test:
+    name: Unit & Integration Tests
+    runs-on: ubuntu-latest
+    needs: build
+
+    services:
+      postgres:
+        image: postgres:16-alpine
+        env:
+          POSTGRES_PASSWORD: test_password
+          POSTGRES_DB: rlapp_test
+        options: >-
+          --health-cmd pg_isready
+          --health-interval 10s
+          --health-timeout 5s
+          --health-retries 5
+        ports:
+          - 5432:5432
+
+      rabbitmq:
+        image: rabbitmq:3-management-alpine
+        options: >-
+          --health-cmd "rabbitmq-diagnostics ping"
+          --health-interval 10s
+          --health-timeout 5s
+          --health-retries 5
+        ports:
+          - 5672:5672
+          - 15672:15672
+
+    steps:
+      - uses: actions/checkout@v3
+
+      - name: Setup .NET
+        uses: actions/setup-dotnet@v3
+        with:
+          dotnet-version: "10.0.x"
+
+      - name: Restore dependencies
+        run: dotnet restore
+
+      - name: Wait for services
+        run: |
+          sleep 10
+          pg_isready -h localhost -p 5432 -U postgres
+
+      - name: Run unit tests with coverage
+        run: |
+          dotnet test \
+            --configuration Release \
+            --no-restore \
+            --logger "console;verbosity=detailed" \
+            --collect:"XPlat Code Coverage" \
+            --filter "Category=Unit" \
+            /p:CollectCoverage=true \
+            /p:CoverageFormat=opencover
+        env:
+          POSTGRES_HOST: localhost
+          RABBITMQ_HOST: localhost
+
+      - name: Run integration tests
+        run: |
+          dotnet test \
+            --configuration Release \
+            --no-restore \
+            --logger "console;verbosity=detailed" \
+            --filter "Category=Integration" \
+            /p:CollectCoverage=true
+        env:
+          POSTGRES_HOST: localhost
+          RABBITMQ_HOST: localhost
+
+      - name: Check coverage thresholds
+        run: |
+          echo "📊 Coverage Report:"
+          find . -name "coverage.opencover.xml" -exec echo "Found: {}" \;
+
+          # Extract coverage percentage
+          coverage_pct=$(grep 'linerate' coverage.opencover.xml | head -1 | sed 's/.*linerate="\([^"]*\)".*/\1/' | awk '{print int($1 * 100)}')
+          echo "Overall coverage: ${coverage_pct}%"
+
+          if [ $coverage_pct -lt 90 ]; then
+            echo "❌ ERROR: Coverage ${coverage_pct}% is below 90% threshold"
+            exit 1
+          fi
+          echo "✅ Coverage threshold passed (${coverage_pct}% >= 90%)"
+
+      - name: Check domain coverage (financial only)
+        run: |
+          echo "📊 Domain Coverage Report (Financial):"
+          # Run only financial domain tests
+          dotnet test \
+            --configuration Release \
+            --filter "Namespace~*.Domain.Financial.*Tests" \
+            /p:CollectCoverage=true \
+            /p:CoverageFormat=opencover
+
+          # Verify >= 95% for financial domain
+          domain_coverage=$(grep -A5 'FinancialValidation' coverage.opencover.xml | grep 'linerate' | sed 's/.*linerate="\([^"]*\)".*/\1/' | awk '{print int($1 * 100)}')
+          echo "Financial domain coverage: ${domain_coverage}%"
+
+          if [ $domain_coverage -lt 95 ]; then
+            echo "❌ ERROR: Domain coverage ${domain_coverage}% is below 95% threshold"
+            exit 1
+          fi
+          echo "✅ Domain coverage threshold passed (${domain_coverage}% >= 95%)"
+
+      - name: Upload coverage reports
+        uses: codecov/codecov-action@v3
+        with:
+          files: ./coverage.opencover.xml
+          flags: unittests
+          name: codecov-umbrella
+          fail_ci_if_error: true
+          verbose: true
+
+  mutation-testing:
+    name: Mutation Testing (Financial Domain)
+    runs-on: ubuntu-latest
+    needs: build
+
+    steps:
+      - uses: actions/checkout@v3
+
+      - name: Setup .NET
+        uses: actions/setup-dotnet@v3
+        with:
+          dotnet-version: "10.0.x"
+
+      - name: Install Stryker (Mutant Testing)
+        run: dotnet tool install -g dotnet-stryker
+
+      - name: Run mutation tests (financial domain only)
+        run: |
+          dotnet stryker \
+            --test-project "rlapp-backend/src/Tests/Domain.Financial.Tests" \
+            --project "rlapp-backend/src/Domain/Financial" \
+            --score-only \
+            --log-level Information
+
+      - name: Validate mutation score
+        run: |
+          # Check that mutation score >= 80%
+          mutation_score=$(dotnet stryker --score-only 2>&1 | grep "Mutation score:" | sed 's/.*: \([0-9]*\)%.*/\1/')
+          echo "Mutation score: ${mutation_score}%"
+
+          if [ $mutation_score -lt 80 ]; then
+            echo "❌ ERROR: Mutation score ${mutation_score}% is below 80% threshold"
+            exit 1
+          fi
+          echo "✅ Mutation score passed (${mutation_score}% >= 80%)"
+
+  lint-and-format:
+    name: Code Quality & Linting
+    runs-on: ubuntu-latest
+
+    steps:
+      - uses: actions/checkout@v3
+
+      - name: Setup .NET
+        uses: actions/setup-dotnet@v3
+        with:
+          dotnet-version: "10.0.x"
+
+      - name: Restore dependencies
+        run: dotnet restore
+
+      - name: Run StyleCop analyzer (C# linting)
+        run: dotnet build /p:EnforceCodeStyleInBuild=true
+
+      - name: Check for hardcoded secrets
+        uses: gitleaks/gitleaks-action@v2
+        env:
+          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+
+      - name: Check code formatting (dotnet format)
+        run: |
+          dotnet format --verify-no-changes --verbosity diagnostic
+          if [ $? -ne 0 ]; then
+            echo "❌ ERROR: Code formatting issues found"
+            echo "Run locally: dotnet format"
+            exit 1
+          fi
+
+on_failure_notify:
+  name: Notify on Failure
+  runs-on: ubuntu-latest
+  if: failure()
+  needs: [build, test, lint-and-format]
+
+  steps:
+    - name: Comment PR on failure
+      if: github.event_name == 'pull_request'
+      uses: actions/github-script@v6
+      with:
+        script: |
+          github.rest.issues.createComment({
+            issue_number: context.issue.number,
+            owner: context.repo.owner,
+            repo: context.repo.repo,
+            body: '❌ CI Pipeline failed. Please review the logs and fix issues before re-requesting review.'
+          })

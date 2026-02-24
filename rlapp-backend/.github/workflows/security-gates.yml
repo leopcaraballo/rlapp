@@ -1,0 +1,278 @@
+name: Security Gates - SAST, SCA, Secrets
+
+on:
+  push:
+    branches:
+      - develop
+      - qa
+  pull_request:
+    branches:
+      - develop
+      - qa
+      - main
+
+jobs:
+  sast-sonarqube:
+    name: SAST Analysis (SonarQube)
+    runs-on: ubuntu-latest
+
+    steps:
+      - uses: actions/checkout@v3
+        with:
+          fetch-depth: 0
+
+      - name: Setup .NET
+        uses: actions/setup-dotnet@v3
+        with:
+          dotnet-version: "10.0.x"
+
+      - name: Restore dependencies
+        run: dotnet restore
+
+      - name: Install SonarQube Scanner
+        run: dotnet tool install -g dotnet-sonarscanner
+
+      - name: Run SonarQube analysis
+        run: |
+          dotnet-sonarscanner begin \
+            /k:"rlapp-backend" \
+            /d:sonar.login="${{ secrets.SONARQUBE_TOKEN }}" \
+            /d:sonar.host.url="${{ secrets.SONARQUBE_URL }}" \
+            /d:sonar.cs.opencover.reportsPaths="coverage.opencover.xml" \
+            /d:sonar.exclusions="**/Tests/**,**/bin/**,**/obj/**"
+
+          dotnet build --configuration Release
+
+          dotnet-sonarscanner end \
+            /d:sonar.login="${{ secrets.SONARQUBE_TOKEN }}"
+
+      - name: Check SonarQube quality gate
+        run: |
+          echo "⏳ Waiting for SonarQube analysis..."
+          sleep 30
+
+          # Fetch quality gate status
+          quality_gate=$(curl -s -u "${{ secrets.SONARQUBE_TOKEN }}:" \
+            "${{ secrets.SONARQUBE_URL }}/api/qualitygates/project_status?projectKey=rlapp-backend" \
+            | jq '.projectStatus.status' | tr -d '"')
+
+          echo "Quality gate status: $quality_gate"
+
+          if [ "$quality_gate" != "OK" ]; then
+            echo "❌ ERROR: SonarQube quality gate failed ($quality_gate)"
+            echo "Review findings: ${{ secrets.SONARQUBE_URL }}/dashboard?id=rlapp-backend"
+            exit 1
+          fi
+          echo "✅ SonarQube quality gate passed"
+
+  dependency-scan-snyk:
+    name: Dependency Scan (Snyk SCA)
+    runs-on: ubuntu-latest
+
+    steps:
+      - uses: actions/checkout@v3
+
+      - name: Setup .NET
+        uses: actions/setup-dotnet@v3
+        with:
+          dotnet-version: "10.0.x"
+
+      - name: Install Snyk
+        run: npm install -g snyk
+
+      - name: Authentication with Snyk
+        run: snyk auth ${{ secrets.SNYK_TOKEN }}
+
+      - name: Run Snyk dependency scan
+        run: |
+          snyk test \
+            --severity-threshold=high \
+            --all-projects \
+            --exit-code=1 \
+            --file=rlapp-backend/RLAPP.slnx
+
+      - name: Generate Snyk report
+        if: success() || failure()
+        run: |
+          snyk test \
+            --json-file-output=snyk-report.json \
+            --file=rlapp-backend/RLAPP.slnx
+
+  container-scan-trivy:
+    name: Container Image Scan (Trivy)
+    runs-on: ubuntu-latest
+
+    steps:
+      - uses: actions/checkout@v3
+
+      - name: Setup .NET
+        uses: actions/setup-dotnet@v3
+        with:
+          dotnet-version: "10.0.x"
+
+      - name: Build Docker image
+        run: |
+          docker build -t rlapp-backend:latest -f rlapp-backend/Dockerfile .
+
+      - name: Run Trivy scan on image
+        uses: aquasecurity/trivy-action@master
+        with:
+          image-ref: "rlapp-backend:latest"
+          format: "sarif"
+          output: "trivy-results.sarif"
+          severity: "CRITICAL,HIGH"
+          exit-code: "1"
+
+      - name: Upload Trivy results to GitHub Security
+        uses: github/codeql-action/upload-sarif@v2
+        if: always()
+        with:
+          sarif_file: "trivy-results.sarif"
+
+  secrets-detection:
+    name: Secrets Detection (GitGuardian)
+    runs-on: ubuntu-latest
+
+    steps:
+      - uses: actions/checkout@v3
+        with:
+          fetch-depth: 0
+
+      - name: GitGuardian scan
+        uses: GitGuardian/ggshield-action@v1
+        with:
+          api-key: ${{ secrets.GITGUARDIAN_API_KEY }}
+          secret-only: true
+
+      - name: Pre-commit hook verification
+        run: |
+          echo "Verifying no secrets in staged files..."
+
+          # Check for common patterns
+          patterns=(
+            "apiKey\s*=\s*['\"]"
+            "password\s*=\s*['\"]"
+            "secret\s*=\s*['\"]"
+            "token\s*=\s*['\"]"
+            "AKIA[0-9A-Z]\{16\}"
+          )
+
+          secrets_found=0
+          for pattern in "${patterns[@]}"; do
+            if git diff --cached | grep -iE "$pattern"; then
+              echo "❌ Potential secret found (pattern: $pattern)"
+              secrets_found=$((secrets_found + 1))
+            fi
+          done
+
+          if [ $secrets_found -gt 0 ]; then
+            echo "❌ $secrets_found potential secrets detected"
+            exit 1
+          fi
+          echo "✅ No hardcoded secrets detected"
+
+  compliance-checklist:
+    name: Compliance Checklist
+    runs-on: ubuntu-latest
+    if: github.event_name == 'pull_request'
+
+    steps:
+      - uses: actions/checkout@v3
+
+      - name: Verify PR template completed
+        run: |
+          echo "✅ PR template completion check:"
+
+          # Check for mandatory sections
+          mandatory_sections=(
+            "Type of Change"
+            "Description"
+            "Mandatory Compliance Checklist"
+            "Test Evidence"
+            "Reviewer Assignment"
+          )
+
+          for section in "${mandatory_sections[@]}"; do
+            if grep -q "## $section" "${{ github.event.pull_request.body }}"; then
+              echo "  ✓ $section found"
+            else
+              echo "  ❌ $section NOT found"
+              exit 1
+            fi
+          done
+
+      - name: Verify signed commits
+        run: |
+          echo "🔒 Verifying all commits are GPG signed..."
+
+          commit_count=$(git log --oneline develop..HEAD | wc -l)
+          signed_count=$(git log --format='%G?' develop..HEAD | grep -c 'G')
+
+          echo "Total commits: $commit_count"
+          echo "Signed commits: $signed_count"
+
+          if [ $signed_count -ne $commit_count ]; then
+            echo "❌ ERROR: Not all commits are signed!"
+            echo "Unsigned commits found. Re-sign with: git rebase --root --exec 'git commit --amend -S --no-edit'"
+            exit 1
+          fi
+          echo "✅ All commits are GPG signed"
+
+      - name: Verify no self-approval
+        run: |
+          echo "👤 Checking for self-approval..."
+
+          pr_author="${{ github.event.pull_request.user.login }}"
+          reviewers=$(curl -s \
+            -H "Authorization: token ${{ secrets.GITHUB_TOKEN }}" \
+            "https://api.github.com/repos/${{ github.repository }}/pulls/${{ github.event.pull_request.number }}/reviews" \
+            | jq -r '.[].user.login' | sort -u)
+
+          for reviewer in $reviewers; do
+            if [ "$reviewer" = "$pr_author" ]; then
+              echo "❌ ERROR: PR author ($pr_author) cannot be a reviewer (self-approval)"
+              exit 1
+            fi
+          done
+          echo "✅ No self-approval detected"
+
+      - name: Check branch naming convention
+        run: |
+          branch_name="${{ github.head_ref }}"
+
+          if [[ ! "$branch_name" =~ ^feature/[a-z0-9-]+$ ]]; then
+            echo "❌ ERROR: Invalid branch name: $branch_name"
+            echo "Expected format: feature/brief-description-in-kebab-case"
+            exit 1
+          fi
+          echo "✅ Branch naming convention correct: $branch_name"
+
+      - name: Verify IA audit trail (if applicable)
+        run: |
+          echo "🤖 Checking for IA-generated code audit trail..."
+
+          # Search for AI-generated files
+          ai_files=$(find . -name "YYYY-MM-DD-change-summary.md" -o -name "*-ai-*.md" | wc -l)
+
+          if [ $ai_files -gt 0 ]; then
+            echo "Found $ai_files AI-related files"
+            echo "Expected format: docs/ai-generated/YYYY-MM-DD-change-summary.md"
+            echo "⚠️  Verify AI audit trail is present in PR description"
+          else
+            echo "ℹ️  No AI-generated code detected (or audit trail not yet created)"
+          fi
+
+  schedule-monitoring:
+    name: Schedule Monitoring & Alerts
+    runs-on: ubuntu-latest
+    if: github.ref == 'refs/heads/develop' && github.event_name == 'push'
+
+    steps:
+      - name: Alert on security findings
+        run: |
+          echo "📢 Sending alerts to security team..."
+
+          # Webhook to Slack (example)
+          curl -X POST "${{ secrets.SLACK_SECURITY_WEBHOOK }}" \
+            -H 'Content-Type: application/json' \
+            -d '{"text":"Security scan completed. Review findings: https://github.com/${{ github.repository }}/actions/runs/${{ github.run_id }}"}'
