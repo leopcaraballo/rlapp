@@ -1,7 +1,7 @@
 Compilación iniciada a las 19/2/2026 17:42:24.
      1>Proyecto "/home/lcaraballo/Documentos/Sofka Projects/Projects/rlapp-backend/RLAPP.slnx" en el nodo 1 (VSTest destinos).
      1>ValidateSolutionConfiguration:
-         Compilando la configuración de soluciones "Release|Any CPU".
+         Compilando la configuración de soluciones "Release|Any CPU".test
 Serie de pruebas para /home/lcaraballo/Documentos/Sofka Projects/Projects/rlapp-backend/src/Tests/WaitingRoom.Tests.Application/bin/Release/net10.0/WaitingRoom.Tests.Application.dll (.NETCoreApp,Version=v10.0)
 Versión 18.0.1 (x64) de VSTest
 
@@ -115,7 +115,7 @@ Pruebas totales: 7
      Correcto: 7
  Tiempo total: 3,3501 Segundos
 [xUnit.net 00:00:00.82]   Finished:    WaitingRoom.Tests.Projections
-  Correctas WaitingRoom.Tests.Projections.Idempotency.PatientCheckedInIdempotencyTests.handler_maintains_priority_order_in_queue [69 ms]
+  Correctas WaitingRoom.Tests.Projections.Idempotency.PatientCheckedInIdempotencyTests.handler_maintainWaitingRoom.Tests.Applications_priority_order_in_queue [69 ms]
   Correctas WaitingRoom.Tests.Projections.Replay.ProjectionReplayTests.replay_with_different_event_order_produces_consistent_final_state [65 ms]
   Correctas WaitingRoom.Tests.Projections.Idempotency.PatientCheckedInIdempotencyTests.handler_is_idempotent_same_event_twice_produces_same_state [7 ms]
   Correctas WaitingRoom.Tests.Projections.Idempotency.PatientCheckedInIdempotencyTests.handler_duplicate_event_does_not_add_patient_twice [2 ms]

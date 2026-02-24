@@ -4,7 +4,7 @@ Guía práctica para que el frontend consuma la API de forma correcta, predecibl
 
 ## 1) Estado real de la API (hoy)
 
-Basado en la configuración actual de `WaitingRoom.API/Program.cs`, los endpoints **activos** son:
+Basado en la configuración actual de `WaitingRoom.API/Program.cs`, los endpoints **activos** son:test
 
 - `POST /api/reception/register`
 - `POST /api/cashier/call-next`

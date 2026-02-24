@@ -11,6 +11,53 @@
       "matchCommandLine": true
     },
     "dotnet clean": true,
-    "dotnet build": true
+    "dotnet build": true,
+    "docker compose": true,
+    "docker-compose": true,
+    "npx jest": true,
+    "npx playwright": true,
+    "npm run lint": true,
+    "npm run build": true,
+    "npm install": true,
+    "npm test": true,
+    "apt-get": true,
+    "git add": true,
+    "git commit": true,
+    "tee": true,
+    "npx prettier": true,
+    "git push": true,
+    "timeout": true,
+    "npm --prefix backend/producer": true,
+    "pkill": true,
+    "diff": true,
+    "/^bash scripts/sync\\.sh$/": {
+      "approve": true,
+      "matchCommandLine": true
+    },
+    "npm run test:cov": true,
+    "/^bash scripts/orchestrator-init\\.sh -h$/": {
+      "approve": true,
+      "matchCommandLine": true
+    }
+  },
+  "editor.formatOnSave": true,
+  "editor.defaultFormatter": "esbenp.prettier-vscode",
+  "editor.codeActionsOnSave": {
+    "source.fixAll.eslint": "explicit"
+  },
+  "[typescript]": {
+    "editor.defaultFormatter": "esbenp.prettier-vscode"
+  },
+  "[typescriptreact]": {
+    "editor.defaultFormatter": "esbenp.prettier-vscode"
+  },
+  "[javascript]": {
+    "editor.defaultFormatter": "esbenp.prettier-vscode"
+  },
+  "[javascriptreact]": {
+    "editor.defaultFormatter": "esbenp.prettier-vscode"
+  },
+  "[json]": {
+    "editor.defaultFormatter": "esbenp.prettier-vscode"
   }
 }
