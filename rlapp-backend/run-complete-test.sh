@@ -5,7 +5,9 @@
 
 set -e
 
-PROJECT_ROOT="/home/lcaraballo/Documentos/Sofka Projects/Projects/rlapp-backend"
+# Calculate PROJECT_ROOT relative to script location
+SCRIPT_DIR="$(cd "$(dirname "${BASH_SOURCE[0]}")" && pwd)"
+PROJECT_ROOT="$SCRIPT_DIR"
 
 echo "════════════════════════════════════════════════════════════════════"
 echo "🚀 RLAPP Backend - Complete Test Cycle"
