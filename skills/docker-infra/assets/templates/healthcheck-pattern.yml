@@ -1,0 +1,44 @@
+# ONE-SHOT EXAMPLE: Docker Compose Healthcheck Pattern
+#
+# This demonstrates the expected healthcheck configuration
+# for NestJS services in this project.
+
+# --- NestJS Service (Producer/Consumer) ---
+# Requires a /health endpoint in the NestJS app
+producer:
+  healthcheck:
+    test: >-
+      CMD node -e "require('http').get('http://localhost:3000/health',
+      (res) => { if (res.statusCode === 200) process.exit(0);
+      else process.exit(1); }).on('error', () => process.exit(1))"
+    interval: 10s
+    timeout: 5s
+    retries: 5
+  depends_on:
+    rabbitmq:
+      condition: service_healthy
+    mongodb:
+      condition: service_healthy
+
+# --- RabbitMQ ---
+rabbitmq:
+  healthcheck:
+    test: ["CMD", "rabbitmq-diagnostics", "-q", "check_running"]
+    interval: 10s
+    timeout: 5s
+    retries: 5
+
+# --- MongoDB ---
+mongodb:
+  healthcheck:
+    test: ["CMD", "mongosh", "--eval", "db.adminCommand('ping')"]
+    interval: 10s
+    timeout: 5s
+    retries: 5
+
+# --- Environment Variables ---
+# ⚕️ HUMAN CHECK - Credentials
+# All credentials must come from .env file:
+#   RABBITMQ_USER, RABBITMQ_PASS
+#   MONGO_USER, MONGO_PASS
+# Never commit .env to version control.
