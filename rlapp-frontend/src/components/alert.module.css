@@ -1,0 +1,27 @@
+.alert {
+  padding: 10px 14px;
+  border-radius: 6px;
+  margin: 8px 0;
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  font-size: 14px;
+}
+.message {
+  line-height: 1.2;
+}
+.error {
+  background: #fff1f0;
+  color: #9b1c1c;
+  border: 1px solid #f5c2c2;
+}
+.success {
+  background: #f0fff4;
+  color: #0f6b3a;
+  border: 1px solid #bfe6c8;
+}
+.info {
+  background: #f0f7ff;
+  color: #0b4f8a;
+  border: 1px solid #cfe7ff;
+}
