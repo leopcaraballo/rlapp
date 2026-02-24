@@ -39,3 +39,15 @@ Este documento registra la colaboracion humano-IA para el backend. Es evidencia 
 - Commits: 59b67b4 (chore(governance): add backend governance artifacts)
 - Observaciones: Docker compose levantado con advertencia de red existente. Frontend en estado unhealthy. Pruebas dotnet test: 96 OK, 0 fallos.
 - Estado: Done
+
+### 2026-02-24
+
+- Tipo: Verificacion
+- Actor: IA
+- Solicitud: Validar salud del backend y servicios en Docker
+- Resultado: API saludable y servicios backend en estado healthy
+- Archivos: N/A
+- Commits: N/A
+- Evidencia: docker compose ps, curl http://localhost:5000/health/live
+- Observaciones: Frontend permanece unhealthy por healthcheck externo al backend.
+- Estado: Done
