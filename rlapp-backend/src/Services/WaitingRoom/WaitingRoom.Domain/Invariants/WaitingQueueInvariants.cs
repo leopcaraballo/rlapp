@@ -49,7 +49,7 @@ public static class WaitingQueueInvariants
         string patientId,
         IEnumerable<string> queuedPatientIds)
     {
-        if (queuedPatientIds.Contains(patientId))
+        if (queuedPatientIds.Contains(patientId, StringComparer.OrdinalIgnoreCase))
             throw new DomainException(
                 $"Patient {patientId} is already in the queue.");
     }

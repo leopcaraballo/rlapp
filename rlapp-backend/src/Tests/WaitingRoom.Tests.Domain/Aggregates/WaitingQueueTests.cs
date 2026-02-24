@@ -114,6 +114,21 @@ public class WaitingQueueTests
     }
 
     [Fact]
+    public void CheckInPatient_DuplicatePatient_WithDifferentCasing_ThrowsDomainException()
+    {
+        var queue = CreateQueue();
+        var request = CreateCheckInRequest("PAT-001", "John Doe", Priority.Low);
+
+        queue.CheckInPatient(request);
+
+        var duplicateWithDifferentCasing = CreateCheckInRequest("pat-001", "John Doe", Priority.Low);
+
+        Assert.Throws<DomainException>(() =>
+            queue.CheckInPatient(duplicateWithDifferentCasing)
+        );
+    }
+
+    [Fact]
     public void CheckInPatient_SamePatient_MoreThanTwoAttempts_ThrowsOnSecondAndThirdAttempt()
     {
         var queue = CreateQueue();
