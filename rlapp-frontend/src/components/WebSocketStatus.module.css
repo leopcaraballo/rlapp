@@ -1,0 +1,88 @@
+.badge {
+  display: inline-flex;
+  align-items: center;
+  gap: 0.5rem;
+  padding: 0.5rem 1rem;
+  border-radius: var(--radius-md);
+  font-size: 0.875rem;
+  font-weight: var(--font-weight-medium);
+  transition: all 200ms var(--ease-standard);
+}
+
+.inlineVariant {
+  display: inline-flex;
+}
+
+.blockVariant {
+  display: flex;
+  width: 100%;
+  justify-content: center;
+}
+
+.icon {
+  font-size: 1rem;
+  line-height: 1;
+  display: inline-block;
+}
+
+.label {
+  white-space: nowrap;
+}
+
+/* Status: Connected - Green */
+.statusConnected {
+  background-color: var(--color-green-50);
+  color: #16a34a;
+  border: 1px solid #86efac;
+  box-shadow: 0 0 0 3px rgba(34, 197, 94, 0.1);
+}
+
+.statusConnected {
+  animation: pulseGreen 2s ease-in-out infinite;
+}
+
+/* Status: Connecting - Yellow */
+.statusConnecting {
+  background-color: var(--color-amber-50);
+  color: #b45309;
+  border: 1px solid #fcd34d;
+}
+
+.statusConnecting .icon {
+  animation: spin 1s linear infinite;
+}
+
+/* Status: Disconnected - Red */
+.statusDisconnected {
+  background-color: var(--color-red-50);
+  color: #991b1b;
+  border: 1px solid #fecaca;
+  box-shadow: 0 0 0 3px rgba(220, 38, 38, 0.1);
+}
+
+@keyframes pulseGreen {
+  0%,
+  100% {
+    box-shadow: 0 0 0 3px rgba(34, 197, 94, 0.1);
+  }
+
+  50% {
+    box-shadow: 0 0 0 6px rgba(34, 197, 94, 0.2);
+  }
+}
+
+@keyframes spin {
+  to {
+    transform: rotate(360deg);
+  }
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .badge {
+    animation: none;
+  }
+
+  .statusConnecting .icon {
+    animation: none;
+  }
+}
