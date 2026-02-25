@@ -22,6 +22,7 @@ using WaitingRoom.Projections.Abstractions;
 using WaitingRoom.Projections.Implementations;
 using BuildingBlocks.EventSourcing;
 using BuildingBlocks.Observability;
+using Prometheus;
 
 // ==============================================================================
 // RLAPP — WaitingRoom.API
@@ -191,6 +192,10 @@ var app = builder.Build();
 app.UseCorrelationId();
 app.UseMiddleware<ExceptionHandlerMiddleware>();
 app.UseCors("FrontendDev");
+
+// Prometheus metrics — expone /metrics para scraping
+app.UseHttpMetrics();  // Metricas automaticas de peticiones HTTP
+app.MapMetrics();      // Endpoint GET /metrics
 
 // OpenAPI schema + Scalar interactive UI
 // // HUMAN CHECK — En produccion real (no Docker local), considerar restringir acceso
