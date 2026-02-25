@@ -26,3 +26,19 @@
   - TODO: show user-facing error messages for API failures (left as `// TODO` in handlers).
   - Server-side SignalR group emits are recommended to provide real-time updates without polling.
   - Prefer to run full test suite and E2E tests in CI where backend services are available to avoid network-related flaky tests.
+
+  ### 2026-02-25 — Limpieza de artefactos versionados
+
+  - Actor: AI assistant (Copilot)
+  - Task: Ajustar ignores y retirar artefactos generados del control de versiones para evitar ruido en estados y commits.
+  - Files changed:
+    - rlapp-backend/.gitignore (agregado `test-results.log`)
+    - Eliminaciones del indice en bin/ y obj/ bajo rlapp-backend
+
+  - Actions performed:
+    1. Se identificaron artefactos generados versionados en `bin/`, `obj/` y `test-results.log`.
+    2. Se removieron del indice git para que queden ignorados en adelante.
+    3. Se actualizo el ignore del backend para `test-results.log`.
+
+  - Notes / Human checks:
+    - Ninguna.
