@@ -15,7 +15,7 @@ describe("WaitingAppointmentCard", () => {
     fullName: "John Doe",
     status: "waiting",
     office: null,
-    priority: "high",
+    priority: "High",
     timestamp: Date.now(),
     idCard: 0,
   };
@@ -44,7 +44,7 @@ describe("WaitingAppointmentCard", () => {
     it("should show correct badge for medium priority", () => {
       const mediumPriority: Appointment = {
         ...mockAppointment,
-        priority: "medium",
+        priority: "Medium",
       };
 
       render(<WaitingAppointmentCard appointment={mediumPriority} />);
@@ -55,7 +55,7 @@ describe("WaitingAppointmentCard", () => {
     it("should show correct badge for low priority", () => {
       const lowPriority: Appointment = {
         ...mockAppointment,
-        priority: "low",
+        priority: "Low",
       };
 
       render(<WaitingAppointmentCard appointment={lowPriority} />);

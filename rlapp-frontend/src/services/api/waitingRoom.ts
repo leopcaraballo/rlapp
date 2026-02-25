@@ -1,3 +1,4 @@
+import { translateApiError } from "./errorTranslations";
 import {
   ApiError,
   CallNextCashierDto,
@@ -20,13 +21,20 @@ function correlationId() {
     : `${Date.now()}-${Math.floor(Math.random() * 10000)}`;
 }
 
+function idempotencyKey() {
+  return (typeof crypto !== "undefined" && crypto.randomUUID)
+    ? crypto.randomUUID()
+    : `${Date.now()}-${Math.floor(Math.random() * 10000)}`;
+}
+
 async function handleResponse<T>(res: Response): Promise<T> {
   const text = await res.text();
   try {
     const json = text ? JSON.parse(text) : null;
     if (res.ok) return json as T;
     const apiErr = (json as ApiError) || { error: res.statusText };
-    throw Object.assign(new Error(apiErr.error || res.statusText), { status: res.status, body: apiErr });
+    const userMessage = translateApiError(apiErr);
+    throw Object.assign(new Error(userMessage), { status: res.status, body: apiErr });
   } catch (err) {
     if (res.ok) return ({} as T);
     throw err;
@@ -37,6 +45,13 @@ function baseHeaders() {
   return {
     "Content-Type": "application/json",
     "X-Correlation-Id": correlationId(),
+  } as Record<string, string>;
+}
+
+function commandHeaders() {
+  return {
+    ...baseHeaders(),
+    "X-Idempotency-Key": idempotencyKey(),
   } as Record<string, string>;
 }
 
@@ -62,13 +77,13 @@ export async function getRecentHistory(queueId: string, limit = 20): Promise<Rec
 }
 
 export async function rebuildProjection(queueId: string): Promise<{ message: string; queueId: string }> {
-  const res = await fetch(`${API_BASE}/api/v1/waiting-room/${encodeURIComponent(queueId)}/rebuild`, { method: "POST", headers: baseHeaders() });
+  const res = await fetch(`${API_BASE}/api/v1/waiting-room/${encodeURIComponent(queueId)}/rebuild`, { method: "POST", headers: commandHeaders() });
   return handleResponse<{ message: string; queueId: string }>(res);
 }
 
 // Command endpoints (write operations)
 async function postCommand<T, R>(path: string, dto: T): Promise<R> {
-  const res = await fetch(`${API_BASE}${path}`, { method: "POST", headers: baseHeaders(), body: JSON.stringify(dto) });
+  const res = await fetch(`${API_BASE}${path}`, { method: "POST", headers: commandHeaders(), body: JSON.stringify(dto) });
   const result = await handleResponse<R>(res);
   try {
     // Notify frontend listeners that a command succeeded so hooks can refresh

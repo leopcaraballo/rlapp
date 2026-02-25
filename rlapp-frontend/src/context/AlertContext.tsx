@@ -52,7 +52,7 @@ export function useAlert() {
   const ctx = useContext(AlertContext);
   if (!ctx) {
     // Provide a safe no-op fallback when AlertProvider is not present
-    return { showError: (_: string) => {}, showSuccess: (_: string) => {}, showInfo: (_: string) => {} };
+    return { showError: (_m: string) => {}, showSuccess: (_m: string) => {}, showInfo: (_m: string) => {} };
   }
   return ctx;
 }

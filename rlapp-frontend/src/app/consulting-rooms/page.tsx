@@ -1,0 +1,88 @@
+"use client";
+import { useSearchParams } from "next/navigation";
+import React, { useEffect, useState } from "react";
+
+import { useAlert } from "@/context/AlertContext";
+import { useConsultingRooms } from "@/hooks/useConsultingRooms";
+import sharedStyles from "@/styles/page.module.css";
+
+const DEFAULT_STATIONS = ["CONS-01", "CONS-02", "CONS-03", "CONS-04"];
+
+interface RoomStatus {
+  stationId: string;
+  active: boolean;
+}
+
+export default function ConsultingRoomsPage() {
+  const search = useSearchParams();
+  const queueId = search?.get("queue") ?? (process.env.NEXT_PUBLIC_DEFAULT_QUEUE_ID || "QUEUE-01");
+  const alert = useAlert();
+  const { busy, error, activate, deactivate, clearError } = useConsultingRooms();
+
+  const [rooms, setRooms] = useState<RoomStatus[]>(
+    DEFAULT_STATIONS.map((id) => ({ stationId: id, active: false })),
+  );
+
+  useEffect(() => {
+    if (error) {
+      alert.showError(error);
+      clearError();
+    }
+  }, [error, alert, clearError]);
+
+  async function toggle(room: RoomStatus) {
+    if (room.active) {
+      await deactivate(queueId, room.stationId);
+    } else {
+      await activate(queueId, room.stationId);
+    }
+    if (!error) {
+      setRooms((prev) =>
+        prev.map((r) =>
+          r.stationId === room.stationId ? { ...r, active: !r.active } : r,
+        ),
+      );
+    }
+  }
+
+  return (
+    <main className={sharedStyles.dashboardContainer}>
+      <header className={sharedStyles.stickyHeader}>
+        <h1 className={sharedStyles.title}>Gestión de Consultorios</h1>
+        <p className={sharedStyles.subtitle}>
+          Cola: <strong>{queueId}</strong>
+        </p>
+      </header>
+
+      <section className={sharedStyles.sectionBlock}>
+        <div className={sharedStyles.cardGrid}>
+          {rooms.map((room) => (
+            <div
+              key={room.stationId}
+              className={
+                room.active ? sharedStyles.cardActive : sharedStyles.cardInactive
+              }
+            >
+              <h3 className={sharedStyles.cardTitle}>{room.stationId}</h3>
+              <p className={sharedStyles.cardStatus}>
+                Estado:{" "}
+                <strong>{room.active ? "Activo" : "Inactivo"}</strong>
+              </p>
+              <button
+                className={
+                  room.active
+                    ? sharedStyles.btnDanger
+                    : sharedStyles.btnPrimary
+                }
+                disabled={busy}
+                onClick={() => void toggle(room)}
+              >
+                {room.active ? "Desactivar" : "Activar"}
+              </button>
+            </div>
+          ))}
+        </div>
+      </section>
+    </main>
+  );
+}

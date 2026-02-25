@@ -62,9 +62,9 @@ describe("CompletedHistoryDashboard coverage", () => {
   it("renders called, waiting, and completed lists", () => {
     mockHookState = {
       appointments: [
-        { id: "1", status: "called", priority: "high", timestamp: 2 },
-        { id: "2", status: "waiting", priority: "low", timestamp: 3 },
-        { id: "3", status: "completed", priority: "medium", timestamp: 4 },
+        { id: "1", status: "called", priority: "High", timestamp: 2 },
+        { id: "2", status: "waiting", priority: "Low", timestamp: 3 },
+        { id: "3", status: "completed", priority: "Medium", timestamp: 4 },
       ],
       error: undefined,
       _connected: true,
@@ -138,7 +138,7 @@ describe("CompletedHistoryDashboard coverage", () => {
       storedCallback?.({
         id: "99",
         status: "completed",
-        priority: "medium",
+        priority: "Medium",
         timestamp: 1,
       });
     });
@@ -163,7 +163,7 @@ describe("CompletedHistoryDashboard coverage", () => {
       storedCallback?.({
         id: "77",
         status: "completed",
-        priority: "low",
+        priority: "Low",
         timestamp: 1,
       });
     });

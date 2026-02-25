@@ -26,12 +26,12 @@ export function useWaitingRoom(queueId: string, refreshInterval = 5000) {
   const [lastUpdated, setLastUpdated] = useState<string | null>(null);
   const failureCount = useRef(0);
   const mounted = useRef(true);
-  let alert;
+  let alert: { showError: (m: string) => void; showSuccess: (m: string) => void; showInfo: (m: string) => void };
   try {
     alert = useAlert();
   } catch {
     // When tests render components without AlertProvider, provide a no-op fallback
-    alert = { showError: (_: string) => {}, showSuccess: (_: string) => {}, showInfo: (_: string) => {} };
+    alert = { showError: (_m: string) => {}, showSuccess: (_m: string) => {}, showInfo: (_m: string) => {} };
   }
 
   useEffect(() => {

@@ -2,6 +2,7 @@ namespace WaitingRoom.API.Endpoints;
 
 using Microsoft.AspNetCore.Http;
 using Microsoft.AspNetCore.Routing;
+using Microsoft.AspNetCore.SignalR;
 using WaitingRoom.Projections.Abstractions;
 using WaitingRoom.Projections.Views;
 
@@ -242,6 +243,8 @@ public static class WaitingRoomQueryEndpoints
     private static async Task<IResult> RebuildProjectionAsync(
         string queueId,
         IProjection projection,
+        IWaitingRoomProjectionContext projectionContext,
+        IHubContext<WaitingRoom.API.Hubs.WaitingRoomHub> hubContext,
         IHostApplicationLifetime hostApplicationLifetime,
         ILoggerFactory loggerFactory,
         CancellationToken cancellationToken)
@@ -262,6 +265,21 @@ public static class WaitingRoomQueryEndpoints
                 try
                 {
                     await projection.RebuildAsync(hostApplicationLifetime.ApplicationStopping);
+
+                    // After successful rebuild, fetch refreshed monitor view and
+                    // notify connected SignalR clients in the queue group.
+                    try
+                    {
+                        var view = await projectionContext.GetMonitorViewAsync(queueId, hostApplicationLifetime.ApplicationStopping);
+                        if (view != null)
+                        {
+                            await hubContext.Clients.Group(queueId).SendAsync("projectionUpdated", view, hostApplicationLifetime.ApplicationStopping);
+                        }
+                    }
+                    catch (Exception ex)
+                    {
+                        logger.LogWarning(ex, "Failed to notify SignalR clients after rebuild for {QueueId}", queueId);
+                    }
                 }
                 catch (Exception ex)
                 {

@@ -58,7 +58,7 @@
 
 .dashboardContainer {
   min-height: 100vh;
-  padding: 48px 2vw 32px 2vw;
+  padding: var(--topnav-height, 64px) 2vw 32px 2vw;
   background: var(--color-surface-alt);
   font-family: var(--font-stack);
   color: var(--color-text-primary);
@@ -507,6 +507,8 @@
   flex-direction: row;
   min-height: 100vh;
   background: linear-gradient(180deg, var(--color-surface-alt) 0%, var(--color-surface-tertiary) 100%);
+  color: var(--color-text-primary);
+  font-family: var(--font-stack);
 }
 
 /* Account for fixed top nav so content isn't hidden under it */
@@ -580,3 +582,256 @@
   background: linear-gradient(100deg, var(--color-blue-50) 80%, var(--color-surface-alt) 100%) !important;
   color: var(--color-text-primary) !important;
 }
+
+/* ========================================
+   SALA DE ESPERA — Clases de layout
+   Reemplazan los estilos inline del TSX
+   ======================================== */
+
+/** Fila del encabezado: título + badge de conexión */
+.headerRow {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+}
+
+/** Grupo de acciones (badges, botón refresh) */
+.headerActions {
+  display: flex;
+  align-items: center;
+  gap: 12px;
+}
+
+/** Texto de última actualización */
+.lastUpdated {
+  margin-top: 8px;
+  font-size: 13px;
+  color: var(--color-text-secondary);
+  font-weight: var(--font-weight-medium);
+  font-variant-numeric: tabular-nums;
+}
+
+/** Lista de acciones rápidas en el aside */
+.quickActionsList {
+  display: flex;
+  flex-direction: column;
+  gap: 8px;
+  margin-top: 10px;
+}
+
+/** Enlace estilizado como botón secundario */
+.actionLink {
+  display: block;
+  padding: 10px 14px;
+  border-radius: var(--radius-md);
+  font-size: 14px;
+  font-weight: var(--font-weight-medium);
+  color: var(--color-blue-600);
+  background: var(--color-blue-50);
+  border: 1px solid var(--color-blue-200);
+  transition: all var(--duration-short) var(--ease-standard);
+  text-align: center;
+}
+
+.actionLink:hover {
+  background: #dbeafe;
+  border-color: var(--color-blue-500);
+  transform: translateY(-1px);
+}
+
+/** Botón utilitario dentro del aside */
+.actionBtn {
+  width: 100%;
+  padding: 10px 14px;
+  border-radius: var(--radius-md);
+  font-size: 14px;
+  font-weight: var(--font-weight-medium);
+  font-family: var(--font-stack);
+  cursor: pointer;
+  color: var(--color-text-secondary);
+  background: var(--color-surface-tertiary);
+  border: 1px solid var(--color-border);
+  transition: all var(--duration-short) var(--ease-standard);
+}
+
+.actionBtn:hover {
+  background: var(--color-border);
+  transform: translateY(-1px);
+}
+
+/** Título dentro de queueCard */
+.queueCardTitle {
+  font-size: 14px;
+  font-weight: 700;
+  color: var(--color-text-primary);
+  letter-spacing: -0.1px;
+}
+
+/** Texto de detalles en queueCard */
+.queueDetails {
+  margin-top: 8px;
+  font-size: 13px;
+  color: var(--color-text-secondary);
+  font-variant-numeric: tabular-nums;
+}
+
+/* ========================================
+   INFO CARDS — Monitor, Estado, Turno, Historial
+   ======================================== */
+
+.infoCard {
+  padding: 16px 18px;
+  border: 1px solid var(--color-border);
+  border-radius: var(--radius-md);
+  background: var(--color-surface);
+  box-shadow: var(--shadow-sm);
+  display: flex;
+  flex-direction: column;
+  gap: 12px;
+  color: var(--color-text-primary);
+}
+
+.cardHeading {
+  font-size: 15px;
+  font-weight: var(--font-weight-bold);
+  color: var(--color-text-primary);
+  letter-spacing: -0.1px;
+}
+
+.statGrid {
+  display: flex;
+  gap: 10px;
+  flex-wrap: wrap;
+}
+
+.statBox {
+  flex: 1 1 120px;
+  background: var(--color-surface-alt);
+  border: 1px solid var(--color-border);
+  padding: 10px 12px;
+  border-radius: var(--radius-sm);
+  display: flex;
+  flex-direction: column;
+  gap: 4px;
+}
+
+.statLabel {
+  font-size: 12px;
+  font-weight: var(--font-weight-medium);
+  color: var(--color-text-secondary);
+  text-transform: uppercase;
+  letter-spacing: 0.4px;
+}
+
+.statValue {
+  font-size: 20px;
+  font-weight: var(--font-weight-bold);
+  color: var(--color-text-primary);
+  font-variant-numeric: tabular-nums;
+  line-height: 1;
+}
+
+.infoList {
+  display: flex;
+  flex-direction: column;
+  gap: 6px;
+}
+
+.infoLine {
+  font-size: 14px;
+  color: var(--color-text-primary);
+}
+
+.infoLine strong {
+  font-weight: var(--font-weight-semibold);
+  color: var(--color-text-primary);
+}
+
+.subHeading {
+  font-size: 13px;
+  font-weight: var(--font-weight-semibold);
+  color: var(--color-text-secondary);
+  text-transform: uppercase;
+  letter-spacing: 0.4px;
+  margin-top: 4px;
+}
+
+.patientList {
+  display: grid;
+  gap: 8px;
+  margin-top: 4px;
+}
+
+.patientItem {
+  padding: 10px 12px;
+  background: var(--color-surface-alt);
+  border: 1px solid var(--color-border-light);
+  border-radius: var(--radius-sm);
+}
+
+.patientName {
+  font-size: 14px;
+  font-weight: var(--font-weight-semibold);
+  color: var(--color-text-primary);
+}
+
+.patientMeta {
+  font-size: 12px;
+  color: var(--color-text-secondary);
+  margin-top: 3px;
+  font-variant-numeric: tabular-nums;
+}
+
+.nextPatientName {
+  font-size: 20px;
+  font-weight: var(--font-weight-bold);
+  color: var(--color-text-primary);
+  letter-spacing: -0.2px;
+}
+
+.historyList {
+  list-style: none;
+  padding: 0;
+  margin: 0;
+  display: flex;
+  flex-direction: column;
+  gap: 10px;
+}
+
+.historyItem {
+  padding: 10px 12px;
+  background: var(--color-surface-alt);
+  border: 1px solid var(--color-border-light);
+  border-radius: var(--radius-sm);
+}
+
+.historyName {
+  font-size: 14px;
+  font-weight: var(--font-weight-semibold);
+  color: var(--color-text-primary);
+}
+
+.historyDate {
+  font-size: 12px;
+  color: var(--color-text-secondary);
+  margin-top: 2px;
+  font-variant-numeric: tabular-nums;
+}
+
+.historyOutcome {
+  font-size: 13px;
+  color: var(--color-text-primary);
+  margin-top: 4px;
+}
+
+.emptyText {
+  font-size: 14px;
+  color: var(--color-text-secondary);
+}
+
+/* ── Botones globales — para páginas que importan page.module.css directamente ── */
+.btn          { composes: btn from './buttons.module.css'; }
+.btnPrimary   { composes: btn btnPrimary from './buttons.module.css'; }
+.btnSecondary { composes: btn btnSecondary from './buttons.module.css'; }
+.btnWarning   { composes: btn btnWarning from './buttons.module.css'; }
+.btnDanger    { composes: btn btnDanger from './buttons.module.css'; }

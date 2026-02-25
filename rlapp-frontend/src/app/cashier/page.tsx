@@ -5,6 +5,7 @@ import React, { useEffect, useState } from "react";
 import { useForm } from "react-hook-form";
 import * as z from "zod";
 
+import { env } from "@/config/env";
 import { useAlert } from "@/context/AlertContext";
 import sharedStyles from "@/styles/page.module.css";
 
@@ -32,11 +33,12 @@ export default function CashierPage() {
   const {
     register,
     handleSubmit,
+    getValues,
     setValue,
     formState: { errors },
   } = useForm<CashierForm>({
     resolver: zodResolver(CashierSchema),
-    defaultValues: { queueId: "default-queue", patientId: "" },
+    defaultValues: { queueId: env.DEFAULT_QUEUE_ID, patientId: "" },
   });
 
   useEffect(() => {
@@ -48,7 +50,7 @@ export default function CashierPage() {
     setBusy(true);
     // clear handled by provider
     try {
-      await callNextCashier({ queueId: (document.querySelector('input[name="queueId"]') as HTMLInputElement)?.value || "default-queue", actor: "cashier" });
+      await callNextCashier({ queueId: getValues("queueId") || env.DEFAULT_QUEUE_ID, actor: "cashier" });
     } catch (e: unknown) {
       const msg = e instanceof Error ? e.message : String(e);
       alert.showError(msg ?? "Error al llamar siguiente");
@@ -85,40 +87,86 @@ export default function CashierPage() {
 
   return (
     <main className={`${localStyles.container} ${sharedStyles.dashboardContainer}`}>
-      <h2 className={sharedStyles.title}>Caja</h2>
-      <form onSubmit={handleSubmit(onValidate)} className={localStyles.form} noValidate>
-        <label>
-          Cola
-          <input {...register("queueId")} name="queueId" className={localStyles.input} />
-        </label>
-        {errors.queueId && <div style={{ color: "#b00020" }}>{errors.queueId.message}</div>}
+      <div className={localStyles.card}>
+        <h2 className={sharedStyles.title}>Caja</h2>
+        <form onSubmit={handleSubmit(onValidate)} className={localStyles.form} noValidate>
 
-        <button type="button" onClick={doCallNext} disabled={busy}>
-          Llamar siguiente
-        </button>
+          <div className={localStyles.formGroup}>
+            <label className={localStyles.label} htmlFor="queueId">Cola</label>
+            <input
+              id="queueId"
+              className={localStyles.input}
+              placeholder="ej. QUEUE-01"
+              {...register("queueId")}
+            />
+          </div>
+          {errors.queueId && (
+            <div className={localStyles.fieldError} role="alert">{errors.queueId.message}</div>
+          )}
 
-        <label>
-          PatientId
-          <input {...register("patientId")} name="patientId" className={localStyles.input} />
-        </label>
-        {errors.patientId && <div style={{ color: "#b00020" }}>{errors.patientId.message}</div>}
+          <div className={localStyles.row}>
+            <button
+              type="button"
+              onClick={doCallNext}
+              disabled={busy}
+              className={`${localStyles.btn} ${localStyles.btnSecondary}`}
+            >
+              Llamar siguiente
+            </button>
+          </div>
 
-        {/* Alerts rendered globally by AlertProvider */}
-        <div className={localStyles.row}>
-          <button type="submit" disabled={busy}>
-            Validar pago
-          </button>
-          <button type="button" onClick={handleSubmit((d) => onAction("pending", d))} disabled={busy}>
-            Marcar pendiente
-          </button>
-          <button type="button" onClick={handleSubmit((d) => onAction("absent", d))} disabled={busy}>
-            Marcar ausente
-          </button>
-          <button type="button" onClick={handleSubmit((d) => onAction("cancel", d))} disabled={busy}>
-            Anular pago
-          </button>
-        </div>
-      </form>
+          <div className={localStyles.sectionDivider}>Acciones por paciente</div>
+
+          <div className={localStyles.formGroup}>
+            <label className={localStyles.label} htmlFor="patientId">ID de paciente</label>
+            <input
+              id="patientId"
+              className={localStyles.input}
+              placeholder="Ej. p-1700000000000"
+              {...register("patientId")}
+            />
+          </div>
+          {errors.patientId && (
+            <div className={localStyles.fieldError} role="alert">{errors.patientId.message}</div>
+          )}
+
+          <div className={localStyles.row}>
+            <button
+              type="submit"
+              disabled={busy}
+              className={`${localStyles.btn} ${localStyles.btnPrimary}`}
+            >
+              Validar pago
+            </button>
+            <button
+              type="button"
+              onClick={handleSubmit((d) => onAction("pending", d))}
+              disabled={busy}
+              className={`${localStyles.btn} ${localStyles.btnSecondary}`}
+            >
+              Marcar pendiente
+            </button>
+          </div>
+          <div className={localStyles.row}>
+            <button
+              type="button"
+              onClick={handleSubmit((d) => onAction("absent", d))}
+              disabled={busy}
+              className={`${localStyles.btn} ${localStyles.btnWarning}`}
+            >
+              Marcar ausente
+            </button>
+            <button
+              type="button"
+              onClick={handleSubmit((d) => onAction("cancel", d))}
+              disabled={busy}
+              className={`${localStyles.btn} ${localStyles.btnDanger}`}
+            >
+              Anular pago
+            </button>
+          </div>
+        </form>
+      </div>
     </main>
   );
 }

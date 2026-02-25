@@ -18,7 +18,7 @@ jest.mock("@/hooks/useAppointmentsWebSocket", () => ({
         fullName: "John Waiting",
         status: "waiting",
         office: null,
-        priority: "high",
+        priority: "High",
         timestamp: Date.now() - 300000,
       },
       {
@@ -26,7 +26,7 @@ jest.mock("@/hooks/useAppointmentsWebSocket", () => ({
         fullName: "Jane Waiting",
         status: "waiting",
         office: null,
-        priority: "medium",
+        priority: "Medium",
         timestamp: Date.now() - 200000,
       },
       {
@@ -34,7 +34,7 @@ jest.mock("@/hooks/useAppointmentsWebSocket", () => ({
         fullName: "Active Patient",
         status: "called",
         office: 1,
-        priority: "high",
+        priority: "High",
         timestamp: Date.now() - 100000,
       },
     ],

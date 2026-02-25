@@ -70,7 +70,7 @@ services:
     environment:
       ASPNETCORE_ENVIRONMENT: Production
       ASPNETCORE_HTTP_PORTS: 8080
-      ConnectionStrings__EventStore: Host=postgres;Port=5432;Database=rlapp_waitingroom;Username=rlapp;Password=rlapp_secure_password
+      ConnectionStrings__EventStore: Host=postgres;Port=5432;Database=rlapp_waitingroom;Username=rlapp;Password=rlapp_secure_password;Timeout=60;CommandTimeout=600
       RabbitMq__HostName: rabbitmq
       RabbitMq__Port: 5672
       RabbitMq__UserName: guest
@@ -106,7 +106,7 @@ services:
     container_name: rlapp-worker
     environment:
       DOTNET_ENVIRONMENT: Production
-      ConnectionStrings__EventStore: Host=postgres;Port=5432;Database=rlapp_waitingroom;Username=rlapp;Password=rlapp_secure_password
+      ConnectionStrings__EventStore: Host=postgres;Port=5432;Database=rlapp_waitingroom;Username=rlapp;Password=rlapp_secure_password;Timeout=60;CommandTimeout=600
       RabbitMq__HostName: rabbitmq
       RabbitMq__Port: 5672
     depends_on:
