@@ -6,6 +6,8 @@ import { useAlert } from "@/context/AlertContext";
 import { useConsultingRooms } from "@/hooks/useConsultingRooms";
 import sharedStyles from "@/styles/page.module.css";
 
+import styles from "./page.module.css";
+
 const DEFAULT_STATIONS = ["CONS-01", "CONS-02", "CONS-03", "CONS-04"];
 
 interface RoomStatus {
@@ -55,25 +57,25 @@ export default function ConsultingRoomsPage() {
       </header>
 
       <section className={sharedStyles.sectionBlock}>
-        <div className={sharedStyles.cardGrid}>
+        <div className={styles.grid}>
           {rooms.map((room) => (
             <div
               key={room.stationId}
-              className={
-                room.active ? sharedStyles.cardActive : sharedStyles.cardInactive
-              }
+              className={room.active ? styles.cardActive : styles.cardInactive}
             >
-              <h3 className={sharedStyles.cardTitle}>{room.stationId}</h3>
-              <p className={sharedStyles.cardStatus}>
-                Estado:{" "}
-                <strong>{room.active ? "Activo" : "Inactivo"}</strong>
-              </p>
-              <button
+              <h3 className={styles.roomId}>{room.stationId}</h3>
+
+              <span
                 className={
-                  room.active
-                    ? sharedStyles.btnDanger
-                    : sharedStyles.btnPrimary
+                  room.active ? styles.statusBadgeActive : styles.statusBadgeInactive
                 }
+              >
+                <span className={room.active ? styles.dotActive : styles.dotInactive} />
+                {room.active ? "Activo" : "Inactivo"}
+              </span>
+
+              <button
+                className={room.active ? styles.btnDeactivate : styles.btnActivate}
                 disabled={busy}
                 onClick={() => void toggle(room)}
               >
@@ -86,3 +88,4 @@ export default function ConsultingRoomsPage() {
     </main>
   );
 }
+
