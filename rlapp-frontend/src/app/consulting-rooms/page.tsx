@@ -33,17 +33,21 @@ export default function ConsultingRoomsPage() {
   }, [error, alert, clearError]);
 
   async function toggle(room: RoomStatus) {
-    if (room.active) {
-      await deactivate(queueId, room.stationId);
-    } else {
-      await activate(queueId, room.stationId);
-    }
-    if (!error) {
+    const ok = room.active
+      ? await deactivate(queueId, room.stationId)
+      : await activate(queueId, room.stationId);
+
+    if (ok) {
       setRooms((prev) =>
         prev.map((r) =>
           r.stationId === room.stationId ? { ...r, active: !r.active } : r,
         ),
       );
+      if (room.active) {
+        alert.showInfo(`Consultorio ${room.stationId} desactivado.`);
+      } else {
+        alert.showSuccess(`Consultorio ${room.stationId} activado correctamente.`);
+      }
     }
   }
 

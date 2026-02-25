@@ -12,8 +12,8 @@ export interface ConsultingRoomsState {
   busy: boolean;
   error: string | null;
   lastResult: CommandResult | null;
-  activate: (queueId: string, stationId: string, actor?: string) => Promise<void>;
-  deactivate: (queueId: string, stationId: string, actor?: string) => Promise<void>;
+  activate: (queueId: string, stationId: string, actor?: string) => Promise<boolean>;
+  deactivate: (queueId: string, stationId: string, actor?: string) => Promise<boolean>;
   clearError: () => void;
 }
 
@@ -28,14 +28,16 @@ export function useConsultingRooms(): ConsultingRoomsState {
   const [error, setError] = useState<string | null>(null);
   const [lastResult, setLastResult] = useState<CommandResult | null>(null);
 
-  async function execute(fn: () => Promise<CommandResult>): Promise<void> {
+  async function execute(fn: () => Promise<CommandResult>): Promise<boolean> {
     setBusy(true);
     setError(null);
     try {
       const result = await fn();
       setLastResult(result);
+      return true;
     } catch (e: unknown) {
       setError(e instanceof Error ? e.message : String(e));
+      return false;
     } finally {
       setBusy(false);
     }
