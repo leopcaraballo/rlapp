@@ -1,3 +1,4 @@
+import { translateApiError } from "./errorTranslations";
 import {
   ApiError,
   CallNextCashierDto,
@@ -20,13 +21,20 @@ function correlationId() {
     : `${Date.now()}-${Math.floor(Math.random() * 10000)}`;
 }
 
+function idempotencyKey() {
+  return (typeof crypto !== "undefined" && crypto.randomUUID)
+    ? crypto.randomUUID()
+    : `${Date.now()}-${Math.floor(Math.random() * 10000)}`;
+}
+
 async function handleResponse<T>(res: Response): Promise<T> {
   const text = await res.text();
   try {
     const json = text ? JSON.parse(text) : null;
     if (res.ok) return json as T;
     const apiErr = (json as ApiError) || { error: res.statusText };
-    throw Object.assign(new Error(apiErr.error || res.statusText), { status: res.status, body: apiErr });
+    const userMessage = translateApiError(apiErr);
+    throw Object.assign(new Error(userMessage), { status: res.status, body: apiErr });
   } catch (err) {
     if (res.ok) return ({} as T);
     throw err;
@@ -37,6 +45,13 @@ function baseHeaders() {
   return {
     "Content-Type": "application/json",
     "X-Correlation-Id": correlationId(),
+  } as Record<string, string>;
+}
+
+function commandHeaders() {
+  return {
+    ...baseHeaders(),
+    "X-Idempotency-Key": idempotencyKey(),
   } as Record<string, string>;
 }
 
@@ -51,8 +66,10 @@ export async function getQueueState(queueId: string): Promise<QueueStateView> {
   return handleResponse<QueueStateView>(res);
 }
 
-export async function getNextTurn(queueId: string): Promise<NextTurnView> {
+export async function getNextTurn(queueId: string): Promise<NextTurnView | null> {
   const res = await fetch(`${API_BASE}/api/v1/waiting-room/${encodeURIComponent(queueId)}/next-turn`, { headers: baseHeaders() });
+  // 404 es normal cuando no hay turno activo (cola vacía o nadie llamado)
+  if (res.status === 404) return null;
   return handleResponse<NextTurnView>(res);
 }
 
@@ -62,13 +79,13 @@ export async function getRecentHistory(queueId: string, limit = 20): Promise<Rec
 }
 
 export async function rebuildProjection(queueId: string): Promise<{ message: string; queueId: string }> {
-  const res = await fetch(`${API_BASE}/api/v1/waiting-room/${encodeURIComponent(queueId)}/rebuild`, { method: "POST", headers: baseHeaders() });
+  const res = await fetch(`${API_BASE}/api/v1/waiting-room/${encodeURIComponent(queueId)}/rebuild`, { method: "POST", headers: commandHeaders() });
   return handleResponse<{ message: string; queueId: string }>(res);
 }
 
 // Command endpoints (write operations)
 async function postCommand<T, R>(path: string, dto: T): Promise<R> {
-  const res = await fetch(`${API_BASE}${path}`, { method: "POST", headers: baseHeaders(), body: JSON.stringify(dto) });
+  const res = await fetch(`${API_BASE}${path}`, { method: "POST", headers: commandHeaders(), body: JSON.stringify(dto) });
   const result = await handleResponse<R>(res);
   try {
     // Notify frontend listeners that a command succeeded so hooks can refresh
@@ -135,11 +152,13 @@ export async function callNextMedical(dto: { queueId: string; actor: string }): 
 }
 
 export async function activateConsultingRoom(dto: { queueId: string; actor: string; stationId?: string | null }): Promise<CommandSuccess> {
-  return postCommand<typeof dto, CommandSuccess>(`/api/medical/consulting-room/activate`, dto);
+  const { stationId, ...rest } = dto;
+  return postCommand<object, CommandSuccess>(`/api/medical/consulting-room/activate`, { ...rest, consultingRoomId: stationId ?? null });
 }
 
 export async function deactivateConsultingRoom(dto: { queueId: string; actor: string; stationId?: string | null }): Promise<CommandSuccess> {
-  return postCommand<typeof dto, CommandSuccess>(`/api/medical/consulting-room/deactivate`, dto);
+  const { stationId, ...rest } = dto;
+  return postCommand<object, CommandSuccess>(`/api/medical/consulting-room/deactivate`, { ...rest, consultingRoomId: stationId ?? null });
 }
 
 export async function startConsultation(dto: { queueId: string; patientId: string; actor: string; stationId?: string | null }): Promise<CommandSuccess> {

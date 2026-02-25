@@ -48,7 +48,7 @@ export default function WebSocketStatus({
   status,
   variant = "inline",
 }: WebSocketStatusProps) {
-  const config = StatusConfig[status];
+  const config = StatusConfig[status] ?? StatusConfig.disconnected;
   const isBlock = variant === "block";
 
   return (

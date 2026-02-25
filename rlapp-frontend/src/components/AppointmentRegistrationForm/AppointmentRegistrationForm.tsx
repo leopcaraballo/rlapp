@@ -15,7 +15,7 @@ import styles from "./AppointmentRegistrationForm.module.css";
 export default function AppointmentRegistrationForm() {
   const [fullName, setFullName] = useState("");
   const [idCard, setIdCard] = useState("");
-  const [priority, setPriority] = useState<"high" | "medium" | "low">("medium");
+  const [priority, setPriority] = useState<"Urgent" | "High" | "Medium" | "Low">("Medium");
 
   const { register, loading, success, error } = useAppointmentRegistration();
   const [validationError, setValidationError] = useState<string | null>(null);
@@ -45,7 +45,7 @@ export default function AppointmentRegistrationForm() {
   };
 
   return (
-    <>
+    <div className={styles.page}>
       <FormLoadingOverlay
         isLoading={loading}
         message="Registrando tu turno..."
@@ -80,14 +80,15 @@ export default function AppointmentRegistrationForm() {
         <select
           value={priority}
           onChange={(e) =>
-            setPriority(e.target.value as "high" | "medium" | "low")
+            setPriority(e.target.value as "Urgent" | "High" | "Medium" | "Low")
           }
           className={styles.input}
           disabled={loading}
         >
-          <option value="low">Prioridad Baja</option>
-          <option value="medium">Prioridad Media</option>
-          <option value="high">Prioridad Alta</option>
+          <option value="Low">Prioridad Baja</option>
+          <option value="Medium">Prioridad Media</option>
+          <option value="High">Prioridad Alta</option>
+          <option value="Urgent">Prioridad Urgente</option>
         </select>
 
         <button disabled={loading} className={styles.button}>
@@ -98,6 +99,6 @@ export default function AppointmentRegistrationForm() {
         {validationError && <p className={styles.error}>{validationError}</p>}
         {error && <p className={styles.error}>{error}</p>}
       </form>
-    </>
+    </div>
   );
 }

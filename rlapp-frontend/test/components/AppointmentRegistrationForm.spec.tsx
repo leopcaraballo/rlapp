@@ -176,7 +176,7 @@ describe("AppointmentRegistrationForm", () => {
         expect(mockRegister).toHaveBeenCalledWith({
           fullName: "Jane Smith",
           idCard: 987654321,
-          priority: "medium",
+          priority: "Medium",
         });
       });
     });
@@ -201,7 +201,7 @@ describe("AppointmentRegistrationForm", () => {
         expect(mockRegister).toHaveBeenCalledWith({
           fullName: "John Doe",
           idCard: 123456,
-          priority: "high",
+          priority: "High",
         });
       });
     });
@@ -226,7 +226,7 @@ describe("AppointmentRegistrationForm", () => {
         expect(mockRegister).toHaveBeenCalledWith({
           fullName: "Alice Johnson",
           idCard: 654321,
-          priority: "low",
+          priority: "Low",
         });
       });
     });

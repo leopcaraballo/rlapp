@@ -45,7 +45,6 @@ export function useAppointmentsWebSocket(
     });
 
     realTime.onError(
-      // eslint-disable-next-line @typescript-eslint/no-unused-vars
       (_err) => {
         setError("Error de conexión en tiempo real");
         setConnected(false);

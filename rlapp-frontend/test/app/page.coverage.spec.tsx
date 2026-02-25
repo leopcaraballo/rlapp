@@ -61,8 +61,8 @@ describe("AppointmentsScreen coverage", () => {
     mockAudio.isEnabled.mockReturnValue(true);
     mockHookState = {
       appointments: [
-        { id: "1", status: "called", priority: "high", timestamp: 1 },
-        { id: "2", status: "waiting", priority: "low", timestamp: 2 },
+        { id: "1", status: "called", priority: "High", timestamp: 1 },
+        { id: "2", status: "waiting", priority: "Low", timestamp: 2 },
       ],
       error: undefined,
       _connected: true,
@@ -76,7 +76,7 @@ describe("AppointmentsScreen coverage", () => {
       storedCallback?.({
         id: "1",
         status: "called",
-        priority: "high",
+        priority: "High",
         timestamp: 1,
       });
     });
@@ -115,7 +115,7 @@ describe("AppointmentsScreen coverage", () => {
       storedCallback?.({
         id: "2",
         status: "called",
-        priority: "low",
+        priority: "Low",
         timestamp: 3,
       });
     });

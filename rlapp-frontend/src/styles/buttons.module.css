@@ -1,0 +1,102 @@
+/* =============================================================
+   SISTEMA DE BOTONES — Fuente única de verdad
+   Uso en CSS Modules:
+     .btn        { composes: btn from '@/styles/buttons.module.css'; }
+     .btnPrimary { composes: btnPrimary from '@/styles/buttons.module.css'; }
+   ============================================================= */
+
+/* ── Base ── */
+.btn {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  gap: 6px;
+  padding: 11px 20px;
+  border-radius: var(--radius-md);
+  font-size: 14px;
+  font-weight: 600;
+  font-family: var(--font-stack);
+  border: none;
+  cursor: pointer;
+  transition:
+    background 0.15s ease,
+    box-shadow 0.15s ease,
+    transform 0.15s ease,
+    border-color 0.15s ease;
+  white-space: nowrap;
+  flex: 1 1 auto;
+  min-width: 110px;
+  letter-spacing: 0.1px;
+}
+
+.btn:disabled {
+  opacity: 0.5;
+  cursor: not-allowed;
+  transform: none !important;
+  box-shadow: none !important;
+}
+
+/* ── Primary — Azul ── */
+.btnPrimary {
+  background: var(--color-blue-600);
+  color: #ffffff;
+  border: 1px solid transparent;
+  box-shadow: 0 2px 8px rgba(37, 99, 235, 0.22);
+}
+
+.btnPrimary:hover:not(:disabled) {
+  background: #1d4ed8;
+  box-shadow: 0 4px 16px rgba(37, 99, 235, 0.32);
+  transform: translateY(-1px);
+}
+
+.btnPrimary:active:not(:disabled) {
+  transform: translateY(0);
+  box-shadow: 0 2px 6px rgba(37, 99, 235, 0.20);
+}
+
+/* ── Secondary — Contorno azul ── */
+.btnSecondary {
+  background: transparent;
+  color: var(--color-blue-600);
+  border: 1.5px solid var(--color-blue-200);
+}
+
+.btnSecondary:hover:not(:disabled) {
+  background: var(--color-blue-50);
+  border-color: var(--color-blue-500);
+  transform: translateY(-1px);
+}
+
+/* ── Warning — Ámbar ── */
+.btnWarning {
+  background: transparent;
+  color: #b45309;
+  border: 1.5px solid #fcd34d;
+}
+
+.btnWarning:hover:not(:disabled) {
+  background: var(--color-amber-50);
+  border-color: var(--color-amber-500);
+  transform: translateY(-1px);
+}
+
+/* ── Danger — Rojo ── */
+.btnDanger {
+  background: transparent;
+  color: var(--color-red-600);
+  border: 1.5px solid #fca5a5;
+}
+
+.btnDanger:hover:not(:disabled) {
+  background: var(--color-red-50);
+  border-color: var(--color-red-600);
+  transform: translateY(-1px);
+}
+
+/* ── Responsive ── */
+@media (max-width: 640px) {
+  .btn {
+    flex: 1 1 100%;
+  }
+}

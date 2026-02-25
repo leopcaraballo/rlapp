@@ -87,7 +87,7 @@ const SKILL_REGISTRY = await read_file("docs/agent-context/SKILL_REGISTRY.md");
 
 | Task Type              | Required Skills (minimum 2-3)                      |
 | ---------------------- | -------------------------------------------------- |
-| Frontend (UI/UX)       | `frontend-ui`, `refactor-arch`, `testing-qa`       |
+| Frontend (UI/UX)       | `vercel-react-best-practices`, `refactor-arch`, `testing-qa` |
 | Backend (API/Logic)    | `backend-api`, `refactor-arch`, `testing-qa`       |
 | Architectural Refactor | `refactor-arch`, `testing-qa`                      |
 | Microservices          | `backend-api`, `refactor-arch`, `testing-qa`       |

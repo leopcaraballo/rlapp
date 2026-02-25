@@ -11,10 +11,10 @@ import QueueStateCard from "../../../components/WaitingRoom/QueueStateCard";
 import RecentHistory from "../../../components/WaitingRoom/RecentHistory";
 import { useWaitingRoom } from "../../../hooks/useWaitingRoom";
 
-type Props = { params: { queueId: string } };
+type Props = { params: Promise<{ queueId: string }> };
 
 export default function WaitingRoomPage({ params }: Props) {
-  const { queueId } = params;
+  const { queueId } = React.use(params);
   const { monitor, queueState, nextTurn, history, refresh, connectionState, lastUpdated } = useWaitingRoom(queueId);
 
   useEffect(() => {
@@ -25,13 +25,13 @@ export default function WaitingRoomPage({ params }: Props) {
     <main className={styles.dashboardSplitLayout}>
       <section className={styles.leftPanel}>
         <header className={styles.stickyHeader}>
-          <div style={{display:'flex',justifyContent:'space-between',alignItems:'center'}}>
+          <div className={styles.headerRow}>
             <h1 className={styles.title}>Sala de espera — {queueId}</h1>
-            <div style={{display:'flex',gap:12,alignItems:'center'}}>
+            <div className={styles.headerActions}>
               <NetworkStatus connectionState={connectionState} lastUpdated={lastUpdated} onForceRefresh={refresh} />
             </div>
           </div>
-          <div style={{marginTop:8,color:'#6b7280'}}>Última actualización: {lastUpdated ?? '—'}</div>
+          <div className={styles.lastUpdated}>Última actualización: {lastUpdated ?? '—'}</div>
         </header>
 
         <div className={styles.sectionBlock}>
@@ -46,18 +46,34 @@ export default function WaitingRoomPage({ params }: Props) {
 
       <aside className={styles.rightPanel}>
         <div className={styles.queueCard}>
-          <strong>Acciones rápidas</strong>
-          <div style={{marginTop:8,display:'flex',flexDirection:'column',gap:8}}>
-            <Link href={`/reception?queue=${encodeURIComponent(queueId)}`}>Registrar check-in</Link>
-            <Link href={`/cashier?queue=${encodeURIComponent(queueId)}`}>Ir a caja</Link>
-            <Link href={`/medical?queue=${encodeURIComponent(queueId)}`}>Ir a área médica</Link>
-            <button onClick={() => { void (async ()=>{ await fetch(`/api/v1/waiting-room/${encodeURIComponent(queueId)}/rebuild`, { method: 'POST' }); refresh(); })(); }} style={{padding:8,borderRadius:6}}>Reconstruir proyección</button>
+          <span className={styles.queueCardTitle}>Acciones rápidas</span>
+          <div className={styles.quickActionsList}>
+            <Link className={styles.actionLink} href={`/reception?queue=${encodeURIComponent(queueId)}`}>
+              Registrar check-in
+            </Link>
+            <Link className={styles.actionLink} href={`/cashier?queue=${encodeURIComponent(queueId)}`}>
+              Ir a caja
+            </Link>
+            <Link className={styles.actionLink} href={`/medical?queue=${encodeURIComponent(queueId)}`}>
+              Ir a área médica
+            </Link>
+            <button
+              className={styles.actionBtn}
+              onClick={() => {
+                void (async () => {
+                  await fetch(`/api/v1/waiting-room/${encodeURIComponent(queueId)}/rebuild`, { method: "POST" });
+                  refresh();
+                })();
+              }}
+            >
+              Reconstruir proyección
+            </button>
           </div>
         </div>
 
         <div className={styles.queueCard}>
-          <strong>Detalles</strong>
-          <div style={{marginTop:8,color:'#6b7280'}}>Última actualización: {monitor?.projectedAt ?? '—'}</div>
+          <span className={styles.queueCardTitle}>Detalles</span>
+          <div className={styles.queueDetails}>Última actualización: {monitor?.projectedAt ?? '—'}</div>
         </div>
       </aside>
     </main>

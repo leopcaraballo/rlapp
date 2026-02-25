@@ -2,7 +2,8 @@
 export interface CreateAppointmentDTO {
   fullName: string;
   idCard: string | number;
-  priority?: "high" | "medium" | "low";
+  /** Nivel de prioridad — mapeado al enum Priority del backend. */
+  priority?: "Urgent" | "High" | "Medium" | "Low";
 }
 
 // ⚕️ HUMAN CHECK - Response synced with backend (ProducerService)

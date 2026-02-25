@@ -1,0 +1,137 @@
+/* Pantalla pública de llamado de turnos — optimizada para pantalla grande (TV/monitor) */
+
+.displayRoot {
+  min-height: 100vh;
+  background: #0a1628;
+  color: #f0f4ff;
+  display: flex;
+  flex-direction: column;
+  font-family: var(--font-sans, system-ui, sans-serif);
+}
+
+/* Cabecera */
+.header {
+  background: #112240;
+  padding: 1.5rem 3rem;
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  border-bottom: 2px solid #1e3a5f;
+}
+
+.queueTitle {
+  font-size: 2rem;
+  font-weight: 700;
+  margin: 0;
+  color: #64b5f6;
+}
+
+.queueId {
+  font-size: 1rem;
+  color: #90a4ae;
+  font-family: monospace;
+}
+
+/* Turno actual */
+.currentCall {
+  flex: 1;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+  padding: 3rem;
+  text-align: center;
+  background: #0d1f3c;
+}
+
+.callLabel {
+  font-size: 1.25rem;
+  text-transform: uppercase;
+  letter-spacing: 0.2em;
+  color: #42a5f5;
+  margin-bottom: 1rem;
+}
+
+.callName {
+  font-size: 5rem;
+  font-weight: 900;
+  color: #ffffff;
+  line-height: 1.1;
+  word-break: break-word;
+}
+
+.callStation {
+  margin-top: 1.5rem;
+  font-size: 2rem;
+  color: #80deea;
+}
+
+.noCall {
+  font-size: 2.5rem;
+  color: #455a64;
+  font-style: italic;
+}
+
+/* Lista de espera */
+.waitingList {
+  background: #112240;
+  padding: 2rem 3rem;
+  border-top: 2px solid #1e3a5f;
+}
+
+.waitingTitle {
+  font-size: 1.1rem;
+  font-weight: 600;
+  text-transform: uppercase;
+  letter-spacing: 0.12em;
+  color: #78909c;
+  margin: 0 0 1rem;
+}
+
+.patientList {
+  list-style: none;
+  margin: 0;
+  padding: 0;
+  display: flex;
+  flex-wrap: wrap;
+  gap: 0.75rem;
+}
+
+.patientItem {
+  display: flex;
+  align-items: center;
+  gap: 0.5rem;
+  background: #1e3a5f;
+  border-radius: 0.5rem;
+  padding: 0.5rem 1rem;
+}
+
+.patientName {
+  font-size: 1.1rem;
+  font-weight: 500;
+  color: #e3f2fd;
+}
+
+.patientPriority {
+  font-size: 0.75rem;
+  text-transform: uppercase;
+  color: #90a4ae;
+  border: 1px solid #1e3a5f;
+  border-radius: 0.25rem;
+  padding: 0.1rem 0.4rem;
+}
+
+.emptyList {
+  color: #455a64;
+  font-style: italic;
+  font-size: 1rem;
+}
+
+/* Pie */
+.footer {
+  background: #071426;
+  text-align: right;
+  padding: 0.75rem 2rem;
+  font-size: 0.8rem;
+  color: #37474f;
+}
