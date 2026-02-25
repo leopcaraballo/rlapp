@@ -1,0 +1,34 @@
+# Excluir carpetas que NO deben entrar al contexto de build Docker
+# node_modules lo provee el RUN npm install del Dockerfile
+node_modules
+
+# Caché y salida de build Next.js (no necesaria en la imagen)
+.next
+out
+
+# Caché de cobertura y tests
+coverage
+
+# Archivos de entorno locales (se inyectan via docker-compose environment)
+.env
+.env.local
+.env.development.local
+.env.test.local
+.env.production.local
+
+# Artefactos de la IDE y OS
+.vscode
+.idea
+.DS_Store
+Thumbs.db
+
+# Git
+.git
+.gitignore
+.gitattributes
+
+# Logs
+*.log
+npm-debug.log*
+yarn-debug.log*
+yarn-error.log*
