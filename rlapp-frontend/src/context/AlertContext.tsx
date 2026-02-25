@@ -37,11 +37,9 @@ export function AlertProvider({ children }: { children: React.ReactNode }) {
   return (
     <AlertContext.Provider value={value}>
       {children}
-      <div style={{ position: "fixed", top: 16, right: 16, zIndex: 9999 }}>
+      <div style={{ position: "fixed", top: 72, right: 16, zIndex: 9999, display: "flex", flexDirection: "column", gap: 8 }}>
         {messages.map((m) => (
-          <div key={m.id} style={{ marginBottom: 8 }}>
-            <Alert message={m.message} variant={m.variant} />
-          </div>
+          <Alert key={m.id} message={m.message} variant={m.variant} />
         ))}
       </div>
     </AlertContext.Provider>
