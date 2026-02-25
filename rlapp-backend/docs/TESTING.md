@@ -1,645 +1,170 @@
-# RLAPP — Testing Guide
+# Testing
 
-**Estrategia de testing, cobertura, violaciones y desafíos.**
+## 1. Purpose
 
-## ✅ Actualización 2026-02-19 (flujo operativo completo)
+Estrategia de calidad del backend RLAPP. Define la piramide de testing, las herramientas utilizadas, los comandos de ejecucion y los requisitos minimos para nuevos command handlers.
 
-Se agregó cobertura explícita para las features nuevas del flujo clínico por rol:
+## 2. Context
 
-- Taquilla obligatoria con estados alternos (`PagoPendiente`, `AusenteTaquilla`, `CanceladoPorPago`)
-- Consulta con ausencia y cancelación por ausencia (`AusenteConsulta`, `CanceladoPorAusencia`)
-- Gestión de consultorios activos/inactivos para `medical/call-next`
-- Prevención de doble registro activo (reintentos de registro duplicado)
-
-Archivo principal de cobertura de flujo:
-
-- `src/Tests/WaitingRoom.Tests.Domain/Aggregates/WaitingQueueAttentionFlowTests.cs`
-
-Matriz mínima de casos (al menos 1 test por caso):
-
-- Registro inicial de paciente
-- Llamado a taquilla
-- Pago validado
-- Pago pendiente
-- Ausencia en taquilla
-- Cancelación por pago fallido
-- Llamado a consulta (claim)
-- Inicio de consulta
-- Finalización de consulta
-- Ausencia en consulta con segundo intento cancelado
-- Consultorio inactivo bloquea llamado
-- Activación/desactivación de consultorio
-
-Cobertura específica de duplicados en registro:
-
-- `CheckInPatient_SamePatient_MoreThanTwoAttempts_ThrowsOnSecondAndThirdAttempt`
-
----
-
-## 🎯 Estrategia de Testing
-
-### Pirámide de Testing
+### Piramide de testing
 
 ```
-         /\
-        /  \        🔺 E2E Tests
-       /────\       System-wide behavior
-      /      \      (Docker + RabbitMQ required)
-     /        \     ⏱ ~5-30 segundos
-    /──────────\
-   /            \   🟡 Integration Tests
-  /              \  Database + components
- /────────────────\ ⏱ ~1-10 segundos
-/                  \
-/                  \
-──────────────────── 🟢 Unit Tests
-      Domain      Pure logic, zero I/O
-   Value Objects ⏱ ~10-100 ms
-     Aggregates  (Mayoría de tests)
+            /‾‾‾‾‾‾‾‾‾‾‾‾‾‾‾‾‾‾‾‾‾\
+           /   Integracion (~7)      \
+          /   Pipeline E2E, Outbox    \
+         /‾‾‾‾‾‾‾‾‾‾‾‾‾‾‾‾‾‾‾‾‾‾‾‾‾‾‾\
+        /   Proyecciones (~13)          \
+       /  Idempotencia, Replay, Flujo   \
+      /‾‾‾‾‾‾‾‾‾‾‾‾‾‾‾‾‾‾‾‾‾‾‾‾‾‾‾‾‾‾‾\
+     /    Aplicacion (~10)                \
+    /   Command Handlers con Mocks        \
+   /‾‾‾‾‾‾‾‾‾‾‾‾‾‾‾‾‾‾‾‾‾‾‾‾‾‾‾‾‾‾‾‾‾‾‾\
+  /      Dominio (~35)                      \
+ /  Agregado, Value Objects, Eventos,        \
+/   Invariantes                                \
+‾‾‾‾‾‾‾‾‾‾‾‾‾‾‾‾‾‾‾‾‾‾‾‾‾‾‾‾‾‾‾‾‾‾‾‾‾‾‾‾‾‾‾
 ```
 
-### Estrategia por Capa
+| Nivel | Proyecto | Tests estimados | Cobertura conceptual |
+|---|---|---|---|
+| Dominio | WaitingRoom.Tests.Domain | ~35 | Agregado, value objects, eventos, invariantes |
+| Aplicacion | WaitingRoom.Tests.Application | ~10 | Command handlers (CheckIn, flujo de atencion) |
+| Proyecciones | WaitingRoom.Tests.Projections | ~13 | Idempotencia, replay, flujo de atencion |
+| Integracion | WaitingRoom.Tests.Integration | ~7 | Outbox dispatcher, pipeline E2E |
+| **Total** | | **~65** | |
 
-| Capa | Strategy | Tools | Coverage |
-|------|----------|-------|----------|
-| **Domain** | Pure unit tests (no mocks) | XUnit | 95%+ |
-| **Application** | Mock infrastructure | Moq | 80%+ |
-| **Infrastructure** | Integration with DB | XUnit + Docker | 70%+ |
-| **API** | Minimal (tested via integration) | - | 60%+ |
+### Herramientas
 
----
+| Herramienta | Version | Proposito |
+|---|---|---|
+| xUnit | 2.6.2 - 2.9.3 | Framework de pruebas |
+| FluentAssertions | 6.12.0 - 8.8.0 | Aserciones fluidas |
+| Moq | 4.20.70 | Mock framework (Application, Integration) |
+| NSubstitute | 4.4.0 | Mock framework (Projections) |
+| coverlet.collector | 6.0.4 | Cobertura de codigo |
+| Microsoft.NET.Test.Sdk | 17.8.0 - 17.14.1 | SDK de pruebas |
 
-## 🟢 Domain Tests
+## 3. Technical Details
 
-### Archivo: `WaitingRoom.Tests.Domain/Aggregates/WaitingQueueTests.cs`
+### Tests de dominio
 
-**Enfoque:** Test pure domain logic sin dependencias.
+Framework: xUnit + FluentAssertions (8.8.0). Cero dependencias de infraestructura.
 
-#### Test 1: WaitingQueue.Create()
+| Archivo | Tests | Validacion |
+|---|---|---|
+| `WaitingQueueTests.cs` | 12 | Creacion de cola, check-in valido e invalido, capacidad, duplicados (case-insensitive), orden de pacientes, limpieza de eventos, determinismo |
+| `WaitingQueueAttentionFlowTests.cs` | 12 | Flujo completo: check-in, taquilla, pago, consulta, finalizacion. Ausencias, cancelaciones, prioridad en claim, activacion/desactivacion de consultorios |
+| `WaitingQueueCheckInPatientAfterRefactoringTests.cs` | 10 | Validacion del patron Parameter Object (`CheckInPatientRequest`). Retrocompatibilidad tras refactorizacion |
+| `PatientCheckedInTests.cs` | 6 | Evento `PatientCheckedIn`: creacion, inmutabilidad (with), metadata, determinismo |
+| `PriorityTests.cs` | 7 | Value object `Priority`: valores validos, invalidos, vacios, nulos, whitespace, trim, comparacion de niveles |
+| `PatientIdTests.cs` | 7 | Value object `PatientId`: creacion, trim, vacio, whitespace, nulo, igualdad semantica |
+| `ConsultationTypeTests.cs` | 5 | Value object `ConsultationType`: creacion, vacio, muy corto, muy largo, trim |
+| `UnitTest1.cs` | 1 (vacio) | Test placeholder sin aserciones |
 
-```csharp
-[Fact]
-public void Create_WithValidData_CreatesQueue()
-{
-    // ARRANGE
-    var metadata = EventMetadata.CreateNew("QUEUE-01", "system");
+Patrones: AAA (Arrange-Act-Assert), factory methods, cobertura de caminos negativos, tests de determinismo, tests de inmutabilidad de records.
 
-    // ACT
-    var queue = WaitingQueue.Create(
-        queueId: "QUEUE-01",
-        queueName: "Main Reception",
-        maxCapacity: 10,
-        metadata: metadata);
+### Tests de aplicacion
 
-    // ASSERT
-    queue.Id.Should().Be("QUEUE-01");
-    queue.QueueName.Should().Be("Main Reception");
-    queue.MaxCapacity.Should().Be(10);
-    queue.CurrentCount.Should().Be(0);
-    queue.Version.Should().Be(1);
-    queue.UncommittedEvents.Should().HaveCount(1);
-    queue.UncommittedEvents[0].Should().BeOfType<WaitingQueueCreated>();
-}
-```
+Framework: xUnit + FluentAssertions (8.8.0) + Moq (4.20.70). Mocks de `IEventStore`, `IEventPublisher`. `FakeClock` para determinismo temporal.
 
-**Lo que valida:**
+| Archivo | Tests | Validacion |
+|---|---|---|
+| `CheckInPatientCommandHandlerTests.cs` | 7 | Handler de check-in: happy path, queue no encontrada (bootstrap), capacidad excedida, conflicto de concurrencia, idempotencia, correlacion, publicacion de eventos |
+| `AttentionWorkflowCommandHandlersTests.cs` | 3 | Flujo cashier, payment, claim, call, complete a nivel de command handlers con mocks de infraestructura |
 
-- Factory method crea agregado válido
-- Evento es emitido correctamente
-- Estado inicial es correcto
+Patrones: `FakeClock`, verificacion de interacciones con `Mock.Verify()`, callbacks en mocks, cobertura de excepciones (`DomainException`, `EventConflictException`).
 
-#### Test 2: Violación de Invariante
+### Tests de proyecciones
 
-```csharp
-[Fact]
-public void Create_WithInvalidQueueName_ThrowsDomainException()
-{
-    // ARRANGE
-    var metadata = EventMetadata.CreateNew("QUEUE-01", "system");
+Framework: xUnit + FluentAssertions (6.12.0) + NSubstitute (4.4.0). Uso real de `InMemoryWaitingRoomProjectionContext` (no mocks).
 
-    // ACT & ASSERT
-    Assert.Throws<DomainException>(() =>
-        WaitingQueue.Create(
-            queueId: "QUEUE-01",
-            queueName: "",  // ← Inválido
-            maxCapacity: 10,
-            metadata: metadata));
-}
-```
+| Archivo | Tests | Validacion |
+|---|---|---|
+| `PatientCheckedInIdempotencyTests.cs` | 6 | Idempotencia del handler: mismo evento 2x/3x produce estado identico. Prioridad alta/normal. Orden por prioridad. No duplica paciente |
+| `ProjectionReplayTests.cs` | 3 | Determinismo: rebuild produce estado identico a procesamiento incremental. Orden de eventos diferente produce mismo estado final. Stream de 100 eventos con replay determinista |
+| `AttentionWorkflowProjectionTests.cs` | 1 | Flujo completo de proyeccion: check-in, cashier, payment, claim, call, complete. Valida `NextTurnView` e historial de atenciones |
 
-**Lo que valida:**
+Patrones: validacion de proyecciones idempotentes con multiples ejecuciones, tests de replay, tests de ordering.
 
-- Invariante se enforza
-- Excepción correcta es lanzada
-- No hay evento si validación falla
+### Tests de integracion
 
-#### Test 3: CheckInPatient - Happy Path
+Framework: xUnit + FluentAssertions (6.12.0) + Moq (4.20.70). `FakeOutboxStore`, `MockProjection`. PostgreSQL real (opcional).
 
-```csharp
-[Fact]
-public void CheckInPatient_WithValidData_EmitsPatientCheckedInEvent()
-{
-    // ARRANGE
-    var queue = CreateQueue();  // Helper: queue con 0 pacientes
+| Archivo | Tests | Validacion |
+|---|---|---|
+| `OutboxDispatcherTests.cs` | 6 | Dispatcher del outbox: sin mensajes, publicacion exitosa, fallos de publicacion, reintentos excedidos, multiples mensajes, fallo parcial |
+| `EventDrivenPipelineE2ETests.cs` | 6 | Pipeline E2E completo: check-in, event store, outbox, proyeccion, lag tracking. Idempotencia, estadisticas de lag, eventos lentos, flujo clinico completo, escenario de carga (24 pacientes, 2 recepciones, 4 consultorios, 1 taquilla) |
 
-    // ACT
-    queue.CheckInPatient(
-        patientId: PatientId.Create("PAT-001"),
-        patientName: "John Doe",
-        priority: Priority.Create(Priority.High),
-        consultationType: ConsultationType.Create("General"),
-        checkInTime: DateTime.UtcNow,
-        metadata: EventMetadata.CreateNew(queue.Id, "nurse"));
+Patrones: `FakeOutboxStore` in-memory, `TestDomainEvent`, `IAsyncLifetime`, `ExecuteWithConcurrencyRetryAsync`, `CollectionBehavior(DisableTestParallelization = true)`, tests de carga con concurrencia.
 
-    // ASSERT
-    queue.CurrentCount.Should().Be(1);
-    queue.UncommittedEvents.Should().HaveCount(1);
-    queue.UncommittedEvents[0].Should().BeOfType<PatientCheckedIn>();
-
-    var evt = (PatientCheckedIn)queue.UncommittedEvents[0];
-    evt.PatientId.Should().Be("PAT-001");
-    evt.Priority.Should().Be(Priority.High);
-}
-```
-
-#### Test 4: Violación - Capacidad
-
-```csharp
-[Fact]
-public void CheckInPatient_AtCapacity_ThrowsDomainException()
-{
-    // ARRANGE
-    var queue = CreateQueue(maxCapacity: 1);  // Capacidad = 1
-
-    // Check in 1 paciente (llena la cola)
-    var metadata1 = EventMetadata.CreateNew(queue.Id, "nurse");
-    queue.CheckInPatient(
-        PatientId.Create("PAT-001"),
-        "Patient 1",
-        Priority.Create(Priority.Low),
-        ConsultationType.Create("General"),
-        DateTime.UtcNow,
-        metadata1);
-
-    // ACT & ASSERT - Segundo paciente falla
-    var metadata2 = EventMetadata.CreateNew(queue.Id, "nurse");
-    Assert.Throws<DomainException>(() =>
-        queue.CheckInPatient(
-            PatientId.Create("PAT-002"),
-            "Patient 2",
-            Priority.Create(Priority.Low),
-            ConsultationType.Create("General"),
-            DateTime.UtcNow,
-            metadata2));
-}
-```
-
-#### Test 5: Violación - Duplicado
-
-```csharp
-[Fact]
-public void CheckInPatient_DuplicatePatient_ThrowsDomainException()
-{
-    // ARRANGE
-    var queue = CreateQueue();
-    var patientId = PatientId.Create("PAT-001");
-
-    // Primera entrada
-    var metadata1 = EventMetadata.CreateNew(queue.Id, "nurse");
-    queue.CheckInPatient(
-        patientId, "John Doe", Priority.Create(Priority.Low),
-        ConsultationType.Create("General"), DateTime.UtcNow, metadata1);
-
-    // ACT & ASSERT - Duplicado falla
-    var metadata2 = EventMetadata.CreateNew(queue.Id, "nurse");
-    Assert.Throws<DomainException>(() =>
-        queue.CheckInPatient(
-            patientId, "John Doe", Priority.Create(Priority.Low),
-            ConsultationType.Create("General"), DateTime.UtcNow, metadata2));
-}
-```
-
-### Value Object Tests
-
-**Archivo:** `WaitingRoom.Tests.Domain/ValueObjects/PriorityTests.cs`
-
-```csharp
-[Fact]
-public void Create_WithValid Priority_Succeeds()
-{
-    var priority = Priority.Create("High");
-    priority.Value.Should().Be("High");
-    priority.Level.Should().Be(3);
-}
-
-[Fact]
-public void Create_WithNormalized_Input()
-{
-    // Case-insensitive input
-    var priority = Priority.Create("high");  // lowercase
-    priority.Value.Should().Be("High");      // normalized to canonical
-}
-
-[Fact]
-public void Create_WithInvalid_ThrowsDomainException()
-{
-    Assert.Throws<DomainException>(() =>
-        Priority.Create("CRITICAL"));  // Not in whitelist
-}
-```
-
-### Coverage Metrics (Domain)
-
-```
-✓ Aggregate.Create()              - 100%
-✓ Aggregate.CheckInPatient()      - 100%
-✓ Invariants validation           - 100%
-✓ Event handlers (When methods)   - 100%
-✓ Value Objects creation          - 100%
-✓ Entity construction             - 100%
-─────────────────────────────────
-TOTAL Domain Coverage:            ~95%
-```
-
----
-
-## 🟡 Application Tests
-
-### Archivo: `WaitingRoom.Tests.Application/CommandHandlers/CheckInPatientCommandHandlerTests.cs`
-
-**Enfoque:** Test orchestration logic con mocks de infraestructura.
-
-#### Test 1: Happy Path
-
-```csharp
-[Fact]
-public async Task HandleAsync_ValidCommand_SavesAndPublishesEvents()
-{
-    // ARRANGE
-    var command = new CheckInPatientCommand
-    {
-        QueueId = "QUEUE-01",
-        PatientId = "PAT-001",
-        PatientName = "John Doe",
-        Priority = Priority.High,
-        ConsultationType = "General",
-        Actor = "nurse-001"
-    };
-
-    // Create aggregate with one event
-    var metadata = EventMetadata.CreateNew("QUEUE-01", "system");
-    var queue = WaitingQueue.Create("QUEUE-01", "Main Queue", 10, metadata);
-    queue.ClearUncommittedEvents();
-
-    // Mock dependencies
-    var eventStoreMock = new Mock<IEventStore>();
-    var publisherMock = new Mock<IEventPublisher>();
-
-    eventStoreMock
-        .Setup(es => es.LoadAsync("QUEUE-01", It.IsAny<CancellationToken>()))
-        .ReturnsAsync(queue);
-
-    var clock = new FakeClock();
-    var handler = new CheckInPatientCommandHandler(
-        eventStoreMock.Object,
-        publisherMock.Object,
-        clock);
-
-    // ACT
-    var result = await handler.HandleAsync(command);
-
-    // ASSERT
-    result.Should().BeGreaterThan(0);
-
-    eventStoreMock.Verify(
-        es => es.SaveAsync(It.IsAny<WaitingQueue>(), It.IsAny<CancellationToken>()),
-        Times.Once);
-
-    publisherMock.Verify(
-        pub => pub.PublishAsync(
-            It.IsAny<IEnumerable<DomainEvent>>(),
-            It.IsAny<CancellationToken>()),
-        Times.Once);
-}
-```
-
-#### Test 2: Aggregate Not Found
-
-```csharp
-[Fact]
-public async Task HandleAsync_QueueNotFound_ThrowsAggregateNotFoundException()
-{
-    // ARRANGE
-    var command = new CheckInPatientCommand
-    {
-        QueueId = "QUEUE-NOTFOUND",
-        PatientId = "PAT-001",
-        PatientName: "John",
-        Priority: "High",
-        ConsultationType: "General",
-        Actor: "nurse-001"
-    };
-
-    var eventStoreMock = new Mock<IEventStore>();
-    eventStoreMock
-        .Setup(es => es.LoadAsync(It.IsAny<string>(), It.IsAny<CancellationToken>()))
-        .ReturnsAsync((WaitingQueue)null);  // ← Not found
-
-    var handler = new CheckInPatientCommandHandler(...);
-
-    // ACT & ASSERT
-    await Assert.ThrowsAsync<AggregateNotFoundException>(
-        () => handler.HandleAsync(command));
-}
-```
-
-#### Test 3: Domain Validation Bubbles
-
-```csharp
-[Fact]
-public async Task HandleAsync_DomainViolation_PropagatesDomainException()
-{
-    // ARRANGE
-    var command = new CheckInPatientCommand
-    {
-        QueueId = "QUEUE-01",
-        PatientId: "PAT-001",
-        PatientName: "John",
-        Priority: "INVALID",  // ← Invalid priority
-        ConsultationType: "General",
-        Actor: "nurse-001"
-    };
-
-    var queue = CreateQueueWithMaxCapacity(10);
-
-    var eventStoreMock = new Mock<IEventStore>();
-    eventStoreMock
-        .Setup(es => es.LoadAsync(It.IsAny<string>(), It.IsAny<CancellationToken>()))
-        .ReturnsAsync(queue);
-
-    var handler = new CheckInPatientCommandHandler(...);
-
-    // ACT & ASSERT
-    await Assert.ThrowsAsync<DomainException>(
-        () => handler.HandleAsync(command));
-}
-```
-
-### Coverage Metrics (Application)
-
-```
-✓ Command handler load → 100%
-✓ Domain logic invocation → 90%
-✓ EventStore.SaveAsync call → 100%
-✓ Publishing → 100%
-✓ Exception bubbling → 90%
-─────────────────────────────────
-TOTAL Application Coverage:       ~85%
-```
-
----
-
-## 🔵 Integration Tests
-
-### Archivo: `WaitingRoom.Tests.Integration/EndToEnd/EventDrivenPipelineE2ETests.cs`
-
-**Requisito:** Docker running (PostgreSQL + RabbitMQ)
-
-```csharp
-[Fact]
-public async Task E2E_PatientCheckIn_UpdatesProjection()
-{
-    // ARRANGE
-    using var context = await CreateTestContext();  // Docker containers
-
-    // Create queue
-    var queueId = "TEST-QUEUE-" + Guid.NewGuid().ToString();
-    var processor = context.ProcessorFactory.Create<WaitingQueueProcessor>();
-
-    var createCommand = new CreateWaitingQueueCommand
-    {
-        QueueId = queueId,
-        QueueName = "Test Queue",
-        MaxCapacity = 20
-    };
-
-    await processor.ProcessAsync(createCommand);
-
-    // ACT - Check in patient
-    var checkInCommand = new CheckInPatientCommand
-    {
-        QueueId = queueId,
-        PatientId = "PAT-E2E-001",
-        PatientName: "E2E Patient",
-        Priority: "High",
-        ConsultationType: "General",
-        Actor: "test-user"
-    };
-
-    await processor.ProcessAsync(checkInCommand);
-
-    // Wait for async processing
-    await Task.Delay(2000);
-
-    // ASSERT - Projection updated
-    var projection = await context.ProjectionProvider
-        .GetMonitorViewAsync(queueId);
-
-    projection.Should().NotBeNull();
-    projection.TotalPatients.Should().Be(1);
-    projection.HighPriorityCount.Should().Be(1);
-}
-```
-
----
-
-## 🚫 Testabilidad - Violaciones
-
-### Problema 1: Reflection-Based Event Dispatch
-
-**En:** `AggregateRoot.ApplyEvent()`
-
-```csharp
-var whenMethod = GetType()
-    .GetMethods(BindingFlags.NonPublic | BindingFlags.Instance)
-    .FirstOrDefault(m =>
-        m.Name == "When" &&
-        m.GetParameters()[0].ParameterType == @event.GetType());
-```
-
-**Impacto:**
-
-- Tests de domain pueden fallar si método `When` renombrado
-- Reflection es más lento (pero aceptable para events)
-- Errores vistos en runtime, no compile time
-
-**Mitigación:**
-
-- Convention-based (nombre siempre "When")
-- Unit tests validan event dispatch
-- Difícil refactorizar sin romper tests
-
-### Problema 2: ValueObject Creation en Handler
-
-**En:** `CheckInPatientCommandHandler.HandleAsync()`
-
-```csharp
-var patientId = PatientId.Create(command.PatientId);
-var priority = Priority.Create(command.Priority);
-// ... múltiples creaciones
-```
-
-**Impacto:**
-
-- Handler tiene lógica de construcción (mejorable)
-- Violación de Single Responsibility
-
-**Mitigación:**
-
-- ValueObject validation está en dominio
-- Aplicación solo orquesta
-- Aceptable en handler actual (pequeño)
-
-### Problema 3: No Pure Testable Sin Docker (Integration)
-
-**En:** `PostgresEventStore`, `PostgresOutboxStore`
-
-```csharp
-// Cannot test without DB
-public async Task<WaitingQueue?> LoadAsync(string aggregateId, ...)
-{
-    await using var connection = new NpgsqlConnection(_connectionString);
-    // ... SQL execution
-}
-```
-
-**Impacto:**
-
-- Tests de infraestructura requieren Docker
-- No hay in-memory stub por defecto
-
-**Mitigación:**
-
-- En tests: use `InMemoryEventStore` (proyecto de tests)
-- Docker Compose hace setup fácil
-- CI/CD puede usar contenedores
-
----
-
-## 📊 Cobertura Actual
-
-```
-┌─────────────┬──────────┬─────────────────────────────┐
-│ Capa        │ Coverage │ Método                      │
-├─────────────┼──────────┼─────────────────────────────┤
-│ Domain      │  95%     │ Unit tests (0 mocks)        │
-│ Application │  85%     │ Unit + Mock tests           │
-│ Integration │  70%     │ Docker + DB (limited)       │
-│ API         │  50%     │ Via integration (limited)   │
-│ Worker      │  60%     │ Background job tests        │
-│ Projections │  75%     │ Handler tests (mocked ctx)  │
-├─────────────┼──────────┼─────────────────────────────┤
-│ TOTAL       │  ~75%    │ Mixed strategy              │
-└─────────────┴──────────┴─────────────────────────────┘
-```
-
----
-
-## 🎯 Recomendaciones de Testing
-
-### Prioridades
-
-1. **Alto:** Domain tests (95%+ coverage)
-   - Reglas de negocio son críticas
-   - Fast, deterministic
-
-2. **Medio:** Application tests (80%+ coverage)
-   - Flujo end-to-end importante
-   - Mocks hacen tests rápidos
-
-3. **Medio:** Integration tests
-   - Validar persistencia
-   - Validar messaging (con Docker)
-
-4. **Bajo:** API tests
-   - Middleware es thin
-   - Infrastructure testing es más importante
-
-### Buenas Prácticas
-
-1. **Tests tienen el mismo nivel de calidad que código**
-
-   ```csharp
-   // ✗ BAD: Vago
-   Assert.True(result);
-
-   // ✓ GOOD: Explícito
-   queue.CurrentCount.Should().Be(1);
-   queue.UncommittedEvents.Should().HaveCount(1);
-   ```
-
-2. **AAA Pattern**
-
-   ```csharp
-   // Arrange - Setup
-   var queue = CreateQueue();
-
-   // Act - Execute
-   queue.CheckInPatient(...);
-
-   // Assert - Verify
-   queue.CurrentCount.Should().Be(1);
-   ```
-
-3. **Test nombres describen el comportamiento**
-
-   ```csharp
-   // ✗ BAD: Vago
-   [Fact] public void Test1() { }
-
-   // ✓ GOOD: Claro
-   [Fact]
-   public void CheckInPatient_AtCapacity_ThrowsDomainException() { }
-   ```
-
-4. **Sin lógica compleja en tests**
-
-   ```csharp
-   // ✗ BAD: Lógica compleja
-   foreach (var patient in patientList) {
-       var result = CheckIn(patient);
-       if (result != null) Assert.True(...);
-   }
-
-   // ✓ GOOD: Directo
-   queue.CheckInPatient(...);
-   queue.CurrentCount.Should().Be(1);
-   ```
-
----
-
-## 🚀 Ejecución de Tests
+### Comandos de ejecucion
 
 ```bash
+# Tests unitarios de dominio (sin infraestructura)
+dotnet test src/Tests/WaitingRoom.Tests.Domain/
+
+# Tests unitarios de aplicacion (sin infraestructura)
+dotnet test src/Tests/WaitingRoom.Tests.Application/
+
+# Tests de proyecciones (sin infraestructura)
+dotnet test src/Tests/WaitingRoom.Tests.Projections/
+
+# Tests de integracion (requiere PostgreSQL)
+dotnet test src/Tests/WaitingRoom.Tests.Integration/
+
 # Todos los tests
-bash run-complete-test.sh
+dotnet test RLAPP.slnx
 
-# Domain solamente
-dotnet test src/Tests/WaitingRoom.Tests.Domain
-
-# Application solamente
-dotnet test src/Tests/WaitingRoom.Tests.Application
-
-# Integration (requiere Docker)
-dotnet test src/Tests/WaitingRoom.Tests.Integration
-
-# Con output detallado
-dotnet test --logger "console;verbosity=detailed"
-
-# Coverage (si está disponible)
-dotnet test /p:CollectCoverage=true
+# Ciclo completo (cleanup + build + test + deploy)
+./run-complete-test.sh
 ```
 
----
+### Requisitos minimos para nuevos command handlers
 
-**Última actualización:** Febrero 2026
+Cada nuevo command handler debe incluir los siguientes tests unitarios:
+
+1. **Happy path**: Ejecucion exitosa del comando con verificacion de eventos generados y estado resultante del agregado.
+2. **Agregado no encontrado**: Verificar comportamiento cuando `IEventStore.LoadAsync` no encuentra el agregado (bootstrap o excepcion segun el caso).
+3. **Conflicto de concurrencia**: Verificar que `EventConflictException` se propaga cuando la version del agregado no coincide.
+4. **Violacion de invariante**: Verificar que `DomainException` se lanza cuando se viola una precondicion de dominio (estado invalido, capacidad excedida, etc.).
+5. **Idempotencia**: Verificar que la operacion es idempotente cuando se recibe el mismo `IdempotencyKey`.
+6. **Correlacion**: Verificar que el `CorrelationId` se propaga desde el comando hacia los eventos generados.
+7. **Publicacion de eventos**: Verificar que `IEventPublisher.PublishAsync` se invoca con los eventos generados.
+
+Estructura de test requerida:
+
+```csharp
+public class [NombreHandler]Tests
+{
+    // Dependencias (mocks)
+    private readonly Mock<IEventStore> _eventStoreMock;
+    private readonly Mock<IEventPublisher> _eventPublisherMock;
+    private readonly IClock _fakeClock;
+
+    // Sujeto bajo prueba
+    private readonly [NombreHandler] _handler;
+
+    // Tests obligatorios:
+    // 1. Should_[Accion]_When_[Condicion]
+    // 2. Should_ThrowDomainException_When_[Invariante]
+    // 3. Should_ThrowEventConflictException_When_VersionMismatch
+    // 4. Should_BeIdempotent_When_SameIdempotencyKey
+    // 5. Should_PropagateCor relationId
+    // 6. Should_PublishEvents_When_Success
+}
+```
+
+## 4. Operational / Maintenance Notes
+
+### Requisitos de infraestructura por nivel
+
+| Nivel | Infraestructura requerida |
+|---|---|
+| Dominio | Ninguna |
+| Aplicacion | Ninguna |
+| Proyecciones | Ninguna |
+| Integracion | PostgreSQL |
+
+### Base de datos de testing
+
+Base de datos `rlapp_waitingroom_test`: replica exacta del esquema de `rlapp_waitingroom` para tests de integracion.
