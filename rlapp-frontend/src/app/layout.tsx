@@ -5,6 +5,7 @@ import { Inter } from "next/font/google";
 
 import { AlertProvider } from "@/context/AlertContext";
 import { DependencyProvider } from "@/context/DependencyContext";
+import { AlertProvider } from "@/context/AlertContext";
 
 const inter = Inter({
   subsets: ["latin"],
