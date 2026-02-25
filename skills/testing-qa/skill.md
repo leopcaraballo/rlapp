@@ -1,12 +1,7 @@
 ---
 name: testing-qa (Senior Level)
 description: Technical quality assurance through TDD, high-precision mocking, and validation of critical scenarios.
-trigger: When feedback mentions tests, specs, unit testing, mocking, coverage, test failures, or QA validation.
-scope: backend/producer/test/, backend/consumer/test/, backend/consumer/src/**/*.spec.ts, backend/producer/src/**/*.spec.ts
-author: "Orchestrator Team"
-version: "2.1.0 (Senior Grade)"
 license: "MIT"
-autoinvoke: true
 ---
 
 # Skill: Testing & QA (Senior Grade)

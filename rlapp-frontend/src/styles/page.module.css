@@ -78,6 +78,50 @@
   border-bottom: 1px solid var(--color-border-light);
 }
 
+/* Barra de navegación superior (global) */
+.topNav {
+  /* Fixed navigation bar at top */
+  position: fixed;
+  top: 0;
+  left: 0;
+  right: 0;
+  z-index: 999;
+  display: flex;
+  justify-content: flex-end;
+  gap: 12px;
+  padding: 12px 24px;
+  height: var(--topnav-height, 64px);
+  background: #0b1220;
+  color: #ffffff;
+  align-items: center;
+  box-shadow: 0 2px 8px rgba(15, 23, 42, 0.06);
+}
+
+.navLink {
+  color: #ffffff;
+  text-decoration: none;
+  padding: 8px 12px;
+  border-radius: 8px;
+  background: transparent;
+  transition: background var(--duration-short) var(--ease-standard), transform var(--duration-short);
+  font-weight: var(--font-weight-medium);
+}
+
+.navLink:hover {
+  background: rgba(255,255,255,0.08);
+  transform: translateY(-1px);
+}
+
+/* Ensure links are fully visible across states */
+.topNav .navLink,
+.topNav .navLink:visited,
+.topNav .navLink:active,
+.topNav .navLink:focus {
+  color: #ffffff;
+  opacity: 1;
+  font-size: 14px;
+}
+
 /* ========================================
    TYPOGRAFÍA - TÍTULO Y ESTADO
    ======================================== */
@@ -463,6 +507,11 @@
   flex-direction: row;
   min-height: 100vh;
   background: linear-gradient(180deg, var(--color-surface-alt) 0%, var(--color-surface-tertiary) 100%);
+}
+
+/* Account for fixed top nav so content isn't hidden under it */
+.dashboardSplitLayout {
+  padding-top: var(--topnav-height, 64px);
 }
 
 .leftPanel {

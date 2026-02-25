@@ -1,12 +1,7 @@
 ---
 name: conventional-commits (Senior Level)
 description: Semantic history management, CI/CD alignment, and versioning automation.
-trigger: When creating commits, pushing code, formatting commit messages, or when feedback mentions git history, commit hygiene, or semantic versioning.
-scope: .git/, scripts/
-author: "Orchestrator Team"
-version: "2.0.0 (Senior Grade)"
 license: "MIT"
-autoinvoke: true
 ---
 
 # Skill: Conventional Commits (Senior Grade)

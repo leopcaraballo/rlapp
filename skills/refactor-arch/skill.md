@@ -1,12 +1,7 @@
 ---
 name: refactor-arch (Senior Level)
 description: Advanced refactoring towards Hexagonal Architecture, applying SOLID, design patterns, and technical trade-off analysis.
-trigger: When feedback mentions architecture refactoring, hexagonal architecture, SOLID principles, design patterns, ports and adapters, domain isolation, coupling, decoupling, or dependency inversion.
-scope: backend/producer/src/, backend/consumer/src/, frontend/src/
-author: "Orchestrator Team"
-version: "2.0.0 (Senior Grade)"
 license: "MIT"
-autoinvoke: true
 ---
 
 # Skill: Architecture Refactoring (Senior Grade)

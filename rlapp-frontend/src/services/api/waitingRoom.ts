@@ -1,15 +1,15 @@
 import {
   ApiError,
-  CommandSuccess,
-  WaitingRoomMonitorView,
-  QueueStateView,
-  NextTurnView,
-  RecentAttentionRecordView,
-  CheckInPatientDto,
   CallNextCashierDto,
-  ValidatePaymentDto,
+  CheckInPatientDto,
   ClaimNextPatientDto,
+  CommandSuccess,
   CompleteAttentionDto,
+  NextTurnView,
+  QueueStateView,
+  RecentAttentionRecordView,
+  ValidatePaymentDto,
+  WaitingRoomMonitorView,
 } from "./types";
 
 const API_BASE = process.env.NEXT_PUBLIC_API_BASE_URL || "http://localhost:5000";
@@ -63,7 +63,7 @@ export async function getRecentHistory(queueId: string, limit = 20): Promise<Rec
 
 export async function rebuildProjection(queueId: string): Promise<{ message: string; queueId: string }> {
   const res = await fetch(`${API_BASE}/api/v1/waiting-room/${encodeURIComponent(queueId)}/rebuild`, { method: "POST", headers: baseHeaders() });
-  return handleResponse<any>(res);
+  return handleResponse<{ message: string; queueId: string }>(res);
 }
 
 // Command endpoints (write operations)
@@ -72,7 +72,7 @@ async function postCommand<T, R>(path: string, dto: T): Promise<R> {
   const result = await handleResponse<R>(res);
   try {
     // Notify frontend listeners that a command succeeded so hooks can refresh
-    const queueId = (dto as any)?.queueId;
+    const queueId = (dto as unknown as { queueId?: string })?.queueId;
     window.dispatchEvent(new CustomEvent("rlapp:command-success", { detail: { queueId, path } }));
   } catch {
     // ignore dispatch failures (e.g., non-browser environments)
