@@ -84,7 +84,7 @@ function buildAppointments(
   // --- Historial reciente (completados) ---
   for (const h of history.slice(0, 10)) {
     // Evitar duplicados (IDs repetidos por reintentos)
-    const compositeId = `${h.patientId}-${h.attendedAt}`;
+    const compositeId = `${h.patientId}-${h.completedAt}`;
     if (result.some((a) => a.id === compositeId)) continue;
 
     result.push({
@@ -92,10 +92,10 @@ function buildAppointments(
       fullName: h.patientName,
       idCard: h.patientId,
       office: null,
-      timestamp: new Date(h.attendedAt).getTime(),
-      completedAt: new Date(h.attendedAt).getTime(),
+      timestamp: new Date(h.completedAt).getTime(),
+      completedAt: new Date(h.completedAt).getTime(),
       status: "completed",
-      priority: "Medium",
+      priority: (h.priority ?? "Medium") as AppointmentPriority,
     });
   }
 

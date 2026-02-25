@@ -152,11 +152,13 @@ export async function callNextMedical(dto: { queueId: string; actor: string }): 
 }
 
 export async function activateConsultingRoom(dto: { queueId: string; actor: string; stationId?: string | null }): Promise<CommandSuccess> {
-  return postCommand<typeof dto, CommandSuccess>(`/api/medical/consulting-room/activate`, dto);
+  const { stationId, ...rest } = dto;
+  return postCommand<object, CommandSuccess>(`/api/medical/consulting-room/activate`, { ...rest, consultingRoomId: stationId ?? null });
 }
 
 export async function deactivateConsultingRoom(dto: { queueId: string; actor: string; stationId?: string | null }): Promise<CommandSuccess> {
-  return postCommand<typeof dto, CommandSuccess>(`/api/medical/consulting-room/deactivate`, dto);
+  const { stationId, ...rest } = dto;
+  return postCommand<object, CommandSuccess>(`/api/medical/consulting-room/deactivate`, { ...rest, consultingRoomId: stationId ?? null });
 }
 
 export async function startConsultation(dto: { queueId: string; patientId: string; actor: string; stationId?: string | null }): Promise<CommandSuccess> {

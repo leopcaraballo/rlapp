@@ -65,8 +65,11 @@ export interface RecentAttentionRecordView {
   queueId: string;
   patientId: string;
   patientName: string;
-  attendedAt: string;
+  priority: string;
+  consultationType: string;
+  completedAt: string;
   outcome?: string | null;
+  notes?: string | null;
 }
 
 // Command DTOs (subset)

@@ -24,7 +24,7 @@ export default function RecentHistory({ history }: Props) {
         {history.slice(0, 8).map(h => (
           <li key={`${h.queueId}-${h.patientId}`} className={styles.historyItem}>
             <div className={styles.historyName}>{h.patientName}</div>
-            <div className={styles.historyDate}>{new Date(h.attendedAt).toLocaleString()}</div>
+            <div className={styles.historyDate}>{new Date(h.completedAt).toLocaleString()}</div>
             {h.outcome && <div className={styles.historyOutcome}>Resultado: {h.outcome}</div>}
           </li>
         ))}

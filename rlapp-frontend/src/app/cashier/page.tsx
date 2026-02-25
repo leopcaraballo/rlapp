@@ -1,21 +1,15 @@
 "use client";
 import { zodResolver } from "@hookform/resolvers/zod";
 import { useSearchParams } from "next/navigation";
-import React, { useEffect, useState } from "react";
+import React, { useEffect } from "react";
 import { useForm } from "react-hook-form";
 import * as z from "zod";
 
 import { env } from "@/config/env";
 import { useAlert } from "@/context/AlertContext";
+import { useCashierStation } from "@/hooks/useCashierStation";
 import sharedStyles from "@/styles/page.module.css";
 
-import {
-  callNextCashier,
-  cancelByPayment,
-  markAbsentAtCashier,
-  markPaymentPending,
-  validatePayment,
-} from "../../services/api/waitingRoom";
 import localStyles from "./page.module.css";
 
 const CashierSchema = z.object({
@@ -27,8 +21,8 @@ type CashierForm = z.infer<typeof CashierSchema>;
 
 export default function CashierPage() {
   const search = useSearchParams();
-  const [busy, setBusy] = useState(false);
   const alert = useAlert();
+  const cashier = useCashierStation();
 
   const {
     register,
@@ -46,43 +40,30 @@ export default function CashierPage() {
     if (q) setValue("queueId", q);
   }, [search, setValue]);
 
-  async function doCallNext() {
-    setBusy(true);
-    // clear handled by provider
-    try {
-      await callNextCashier({ queueId: getValues("queueId") || env.DEFAULT_QUEUE_ID, actor: "cashier" });
-    } catch (e: unknown) {
-      const msg = e instanceof Error ? e.message : String(e);
-      alert.showError(msg ?? "Error al llamar siguiente");
-    } finally {
-      setBusy(false);
+  // Auto-rellenar patientId cuando el backend devuelve uno tras callNext
+  useEffect(() => {
+    if (cashier.lastResult?.patientId) {
+      setValue("patientId", cashier.lastResult.patientId);
     }
+  }, [cashier.lastResult, setValue]);
+
+  // Propagar errores del hook al sistema de alertas
+  useEffect(() => {
+    if (cashier.error) alert.showError(cashier.error);
+  }, [cashier.error, alert]);
+
+  async function doCallNext() {
+    await cashier.callNext(getValues("queueId") || env.DEFAULT_QUEUE_ID);
   }
 
   async function onValidate(data: CashierForm) {
-    setBusy(true);
-    try {
-      await validatePayment({ queueId: data.queueId, patientId: data.patientId, actor: "cashier" });
-    } catch (e: unknown) {
-      const msg = e instanceof Error ? e.message : String(e);
-      alert.showError(msg ?? "Error al validar pago");
-    } finally {
-      setBusy(false);
-    }
+    await cashier.validate({ queueId: data.queueId, patientId: data.patientId });
   }
 
   async function onAction(action: "pending" | "absent" | "cancel", data: CashierForm) {
-    setBusy(true);
-    try {
-      if (action === "pending") await markPaymentPending({ queueId: data.queueId, patientId: data.patientId, actor: "cashier" });
-      if (action === "absent") await markAbsentAtCashier({ queueId: data.queueId, patientId: data.patientId, actor: "cashier" });
-      if (action === "cancel") await cancelByPayment({ queueId: data.queueId, patientId: data.patientId, actor: "cashier" });
-    } catch (e: unknown) {
-      const msg = e instanceof Error ? e.message : String(e);
-      alert.showError(msg ?? "Error en la acción");
-    } finally {
-      setBusy(false);
-    }
+    if (action === "pending") await cashier.markPending({ queueId: data.queueId, patientId: data.patientId });
+    if (action === "absent") await cashier.markAbsent({ queueId: data.queueId, patientId: data.patientId });
+    if (action === "cancel") await cashier.cancel({ queueId: data.queueId, patientId: data.patientId });
   }
 
   return (
@@ -108,7 +89,7 @@ export default function CashierPage() {
             <button
               type="button"
               onClick={doCallNext}
-              disabled={busy}
+              disabled={cashier.busy}
               className={`${localStyles.btn} ${localStyles.btnSecondary}`}
             >
               Llamar siguiente
@@ -133,7 +114,7 @@ export default function CashierPage() {
           <div className={localStyles.row}>
             <button
               type="submit"
-              disabled={busy}
+              disabled={cashier.busy}
               className={`${localStyles.btn} ${localStyles.btnPrimary}`}
             >
               Validar pago
@@ -141,7 +122,7 @@ export default function CashierPage() {
             <button
               type="button"
               onClick={handleSubmit((d) => onAction("pending", d))}
-              disabled={busy}
+              disabled={cashier.busy}
               className={`${localStyles.btn} ${localStyles.btnSecondary}`}
             >
               Marcar pendiente
@@ -151,7 +132,7 @@ export default function CashierPage() {
             <button
               type="button"
               onClick={handleSubmit((d) => onAction("absent", d))}
-              disabled={busy}
+              disabled={cashier.busy}
               className={`${localStyles.btn} ${localStyles.btnWarning}`}
             >
               Marcar ausente
@@ -159,7 +140,7 @@ export default function CashierPage() {
             <button
               type="button"
               onClick={handleSubmit((d) => onAction("cancel", d))}
-              disabled={busy}
+              disabled={cashier.busy}
               className={`${localStyles.btn} ${localStyles.btnDanger}`}
             >
               Anular pago
@@ -170,3 +151,4 @@ export default function CashierPage() {
     </main>
   );
 }
+

@@ -67,6 +67,7 @@ export interface CompleteAttentionCommand {
   queueId: string;
   patientId: string;
   actor: string;
+  outcome?: string | null;
   notes?: string | null;
 }
 

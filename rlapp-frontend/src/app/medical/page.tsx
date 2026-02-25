@@ -19,6 +19,7 @@ const MedicalSchema = z.object({
   queueId: z.string().min(1, "La cola es obligatoria"),
   stationId: z.string().min(1, "El ID de estación es obligatorio"),
   patientId: z.string().optional(),
+  outcome: z.string().optional().nullable(),
 });
 
 type MedicalForm = z.infer<typeof MedicalSchema>;
@@ -37,7 +38,7 @@ export default function MedicalPage() {
     formState: { errors },
   } = useForm<MedicalForm>({
     resolver: zodResolver(MedicalSchema),
-    defaultValues: { queueId: env.DEFAULT_QUEUE_ID, stationId: "", patientId: "" },
+    defaultValues: { queueId: env.DEFAULT_QUEUE_ID, stationId: "", patientId: "", outcome: null },
   });
 
   useEffect(() => {
@@ -73,7 +74,7 @@ export default function MedicalPage() {
 
   function onFinishConsult(data: MedicalForm) {
     if (!data.patientId) { alert.showError("El ID de paciente es obligatorio"); return; }
-    medical.complete({ queueId: data.queueId, patientId: data.patientId });
+    medical.complete({ queueId: data.queueId, patientId: data.patientId, outcome: data.outcome ?? null });
   }
 
   function onMarkAbsent(data: MedicalForm) {
@@ -151,6 +152,16 @@ export default function MedicalPage() {
               className={localStyles.input}
               placeholder="Ej. p-1700000000000"
               {...register("patientId")}
+            />
+          </div>
+
+          <div className={localStyles.formGroup}>
+            <label className={localStyles.label} htmlFor="outcome">Resultado de la consulta (opcional)</label>
+            <input
+              id="outcome"
+              className={localStyles.input}
+              placeholder="Ej. Diagnóstico, tratamiento indicado..."
+              {...register("outcome")}
             />
           </div>
 
