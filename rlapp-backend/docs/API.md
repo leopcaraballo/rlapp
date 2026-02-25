@@ -1,39 +1,31 @@
-# RLAPP API Contract (Current Runtime)
+# API Contract
 
-Contrato HTTP vigente de `WaitingRoom.API` alineado al estado real del código.
+## 1. Purpose
 
-Modelo operativo definitivo (target de negocio): [OPERATING_MODEL.md](OPERATING_MODEL.md)
+Contrato HTTP del servicio `WaitingRoom.API`. Describe los endpoints publicados en el pipeline HTTP principal, agrupados por rol operativo.
 
-## Alcance y fuente de verdad
-
-Este documento describe los endpoints **publicados actualmente** en el pipeline HTTP principal.
+## 2. Context
 
 Fuente de verdad operativa:
 
 1. Mapeo de endpoints en `src/Services/WaitingRoom/WaitingRoom.API/Program.cs`
 2. OpenAPI runtime (`/openapi/v1.json`) en entorno Development
 
----
+Base URL:
 
-## Base URL
+| Entorno | URL |
+|---|---|
+| Local (`dotnet run`) | `http://localhost:5000` |
+| Containerizado (Docker Compose) | `http://localhost:8080` |
 
-- Local con `dotnet run`: `http://localhost:5000`
-- Containerizado (si API está expuesta por compose): normalmente `http://localhost:8080`
+Headers comunes:
 
----
+| Header | Valor | Obligatorio |
+|---|---|---|
+| `Content-Type` | `application/json` | Si |
+| `X-Correlation-Id` | UUID | No (generado por middleware si ausente) |
 
-## Headers comunes
-
-- `Content-Type: application/json`
-- `X-Correlation-Id: <uuid>` (recomendado)
-
-Si el cliente no envía `X-Correlation-Id`, el middleware lo genera y lo devuelve en el response header.
-
----
-
-## Errores (formato estándar)
-
-El middleware global normaliza excepciones a este contrato:
+Formato de error estandar:
 
 ```json
 {
@@ -43,88 +35,64 @@ El middleware global normaliza excepciones a este contrato:
 }
 ```
 
-Mapeo principal:
+Codigos HTTP:
 
-- `400`: violación de reglas de dominio o request inválido
-- `404`: agregado/cola no encontrado
-- `409`: conflicto de concurrencia
-- `500`: error inesperado
+| Codigo | Causa |
+|---|---|
+| 400 | Violacion de regla de dominio o request invalido |
+| 404 | Agregado o cola no encontrado |
+| 409 | Conflicto de concurrencia |
+| 500 | Error inesperado |
 
----
+## 3. Technical Details
 
-## Command Endpoints
+### Endpoints de comando por rol
 
-## Recepción
+#### Recepcion
 
-### POST /api/reception/register
+| Metodo | Ruta | Descripcion |
+|---|---|---|
+| POST | `/api/reception/register` | Registro clinico de paciente (alias de check-in por rol de recepcion) |
 
-Registro clínico operativo (alias de check-in por rol de recepción).
+#### Taquilla
 
-Mismo contrato de request/response que `POST /api/waiting-room/check-in`.
+| Metodo | Ruta | Descripcion |
+|---|---|---|
+| POST | `/api/cashier/call-next` | Llama siguiente paciente para pago (prioridad + FIFO) |
+| POST | `/api/cashier/validate-payment` | Valida pago y habilita paso a cola de consulta |
+| POST | `/api/cashier/mark-payment-pending` | Marca pago pendiente e incrementa contador (maximo 3 intentos) |
+| POST | `/api/cashier/mark-absent` | Marca ausencia en taquilla y reencola (maximo 2 reintentos) |
+| POST | `/api/cashier/cancel-payment` | Cancela turno por politica de pago |
 
-## Taquilla
+#### Medico
 
-### POST /api/cashier/call-next
+| Metodo | Ruta | Descripcion |
+|---|---|---|
+| POST | `/api/medical/consulting-room/activate` | Activa consultorio para habilitar llamados |
+| POST | `/api/medical/consulting-room/deactivate` | Desactiva consultorio |
+| POST | `/api/medical/call-next` | Reclama siguiente paciente para consulta (requiere `stationId` de consultorio activo) |
+| POST | `/api/medical/start-consultation` | Inicia consulta para paciente en estado `LlamadoConsulta` |
+| POST | `/api/medical/finish-consultation` | Finaliza consulta para paciente en estado `EnConsulta` |
+| POST | `/api/medical/mark-absent` | Marca ausencia en consulta (1 reintento, luego cancelacion) |
 
-Llama siguiente paciente para pago, aplicando prioridad administrativa primero y FIFO dentro de nivel.
+#### Compatibilidad
 
-### POST /api/cashier/validate-payment
+| Metodo | Ruta | Descripcion |
+|---|---|---|
+| POST | `/api/waiting-room/check-in` | Check-in de paciente en cola de espera |
+| POST | `/api/waiting-room/claim-next` | Reclama siguiente paciente (prioridad clinica + FIFO) |
+| POST | `/api/waiting-room/call-patient` | Marca paciente reclamado como llamado |
+| POST | `/api/waiting-room/complete-attention` | Finaliza atencion del paciente activo |
 
-Valida pago y habilita paso a cola de consulta.
+### Request y response de referencia
 
-### POST /api/cashier/mark-payment-pending
-
-Marca pago pendiente e incrementa contador de intentos (máximo 3).
-
-### POST /api/cashier/mark-absent
-
-Marca ausencia en taquilla y reencola paciente (máximo 2 reintentos).
-
-### POST /api/cashier/cancel-payment
-
-Cancela turno por política de pago (después de alcanzar intentos máximos).
-
-## Médico
-
-### POST /api/medical/consulting-room/activate
-
-Activa consultorio para habilitar llamados médicos desde ese consultorio.
-
-### POST /api/medical/consulting-room/deactivate
-
-Desactiva consultorio; desde ese momento no puede reclamar siguiente paciente.
-
-### POST /api/medical/call-next
-
-Reclama siguiente paciente para consulta.
-
-Regla clave: `stationId` debe corresponder a un consultorio activo, de lo contrario retorna `400` por violación de dominio.
-
-### POST /api/medical/start-consultation
-
-Inicia consulta para paciente en estado `LlamadoConsulta`.
-
-### POST /api/medical/finish-consultation
-
-Finaliza consulta para paciente en estado `EnConsulta`.
-
-### POST /api/medical/mark-absent
-
-Marca ausencia en consulta; primer ausente reintenta, segundo ausente cancela por ausencia.
-
-## Compatibilidad (legacy)
-
-### POST /api/waiting-room/check-in
-
-Registra el check-in de un paciente en una cola de espera.
-
-### Request body
+#### Check-in (request)
 
 ```json
 {
   "queueId": "QUEUE-01",
   "patientId": "PAT-001",
-  "patientName": "Juan Pérez",
+  "patientName": "Juan Perez",
   "priority": "High",
   "consultationType": "General",
   "actor": "nurse-001",
@@ -132,17 +100,9 @@ Registra el check-in de un paciente en una cola de espera.
 }
 ```
 
-### Validaciones relevantes
+Validaciones: `queueId` (obligatorio), `patientId` (obligatorio), `patientName` (obligatorio), `priority` (Low | Medium | High | Urgent), `consultationType` (longitud 2-100), `actor` (obligatorio), `notes` (opcional).
 
-- `queueId`: obligatorio, no vacío
-- `patientId`: obligatorio, no vacío
-- `patientName`: obligatorio
-- `priority`: obligatorio; valores válidos `Low | Medium | High | Urgent`
-- `consultationType`: obligatorio; longitud entre 2 y 100
-- `actor`: obligatorio
-- `notes`: opcional
-
-### Success response (200)
+#### Check-in (response 200)
 
 ```json
 {
@@ -153,35 +113,7 @@ Registra el check-in de un paciente en una cola de espera.
 }
 ```
 
-### Error responses
-
-- `400` DomainViolation
-- `404` AggregateNotFound
-- `409` ConcurrencyConflict
-- `500` InternalServerError
-
-### Ejemplo curl
-
-```bash
-curl -X POST http://localhost:5000/api/waiting-room/check-in \
-  -H "Content-Type: application/json" \
-  -H "X-Correlation-Id: $(uuidgen)" \
-  -d '{
-    "queueId": "QUEUE-01",
-    "patientId": "PAT-001",
-    "patientName": "Juan Perez",
-    "priority": "High",
-    "consultationType": "General",
-    "actor": "nurse-001",
-    "notes": "Dolor de cabeza"
-  }'
-```
-
-### POST /api/waiting-room/claim-next
-
-Reclama el siguiente paciente a atender (prioridad clínica + orden de llegada).
-
-#### Request body
+#### Claim-next (request)
 
 ```json
 {
@@ -191,9 +123,7 @@ Reclama el siguiente paciente a atender (prioridad clínica + orden de llegada).
 }
 ```
 
-`stationId` es obligatorio en operación para cumplir la regla de consultorio activo.
-
-#### Response (200)
+#### Claim-next (response 200)
 
 ```json
 {
@@ -205,108 +135,23 @@ Reclama el siguiente paciente a atender (prioridad clínica + orden de llegada).
 }
 ```
 
-### POST /api/waiting-room/call-patient
+### Endpoints de consulta (query)
 
-Marca el paciente reclamado como llamado para atención.
+| Metodo | Ruta | Descripcion |
+|---|---|---|
+| GET | `/api/v1/waiting-room/{queueId}/monitor` | Vista de monitor de la sala de espera |
+| GET | `/api/v1/waiting-room/{queueId}/queue-state` | Estado detallado de la cola |
+| GET | `/api/v1/waiting-room/{queueId}/next-turn` | Informacion del siguiente turno |
+| GET | `/api/v1/waiting-room/{queueId}/recent-history?limit=20` | Historial reciente de atenciones |
+| POST | `/api/v1/waiting-room/{queueId}/rebuild` | Reconstruir proyecciones desde event store |
 
-#### Request body
-
-```json
-{
-  "queueId": "QUEUE-01",
-  "patientId": "PAT-001",
-  "actor": "nurse-001"
-}
-```
-
-#### Response (200)
-
-```json
-{
-  "success": true,
-  "message": "Patient called successfully",
-  "correlationId": "abfced71-84db-4dbd-8004-f84db9f4cf31",
-  "eventCount": 1,
-  "patientId": "PAT-001"
-}
-```
-
-### POST /api/waiting-room/complete-attention
-
-Finaliza la atención del paciente activo.
-
-#### Request body
+#### Next-turn (response de referencia)
 
 ```json
 {
   "queueId": "QUEUE-01",
   "patientId": "PAT-001",
-  "actor": "doctor-001",
-  "outcome": "resolved",
-  "notes": "Alta y control en 48h"
-}
-```
-
-#### Response (200)
-
-```json
-{
-  "success": true,
-  "message": "Attention completed successfully",
-  "correlationId": "237abf39-bfc2-4b93-8f7c-b6629b1512f6",
-  "eventCount": 1,
-  "patientId": "PAT-001"
-}
-```
-
----
-
-## Health & Readiness
-
-### GET /health/live
-
-Verifica que el proceso está vivo.
-
-### GET /health/ready
-
-Verifica readiness completa (incluye chequeos de dependencias).
-
-### Ejemplo curl (health)
-
-```bash
-curl http://localhost:5000/health/live
-curl http://localhost:5000/health/ready
-```
-
----
-
-## OpenAPI
-
-### GET /openapi/v1.json
-
-Disponible en entorno Development.
-
-Usar este endpoint para generación de cliente frontend o validación automática del contrato publicado.
-
----
-
-## Query Endpoints
-
-Todos estos endpoints están publicados en runtime:
-
-- `GET /api/v1/waiting-room/{queueId}/monitor`
-- `GET /api/v1/waiting-room/{queueId}/queue-state`
-- `GET /api/v1/waiting-room/{queueId}/next-turn`
-- `GET /api/v1/waiting-room/{queueId}/recent-history?limit=20`
-- `POST /api/v1/waiting-room/{queueId}/rebuild`
-
-### Ejemplo response `GET /api/v1/waiting-room/{queueId}/next-turn`
-
-```json
-{
-  "queueId": "QUEUE-01",
-  "patientId": "PAT-001",
-  "patientName": "Juan Pérez",
+  "patientName": "Juan Perez",
   "priority": "high",
   "consultationType": "General",
   "status": "called",
@@ -317,25 +162,42 @@ Todos estos endpoints están publicados en runtime:
 }
 ```
 
----
+### Health y readiness
 
-## Integración Frontend
+| Metodo | Ruta | Descripcion |
+|---|---|---|
+| GET | `/health/live` | Liveness probe |
+| GET | `/health/ready` | Readiness probe (verifica PostgreSQL) |
 
-Para consumo end-to-end, tipado TypeScript, estrategia de retries, manejo de errores y trazabilidad:
+### OpenAPI
 
-- [frontend-api-usage.md](api/frontend-api-usage.md)
+| Metodo | Ruta | Descripcion |
+|---|---|---|
+| GET | `/openapi/v1.json` | Especificacion OpenAPI (solo entorno Development) |
 
----
+## 4. Operational / Maintenance Notes
 
-## Related docs
+### Ejemplo de invocacion
 
-- [APPLICATION.md](APPLICATION.md)
-- [ARCHITECTURE.md](ARCHITECTURE.md)
-- [PROJECT_STRUCTURE.md](PROJECT_STRUCTURE.md)
-- [ADR-005-cqrs.md](architecture/ADR-005-cqrs.md)
-- [ADR-006-outbox-pattern.md](architecture/ADR-006-outbox-pattern.md)
+```bash
+curl -X POST http://localhost:5000/api/waiting-room/check-in \
+  -H "Content-Type: application/json" \
+  -H "X-Correlation-Id: $(uuidgen)" \
+  -d '{
+    "queueId": "QUEUE-01",
+    "patientId": "PAT-001",
+    "patientName": "Juan Perez",
+    "priority": "High",
+    "consultationType": "General",
+    "actor": "nurse-001"
+  }'
+```
 
----
+```bash
+curl http://localhost:5000/health/live
+curl http://localhost:5000/health/ready
+```
 
-**Last updated:** 2026-02-19
-**Status:** Runtime-aligned
+### CORS
+
+Origenes permitidos: `http://localhost:3000`, `http://localhost:3001`.
