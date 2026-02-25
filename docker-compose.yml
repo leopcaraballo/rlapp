@@ -147,8 +147,8 @@ services:
       api:
         condition: service_healthy
     healthcheck:
-      # Use CMD-SHELL and allow more time/retries because Next.js dev may take a few seconds
-      test: ["CMD-SHELL", "curl -f http://localhost:3000/ || exit 1"]
+      # wget está disponible en node:20-slim tras el apt-get install en el Dockerfile
+      test: ["CMD-SHELL", "wget -q --spider http://localhost:3000/ || exit 1"]
       interval: 15s
       timeout: 10s
       retries: 12
