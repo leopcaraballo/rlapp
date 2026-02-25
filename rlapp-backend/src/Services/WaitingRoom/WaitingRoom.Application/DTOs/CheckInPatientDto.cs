@@ -1,5 +1,7 @@
 namespace WaitingRoom.Application.DTOs;
 
+using System.ComponentModel.DataAnnotations;
+
 /// <summary>
 /// DTO for CheckInPatient command request.
 ///
@@ -17,26 +19,36 @@ public sealed record CheckInPatientDto
     /// <summary>
     /// Unique queue identifier.
     /// </summary>
+    [Required]
+    [MinLength(1)]
     public required string QueueId { get; init; }
 
     /// <summary>
     /// Unique patient identifier.
     /// </summary>
+    [Required]
+    [MinLength(1)]
     public required string PatientId { get; init; }
 
     /// <summary>
     /// Patient full name.
     /// </summary>
+    [Required]
+    [MinLength(1)]
     public required string PatientName { get; init; }
 
     /// <summary>
     /// Priority level (e.g., "High", "Medium", "Low").
     /// </summary>
+    [Required]
+    [MinLength(1)]
     public required string Priority { get; init; }
 
     /// <summary>
     /// Type of consultation (e.g., "General", "Dental", "Surgery").
     /// </summary>
+    [Required]
+    [MinLength(1)]
     public required string ConsultationType { get; init; }
 
     /// <summary>
@@ -57,5 +69,7 @@ public sealed record CheckInPatientDto
     /// <summary>
     /// Actor performing check-in (e.g., nurse ID or system name).
     /// </summary>
+    [Required]
+    [MinLength(1)]
     public required string Actor { get; init; }
 }

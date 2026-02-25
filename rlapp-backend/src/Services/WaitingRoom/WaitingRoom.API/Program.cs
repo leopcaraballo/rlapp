@@ -1,4 +1,5 @@
 using Serilog;
+using WaitingRoom.API.Validation;
 using WaitingRoom.API.Middleware;
 using WaitingRoom.API.Endpoints;
 using WaitingRoom.API.Hubs;
@@ -184,6 +185,19 @@ WaitingRoomQueryEndpoints.MapEndpoints(queryGroup);
 
 app.MapHub<WaitingRoomHub>("/ws/waiting-room");
 
+var commandGroup = app.MapGroup(string.Empty)
+    .AddEndpointFilterFactory(RequestValidationFilter.Factory);
+
+static async Task ProjectQueueAsync(
+    IProjection projection,
+    IEventStore eventStore,
+    string queueId,
+    CancellationToken cancellationToken)
+{
+    var queueEvents = await eventStore.GetEventsAsync(queueId, cancellationToken);
+    await projection.ProcessEventsAsync(queueEvents, cancellationToken);
+}
+
 // ==============================================================================
 // API ENDPOINTS — Minimal API Pattern
 // ==============================================================================
@@ -203,7 +217,7 @@ app.MapHub<WaitingRoomHub>("/ws/waiting-room");
 /// Flow:
 /// HTTP Request → DTO → Command → Handler → Aggregate → Events → EventStore → Response
 /// </summary>
-app.MapPost("/api/waiting-room/check-in", async (
+commandGroup.MapPost("/api/waiting-room/check-in", async (
     CheckInPatientDto dto,
     HttpContext httpContext,
     CheckInPatientCommandHandler handler,
@@ -237,8 +251,7 @@ app.MapPost("/api/waiting-room/check-in", async (
 
     // Execute command via handler
     var eventCount = await handler.HandleAsync(command, cancellationToken);
-    var queueEvents = await eventStore.GetEventsAsync(dto.QueueId, cancellationToken);
-    await projection.ProcessEventsAsync(queueEvents, cancellationToken);
+    await ProjectQueueAsync(projection, eventStore, dto.QueueId, cancellationToken);
 
     logger.LogInformation(
         "CheckIn completed. CorrelationId: {CorrelationId}, EventCount: {EventCount}",
@@ -261,7 +274,7 @@ app.MapPost("/api/waiting-room/check-in", async (
 .Produces(409)
 .Produces(500);
 
-app.MapPost("/api/reception/register", async (
+commandGroup.MapPost("/api/reception/register", async (
     CheckInPatientDto dto,
     HttpContext httpContext,
     CheckInPatientCommandHandler handler,
@@ -286,8 +299,7 @@ app.MapPost("/api/reception/register", async (
     };
 
     var eventCount = await handler.HandleAsync(command, cancellationToken);
-    var queueEvents = await eventStore.GetEventsAsync(dto.QueueId, cancellationToken);
-    await projection.ProcessEventsAsync(queueEvents, cancellationToken);
+    await ProjectQueueAsync(projection, eventStore, dto.QueueId, cancellationToken);
 
     return Results.Ok(new
     {
@@ -305,7 +317,7 @@ app.MapPost("/api/reception/register", async (
 .Produces(409)
 .Produces(500);
 
-app.MapPost("/api/cashier/call-next", async (
+commandGroup.MapPost("/api/cashier/call-next", async (
     CallNextCashierDto dto,
     HttpContext httpContext,
     CallNextCashierCommandHandler handler,
@@ -324,8 +336,7 @@ app.MapPost("/api/cashier/call-next", async (
     };
 
     var result = await handler.HandleAsync(command, cancellationToken);
-    var queueEvents = await eventStore.GetEventsAsync(dto.QueueId, cancellationToken);
-    await projection.ProcessEventsAsync(queueEvents, cancellationToken);
+    await ProjectQueueAsync(projection, eventStore, dto.QueueId, cancellationToken);
 
     return Results.Ok(new
     {
@@ -344,7 +355,7 @@ app.MapPost("/api/cashier/call-next", async (
 .Produces(409)
 .Produces(500);
 
-app.MapPost("/api/cashier/validate-payment", async (
+commandGroup.MapPost("/api/cashier/validate-payment", async (
     ValidatePaymentDto dto,
     HttpContext httpContext,
     ValidatePaymentCommandHandler handler,
@@ -364,8 +375,7 @@ app.MapPost("/api/cashier/validate-payment", async (
     };
 
     var eventCount = await handler.HandleAsync(command, cancellationToken);
-    var queueEvents = await eventStore.GetEventsAsync(dto.QueueId, cancellationToken);
-    await projection.ProcessEventsAsync(queueEvents, cancellationToken);
+    await ProjectQueueAsync(projection, eventStore, dto.QueueId, cancellationToken);
 
     return Results.Ok(new
     {
@@ -384,7 +394,7 @@ app.MapPost("/api/cashier/validate-payment", async (
 .Produces(409)
 .Produces(500);
 
-app.MapPost("/api/cashier/mark-payment-pending", async (
+commandGroup.MapPost("/api/cashier/mark-payment-pending", async (
     MarkPaymentPendingDto dto,
     HttpContext httpContext,
     MarkPaymentPendingCommandHandler handler,
@@ -404,8 +414,7 @@ app.MapPost("/api/cashier/mark-payment-pending", async (
     };
 
     var eventCount = await handler.HandleAsync(command, cancellationToken);
-    var queueEvents = await eventStore.GetEventsAsync(dto.QueueId, cancellationToken);
-    await projection.ProcessEventsAsync(queueEvents, cancellationToken);
+    await ProjectQueueAsync(projection, eventStore, dto.QueueId, cancellationToken);
 
     return Results.Ok(new
     {
@@ -424,7 +433,7 @@ app.MapPost("/api/cashier/mark-payment-pending", async (
 .Produces(409)
 .Produces(500);
 
-app.MapPost("/api/cashier/mark-absent", async (
+commandGroup.MapPost("/api/cashier/mark-absent", async (
     MarkAbsentAtCashierDto dto,
     HttpContext httpContext,
     MarkAbsentAtCashierCommandHandler handler,
@@ -443,8 +452,7 @@ app.MapPost("/api/cashier/mark-absent", async (
     };
 
     var eventCount = await handler.HandleAsync(command, cancellationToken);
-    var queueEvents = await eventStore.GetEventsAsync(dto.QueueId, cancellationToken);
-    await projection.ProcessEventsAsync(queueEvents, cancellationToken);
+    await ProjectQueueAsync(projection, eventStore, dto.QueueId, cancellationToken);
 
     return Results.Ok(new
     {
@@ -463,7 +471,7 @@ app.MapPost("/api/cashier/mark-absent", async (
 .Produces(409)
 .Produces(500);
 
-app.MapPost("/api/cashier/cancel-payment", async (
+commandGroup.MapPost("/api/cashier/cancel-payment", async (
     CancelByPaymentDto dto,
     HttpContext httpContext,
     CancelByPaymentCommandHandler handler,
@@ -483,8 +491,7 @@ app.MapPost("/api/cashier/cancel-payment", async (
     };
 
     var eventCount = await handler.HandleAsync(command, cancellationToken);
-    var queueEvents = await eventStore.GetEventsAsync(dto.QueueId, cancellationToken);
-    await projection.ProcessEventsAsync(queueEvents, cancellationToken);
+    await ProjectQueueAsync(projection, eventStore, dto.QueueId, cancellationToken);
 
     return Results.Ok(new
     {
@@ -503,7 +510,7 @@ app.MapPost("/api/cashier/cancel-payment", async (
 .Produces(409)
 .Produces(500);
 
-app.MapPost("/api/medical/call-next", async (
+commandGroup.MapPost("/api/medical/call-next", async (
     ClaimNextPatientDto dto,
     HttpContext httpContext,
     ClaimNextPatientCommandHandler handler,
@@ -522,8 +529,7 @@ app.MapPost("/api/medical/call-next", async (
     };
 
     var result = await handler.HandleAsync(command, cancellationToken);
-    var queueEvents = await eventStore.GetEventsAsync(dto.QueueId, cancellationToken);
-    await projection.ProcessEventsAsync(queueEvents, cancellationToken);
+    await ProjectQueueAsync(projection, eventStore, dto.QueueId, cancellationToken);
 
     return Results.Ok(new
     {
@@ -542,7 +548,7 @@ app.MapPost("/api/medical/call-next", async (
 .Produces(409)
 .Produces(500);
 
-app.MapPost("/api/medical/consulting-room/activate", async (
+commandGroup.MapPost("/api/medical/consulting-room/activate", async (
     ActivateConsultingRoomDto dto,
     HttpContext httpContext,
     ActivateConsultingRoomCommandHandler handler,
@@ -561,8 +567,7 @@ app.MapPost("/api/medical/consulting-room/activate", async (
     };
 
     var eventCount = await handler.HandleAsync(command, cancellationToken);
-    var queueEvents = await eventStore.GetEventsAsync(dto.QueueId, cancellationToken);
-    await projection.ProcessEventsAsync(queueEvents, cancellationToken);
+    await ProjectQueueAsync(projection, eventStore, dto.QueueId, cancellationToken);
 
     return Results.Ok(new
     {
@@ -581,7 +586,7 @@ app.MapPost("/api/medical/consulting-room/activate", async (
 .Produces(409)
 .Produces(500);
 
-app.MapPost("/api/medical/consulting-room/deactivate", async (
+commandGroup.MapPost("/api/medical/consulting-room/deactivate", async (
     DeactivateConsultingRoomDto dto,
     HttpContext httpContext,
     DeactivateConsultingRoomCommandHandler handler,
@@ -600,8 +605,7 @@ app.MapPost("/api/medical/consulting-room/deactivate", async (
     };
 
     var eventCount = await handler.HandleAsync(command, cancellationToken);
-    var queueEvents = await eventStore.GetEventsAsync(dto.QueueId, cancellationToken);
-    await projection.ProcessEventsAsync(queueEvents, cancellationToken);
+    await ProjectQueueAsync(projection, eventStore, dto.QueueId, cancellationToken);
 
     return Results.Ok(new
     {
@@ -620,7 +624,7 @@ app.MapPost("/api/medical/consulting-room/deactivate", async (
 .Produces(409)
 .Produces(500);
 
-app.MapPost("/api/medical/start-consultation", async (
+commandGroup.MapPost("/api/medical/start-consultation", async (
     CallPatientDto dto,
     HttpContext httpContext,
     CallPatientCommandHandler handler,
@@ -639,8 +643,7 @@ app.MapPost("/api/medical/start-consultation", async (
     };
 
     var eventCount = await handler.HandleAsync(command, cancellationToken);
-    var queueEvents = await eventStore.GetEventsAsync(dto.QueueId, cancellationToken);
-    await projection.ProcessEventsAsync(queueEvents, cancellationToken);
+    await ProjectQueueAsync(projection, eventStore, dto.QueueId, cancellationToken);
 
     return Results.Ok(new
     {
@@ -659,7 +662,7 @@ app.MapPost("/api/medical/start-consultation", async (
 .Produces(409)
 .Produces(500);
 
-app.MapPost("/api/medical/finish-consultation", async (
+commandGroup.MapPost("/api/medical/finish-consultation", async (
     CompleteAttentionDto dto,
     HttpContext httpContext,
     CompleteAttentionCommandHandler handler,
@@ -680,8 +683,7 @@ app.MapPost("/api/medical/finish-consultation", async (
     };
 
     var eventCount = await handler.HandleAsync(command, cancellationToken);
-    var queueEvents = await eventStore.GetEventsAsync(dto.QueueId, cancellationToken);
-    await projection.ProcessEventsAsync(queueEvents, cancellationToken);
+    await ProjectQueueAsync(projection, eventStore, dto.QueueId, cancellationToken);
 
     return Results.Ok(new
     {
@@ -700,7 +702,7 @@ app.MapPost("/api/medical/finish-consultation", async (
 .Produces(409)
 .Produces(500);
 
-app.MapPost("/api/medical/mark-absent", async (
+commandGroup.MapPost("/api/medical/mark-absent", async (
     MarkAbsentAtConsultationDto dto,
     HttpContext httpContext,
     MarkAbsentAtConsultationCommandHandler handler,
@@ -719,8 +721,7 @@ app.MapPost("/api/medical/mark-absent", async (
     };
 
     var eventCount = await handler.HandleAsync(command, cancellationToken);
-    var queueEvents = await eventStore.GetEventsAsync(dto.QueueId, cancellationToken);
-    await projection.ProcessEventsAsync(queueEvents, cancellationToken);
+    await ProjectQueueAsync(projection, eventStore, dto.QueueId, cancellationToken);
 
     return Results.Ok(new
     {
@@ -739,7 +740,7 @@ app.MapPost("/api/medical/mark-absent", async (
 .Produces(409)
 .Produces(500);
 
-app.MapPost("/api/waiting-room/claim-next", async (
+commandGroup.MapPost("/api/waiting-room/claim-next", async (
     ClaimNextPatientDto dto,
     HttpContext httpContext,
     ClaimNextPatientCommandHandler handler,
@@ -764,8 +765,7 @@ app.MapPost("/api/waiting-room/claim-next", async (
     };
 
     var result = await handler.HandleAsync(command, cancellationToken);
-    var queueEvents = await eventStore.GetEventsAsync(dto.QueueId, cancellationToken);
-    await projection.ProcessEventsAsync(queueEvents, cancellationToken);
+    await ProjectQueueAsync(projection, eventStore, dto.QueueId, cancellationToken);
 
     return Results.Ok(new
     {
@@ -784,7 +784,7 @@ app.MapPost("/api/waiting-room/claim-next", async (
 .Produces(409)
 .Produces(500);
 
-app.MapPost("/api/waiting-room/call-patient", async (
+commandGroup.MapPost("/api/waiting-room/call-patient", async (
     CallPatientDto dto,
     HttpContext httpContext,
     CallPatientCommandHandler handler,
@@ -803,8 +803,7 @@ app.MapPost("/api/waiting-room/call-patient", async (
     };
 
     var eventCount = await handler.HandleAsync(command, cancellationToken);
-    var queueEvents = await eventStore.GetEventsAsync(dto.QueueId, cancellationToken);
-    await projection.ProcessEventsAsync(queueEvents, cancellationToken);
+    await ProjectQueueAsync(projection, eventStore, dto.QueueId, cancellationToken);
 
     return Results.Ok(new
     {
@@ -823,7 +822,7 @@ app.MapPost("/api/waiting-room/call-patient", async (
 .Produces(409)
 .Produces(500);
 
-app.MapPost("/api/waiting-room/complete-attention", async (
+commandGroup.MapPost("/api/waiting-room/complete-attention", async (
     CompleteAttentionDto dto,
     HttpContext httpContext,
     CompleteAttentionCommandHandler handler,
@@ -844,8 +843,7 @@ app.MapPost("/api/waiting-room/complete-attention", async (
     };
 
     var eventCount = await handler.HandleAsync(command, cancellationToken);
-    var queueEvents = await eventStore.GetEventsAsync(dto.QueueId, cancellationToken);
-    await projection.ProcessEventsAsync(queueEvents, cancellationToken);
+    await ProjectQueueAsync(projection, eventStore, dto.QueueId, cancellationToken);
 
     return Results.Ok(new
     {
