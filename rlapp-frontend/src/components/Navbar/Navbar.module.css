@@ -1,0 +1,64 @@
+/* ==========================================
+   NAVBAR — Barra de navegación global
+   Visible en todas las rutas excepto "/"
+   ========================================== */
+
+.topNav {
+  position: fixed;
+  top: 0;
+  left: 0;
+  right: 0;
+  z-index: 999;
+  display: flex;
+  align-items: center;
+  gap: 12px;
+  padding: 12px 24px;
+  height: var(--topnav-height, 64px);
+  background: #0b1220;
+  color: #ffffff;
+  box-shadow: 0 2px 8px rgba(15, 23, 42, 0.06);
+}
+
+.brand {
+  font-size: 15px;
+  font-weight: 700;
+  color: #ffffff;
+  text-decoration: none;
+  letter-spacing: -0.3px;
+  margin-right: auto;
+}
+
+.brand:hover {
+  color: rgba(255, 255, 255, 0.85);
+}
+
+.navLink {
+  color: #ffffff;
+  text-decoration: none;
+  padding: 8px 12px;
+  border-radius: 8px;
+  background: transparent;
+  transition:
+    background 140ms ease,
+    transform 140ms ease;
+  font-weight: 500;
+  font-size: 14px;
+  opacity: 1;
+}
+
+.navLink:hover {
+  background: rgba(255, 255, 255, 0.08);
+  transform: translateY(-1px);
+}
+
+.navLink:visited,
+.navLink:active,
+.navLink:focus {
+  color: #ffffff;
+  opacity: 1;
+}
+
+.navLinkActive {
+  background: rgba(255, 255, 255, 0.14);
+  font-weight: 600;
+}

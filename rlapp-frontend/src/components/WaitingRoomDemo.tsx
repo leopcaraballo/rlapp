@@ -1,9 +1,10 @@
 import React, { useEffect } from "react";
 
 import { useWaitingRoom } from "../hooks/useWaitingRoom";
+import type { NextTurnView, QueueStateView, WaitingRoomMonitorView } from "../services/api/types";
 import { connect, disconnect } from "../services/signalr/waitingRoomSignalR";
 
-export default function WaitingRoomDemo({ queueId = "default-queue" }: { queueId?: string }) {
+export default function WaitingRoomDemo({ queueId = process.env.NEXT_PUBLIC_DEFAULT_QUEUE_ID || "QUEUE-01" }: { queueId?: string }) {
   const { monitor, queueState, nextTurn, history, setMonitor, setQueueState, setNextTurn, refresh } = useWaitingRoom(queueId, 8000);
 
   useEffect(() => {
@@ -13,9 +14,9 @@ export default function WaitingRoomDemo({ queueId = "default-queue" }: { queueId
     (async () => {
       try {
         const conn = await connect(queueId, {
-          onMonitor: (payload) => { if (mounted) setMonitor(payload); },
-          onQueueState: (payload) => { if (mounted) setQueueState(payload); },
-          onNextTurn: (payload) => { if (mounted) setNextTurn(payload); },
+          onMonitor: (payload) => { if (mounted) setMonitor(payload as WaitingRoomMonitorView); },
+          onQueueState: (payload) => { if (mounted) setQueueState(payload as QueueStateView); },
+          onNextTurn: (payload) => { if (mounted) setNextTurn(payload as NextTurnView); },
           onAny: () => {},
         });
 

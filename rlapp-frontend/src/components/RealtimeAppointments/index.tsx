@@ -11,7 +11,7 @@ import WaitingRoomDemo from "@/components/WaitingRoomDemo";
 import WebSocketStatus from "@/components/WebSocketStatus";
 import { ConnectionStatus } from "@/components/WebSocketStatus";
 import { Appointment } from "@/domain/Appointment";
-import { useAppointmentsWebSocket } from "@/hooks/useAppointmentsWebSocket";
+import { useQueueAsAppointments } from "@/hooks/useQueueAsAppointments";
 import { audioService } from "@/services/AudioService";
 import styles from "@/styles/page.module.css";
 
@@ -20,6 +20,10 @@ type Props = {
   showCompleted?: boolean;
   title?: string;
   demoQueueId?: string | null;
+  /** ID de la cola que se debe observar en tiempo real (polling REST). */
+  queueId?: string;
+  /** Si es true, el contenedor ocupa el 100% del ancho. Si es false, se restringe al 70%. */
+  fullWidth?: boolean;
 };
 
 export default function RealtimeAppointments({
@@ -27,6 +31,8 @@ export default function RealtimeAppointments({
   showCompleted = false,
   title = "Turnos Disponibles",
   demoQueueId = null,
+  queueId = process.env.NEXT_PUBLIC_DEFAULT_QUEUE_ID || "QUEUE-01",
+  fullWidth = true,
 }: Props) {
   const [audioEnabled, setAudioEnabled] = useState(() => audioService.isEnabled());
   const [showToast, setShowToast] = useState<string | null>(null);
@@ -43,9 +49,16 @@ export default function RealtimeAppointments({
     }
   }, []);
 
-  // eslint-disable-next-line @typescript-eslint/no-unused-vars
-  const { appointments, error, connected, isConnecting, connectionStatus } =
-    useAppointmentsWebSocket(handleUpdate);
+  const { appointments, error, isConnecting, connectionStatus } =
+    useQueueAsAppointments(queueId);
+
+  // Notificaciones de audio y toast cuando llega un turno llamado
+  useEffect(() => {
+    // Este efecto observa cambios en appointments para disparar audio/toast
+    const calledIds = appointments.filter((a) => a.status === "called").map((a) => a.id);
+    if (calledIds.length > 0) handleUpdate(appointments.find((a) => a.status === "called")!);
+  // Solo ejecutar cuando cambia la lista de llamados (la expresión derivada actúa como dep estable)
+  }, [appointments.filter((a) => a.status === "called").map((a) => a.id).join(",")]);
 
   useEffect(() => {
     audioService.init("/sounds/ding.mp3", 0.6);
@@ -67,8 +80,8 @@ export default function RealtimeAppointments({
   const waitingAppointments = appointments
     .filter((t) => t.status === "waiting")
     .sort((a, b) => {
-      const priorityOrder: Record<string, number> = { high: 0, medium: 1, low: 2 };
-      return priorityOrder[a.priority] - priorityOrder[b.priority];
+      const priorityOrder: Record<string, number> = { High: 0, Medium: 1, Low: 2 };
+      return (priorityOrder[a.priority] ?? 1) - (priorityOrder[b.priority] ?? 1);
     });
 
   const calledAppointments = appointments.filter((t) => t.status === "called");
@@ -78,8 +91,11 @@ export default function RealtimeAppointments({
     .sort((a, b) => b.timestamp - a.timestamp);
 
   if (layout === "container") {
+    const containerClass = fullWidth
+      ? styles.dashboardContainer
+      : `${styles.dashboardContainer} ${styles.contentConstrained}`;
     return (
-      <main className={styles.dashboardContainer}>
+      <main className={containerClass}>
         <header className={styles.stickyHeader}>
           <h1 className={styles.title}>{title}</h1>
             <WebSocketStatus status={connectionStatus as ConnectionStatus} variant="block" />

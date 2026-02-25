@@ -1,31 +1,339 @@
-.container {
-  padding: 20px;
-  max-width: 700px;
+/* ==========================================
+   CAJA — Layout dividido: lista + acciones
+   Colores hardcodeados para compatibilidad dark mode
+   ========================================== */
+
+/* ── Layout principal ── */
+.splitLayout {
+  display: grid;
+  grid-template-columns: 420px 1fr;
+  gap: 0;
+  padding-top: var(--topnav-height, 64px);
+  min-height: 100vh;
+  width: 70%;
   margin: 0 auto;
 }
-.form {
-  display: grid;
-  gap: 12px;
-  margin-top: 12px;
-}
-.form input {
-  width: 100%;
-  padding: 8px;
-  margin-top: 6px;
-}
-.row {
+
+/* ═══════════════════════════════════════════
+   PANEL IZQUIERDO — Lista de pacientes
+   ═══════════════════════════════════════════ */
+.listPanel {
+  background: #ffffff;
+  border-right: 1px solid #f1f5f9;
   display: flex;
-  gap: 8px;
-  flex-wrap: wrap;
-}
-.row button {
-  padding: 8px;
-  border-radius: 6px;
-  flex: 1 1 120px;
+  flex-direction: column;
+  overflow: hidden;
 }
 
-@media (min-width: 768px) {
-  .form {
-    gap: 16px;
+.listHeader {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  padding: 20px 24px;
+  border-bottom: 1px solid #f1f5f9;
+  background: #f8fafc;
+}
+
+.listTitle {
+  font-size: 16px;
+  font-weight: 700;
+  color: #0b1324;
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  margin: 0;
+}
+
+.countBadge {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  min-width: 26px;
+  height: 26px;
+  padding: 0 8px;
+  font-size: 12px;
+  font-weight: 700;
+  color: #fff;
+  background: linear-gradient(135deg, #3b82f6, #2563eb);
+  border-radius: 99px;
+}
+
+.callNextBtn {
+  padding: 8px 18px;
+  font-size: 13px;
+  font-weight: 600;
+  color: #fff;
+  background: linear-gradient(135deg, #3b82f6, #2563eb);
+  border: none;
+  border-radius: 8px;
+  cursor: pointer;
+  transition: opacity 0.15s ease, transform 0.1s ease;
+}
+.callNextBtn:hover:not(:disabled) {
+  opacity: 0.9;
+  transform: translateY(-1px);
+}
+.callNextBtn:disabled {
+  opacity: 0.5;
+  cursor: not-allowed;
+}
+
+/* ── Estado vacío ── */
+.emptyState {
+  flex: 1;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+  gap: 12px;
+  color: #94a3b8;
+  padding: 48px 24px;
+}
+.emptyIcon {
+  font-size: 48px;
+}
+
+/* ── Lista scrolleable ── */
+.patientList {
+  list-style: none;
+  margin: 0;
+  padding: 8px;
+  overflow-y: auto;
+  flex: 1;
+  display: flex;
+  flex-direction: column;
+  gap: 4px;
+}
+
+/* ── Cada paciente ── */
+.patientItem {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  width: 100%;
+  padding: 14px 16px;
+  background: transparent;
+  border: 1px solid transparent;
+  border-radius: 12px;
+  cursor: pointer;
+  transition: all 0.15s ease;
+  text-align: left;
+  font-family: var(--font-stack);
+}
+.patientItem:hover {
+  background: #f8fafc;
+  border-color: #f1f5f9;
+}
+.patientItemSelected {
+  background: #eff6ff;
+  border-color: #bfdbfe;
+  box-shadow: 0 0 0 2px rgba(59, 130, 246, 0.08);
+}
+
+.patientInfo {
+  display: flex;
+  flex-direction: column;
+  gap: 2px;
+}
+.patientName {
+  font-size: 14px;
+  font-weight: 600;
+  color: #0b1324;
+}
+.patientId {
+  font-size: 12px;
+  color: #94a3b8;
+  font-family: monospace;
+}
+
+.patientMeta {
+  display: flex;
+  flex-direction: column;
+  align-items: flex-end;
+  gap: 4px;
+}
+
+/* ── Badges de prioridad ── */
+.priorityBadge {
+  font-size: 11px;
+  font-weight: 700;
+  padding: 2px 10px;
+  border-radius: 99px;
+  text-transform: uppercase;
+  letter-spacing: 0.5px;
+}
+.priorityUrgent {
+  background: #fef2f2;
+  color: #dc2626;
+  border: 1px solid #fecaca;
+}
+.priorityHigh {
+  background: #fff7ed;
+  color: #ea580c;
+  border: 1px solid #fed7aa;
+}
+.priorityMedium {
+  background: #eff6ff;
+  color: #2563eb;
+  border: 1px solid #bfdbfe;
+}
+.priorityLow {
+  background: #f0fdf4;
+  color: #16a34a;
+  border: 1px solid #bbf7d0;
+}
+
+.waitTime {
+  font-size: 12px;
+  color: #94a3b8;
+  font-weight: 500;
+}
+
+/* ═══════════════════════════════════════════
+   PANEL DERECHO — Acciones
+   ═══════════════════════════════════════════ */
+.actionPanel {
+  padding: 48px 40px 32px;
+  background: #f8fafc;
+  display: flex;
+  flex-direction: column;
+  gap: 20px;
+}
+
+.queueLabel {
+  font-size: 13px;
+  color: #94a3b8;
+  margin: 0;
+}
+
+/* ── Tarjeta de paciente seleccionado ── */
+.selectedCard {
+  background: #ffffff;
+  border-radius: 16px;
+  box-shadow: 0 4px 16px rgba(15, 23, 42, 0.08);
+  border: 1px solid #f1f5f9;
+  padding: 28px 32px;
+  display: flex;
+  flex-direction: column;
+  gap: 24px;
+}
+
+.selectedHeader {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+}
+.selectedName {
+  font-size: 20px;
+  font-weight: 700;
+  color: #0b1324;
+}
+
+.selectedDetails {
+  display: flex;
+  flex-direction: column;
+  gap: 12px;
+  padding: 16px 0;
+  border-top: 1px solid #f1f5f9;
+  border-bottom: 1px solid #f1f5f9;
+}
+.detailRow {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+}
+.detailLabel {
+  font-size: 12px;
+  font-weight: 700;
+  color: #94a3b8;
+  text-transform: uppercase;
+  letter-spacing: 0.5px;
+}
+.detailValue {
+  font-size: 14px;
+  font-weight: 500;
+  color: #0b1324;
+}
+
+/* ── Botones de acción ── */
+.actionButtons {
+  display: grid;
+  grid-template-columns: 1fr 1fr;
+  gap: 10px;
+}
+
+.btnValidate,
+.btnPending,
+.btnAbsent,
+.btnCancel {
+  padding: 12px 18px;
+  font-size: 14px;
+  font-weight: 600;
+  border: none;
+  border-radius: 8px;
+  cursor: pointer;
+  transition: opacity 0.15s ease, transform 0.1s ease;
+  font-family: var(--font-stack);
+}
+.btnValidate:hover:not(:disabled),
+.btnPending:hover:not(:disabled),
+.btnAbsent:hover:not(:disabled),
+.btnCancel:hover:not(:disabled) {
+  opacity: 0.9;
+  transform: translateY(-1px);
+}
+.btnValidate:disabled,
+.btnPending:disabled,
+.btnAbsent:disabled,
+.btnCancel:disabled {
+  opacity: 0.5;
+  cursor: not-allowed;
+}
+
+.btnValidate {
+  background: linear-gradient(135deg, #22c55e, #16a34a);
+  color: #fff;
+}
+.btnPending {
+  background: linear-gradient(135deg, #f59e0b, #d97706);
+  color: #fff;
+}
+.btnAbsent {
+  background: linear-gradient(135deg, #94a3b8, #64748b);
+  color: #fff;
+}
+.btnCancel {
+  background: linear-gradient(135deg, #dc2626, #b91c1c);
+  color: #fff;
+}
+
+/* ── Estado sin selección ── */
+.noSelection {
+  flex: 1;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+  gap: 12px;
+  color: #94a3b8;
+  text-align: center;
+  padding: 80px 24px;
+}
+.noSelectionIcon {
+  font-size: 48px;
+}
+
+/* ═══════════════════════════════════════════
+   RESPONSIVE
+   ═══════════════════════════════════════════ */
+@media (max-width: 900px) {
+  .splitLayout {
+    grid-template-columns: 1fr;
+    width: 100%;
+  }
+  .listPanel {
+    border-right: none;
+    border-bottom: 1px solid #f1f5f9;
+    max-height: 50vh;
   }
 }

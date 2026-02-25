@@ -1,3 +1,6 @@
+import type { AppointmentPriority } from "../../domain/Appointment";
+import type { ConsultationType } from "../../domain/patient/ConsultationType";
+
 export interface ApiError {
   error: string;
   message?: string;
@@ -17,6 +20,8 @@ export interface WaitingRoomMonitorView {
   queueId: string;
   totalPatientsWaiting: number;
   highPriorityCount: number;
+  /** Conteo de pacientes con prioridad Urgente (puede no estar presente en versiones anteriores del backend). */
+  urgentPriorityCount?: number;
   normalPriorityCount: number;
   lowPriorityCount: number;
   lastPatientCheckedInAt: string | null;
@@ -60,8 +65,11 @@ export interface RecentAttentionRecordView {
   queueId: string;
   patientId: string;
   patientName: string;
-  attendedAt: string;
+  priority: string;
+  consultationType: string;
+  completedAt: string;
   outcome?: string | null;
+  notes?: string | null;
 }
 
 // Command DTOs (subset)
@@ -69,8 +77,8 @@ export interface CheckInPatientDto {
   queueId: string;
   patientId: string;
   patientName: string;
-  priority: string;
-  consultationType: string;
+  priority: AppointmentPriority;
+  consultationType: ConsultationType;
   age?: number | null;
   isPregnant?: boolean | null;
   notes?: string | null;

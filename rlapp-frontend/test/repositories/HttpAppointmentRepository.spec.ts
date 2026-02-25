@@ -32,7 +32,7 @@ describe("HttpAppointmentRepository", () => {
   it("should create appointment with POST request", async () => {
     const mockDTO = AppointmentFactory.create({
       fullName: "New Patient",
-      priority: "high",
+      priority: "High",
     });
     const mockResponse = { id: "new-id", status: "waiting" };
     (httpPost as jest.Mock).mockResolvedValue(mockResponse);
