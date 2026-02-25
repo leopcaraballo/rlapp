@@ -82,12 +82,14 @@ export default function MedicalPage() {
   }
 
   return (
-    <main>
-      <form className={styles.splitLayout} onSubmit={handleSubmit(onStartConsult)} noValidate>
-        {/* Panel izquierdo: Estación */}
-        <section className={styles.stationPanel}>
+    <form className={styles.splitLayout} onSubmit={handleSubmit(onStartConsult)} noValidate>
+      {/* Panel izquierdo: Estación */}
+      <section className={styles.stationPanel}>
+        <header className={styles.panelHeader}>
           <h2 className={styles.panelTitle}>Estación Médica</h2>
+        </header>
 
+        <div className={styles.panelBody}>
           <div className={styles.formGroup}>
             <label className={styles.label} htmlFor="queueId">Cola</label>
             <input id="queueId" className={styles.input} placeholder="ej. QUEUE-01" {...register("queueId")} />
@@ -117,12 +119,16 @@ export default function MedicalPage() {
               Desactivar estación
             </button>
           </div>
-        </section>
+        </div>
+      </section>
 
-        {/* Panel derecho: Gestión de consulta */}
-        <section className={styles.consultPanel}>
+      {/* Panel derecho: Gestión de consulta */}
+      <section className={styles.consultPanel}>
+        <header className={styles.panelHeader}>
           <h2 className={styles.panelTitle}>Gestión de Consulta</h2>
+        </header>
 
+        <div className={styles.panelBody}>
           <div className={styles.formGroup}>
             <label className={styles.label} htmlFor="patientId">ID de paciente</label>
             <input id="patientId" className={styles.input} placeholder="Ej. p-1700000000000" {...register("patientId")} />
@@ -144,8 +150,8 @@ export default function MedicalPage() {
               Marcar ausente
             </button>
           </div>
-        </section>
-      </form>
-    </main>
+        </div>
+      </section>
+    </form>
   );
 }

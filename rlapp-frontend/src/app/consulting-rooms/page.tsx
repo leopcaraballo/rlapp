@@ -52,7 +52,7 @@ export default function ConsultingRoomsPage() {
   }
 
   return (
-    <main className={sharedStyles.dashboardContainer}>
+    <main className={`${sharedStyles.dashboardContainer} ${sharedStyles.contentConstrained}`}>
       <header className={sharedStyles.stickyHeader}>
         <h1 className={sharedStyles.title}>Gestión de Consultorios</h1>
         <p className={sharedStyles.subtitle}>

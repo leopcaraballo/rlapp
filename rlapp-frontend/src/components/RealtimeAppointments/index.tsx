@@ -22,6 +22,8 @@ type Props = {
   demoQueueId?: string | null;
   /** ID de la cola que se debe observar en tiempo real (polling REST). */
   queueId?: string;
+  /** Si es true, el contenedor ocupa el 100% del ancho. Si es false, se restringe al 70%. */
+  fullWidth?: boolean;
 };
 
 export default function RealtimeAppointments({
@@ -30,6 +32,7 @@ export default function RealtimeAppointments({
   title = "Turnos Disponibles",
   demoQueueId = null,
   queueId = process.env.NEXT_PUBLIC_DEFAULT_QUEUE_ID || "QUEUE-01",
+  fullWidth = true,
 }: Props) {
   const [audioEnabled, setAudioEnabled] = useState(() => audioService.isEnabled());
   const [showToast, setShowToast] = useState<string | null>(null);
@@ -88,8 +91,11 @@ export default function RealtimeAppointments({
     .sort((a, b) => b.timestamp - a.timestamp);
 
   if (layout === "container") {
+    const containerClass = fullWidth
+      ? styles.dashboardContainer
+      : `${styles.dashboardContainer} ${styles.contentConstrained}`;
     return (
-      <main className={styles.dashboardContainer}>
+      <main className={containerClass}>
         <header className={styles.stickyHeader}>
           <h1 className={styles.title}>{title}</h1>
             <WebSocketStatus status={connectionStatus as ConnectionStatus} variant="block" />

@@ -93,107 +93,114 @@ export default function ReceptionPage() {
 
   return (
     <main className={styles.splitLayout}>
-      {/* Panel izquierdo: Formulario de check-in */}
-      <section className={styles.formPanel}>
-        <h2 className={styles.panelTitle}>Recepción — Check-in</h2>
-        <form onSubmit={handleSubmit(onSubmit)} className={styles.form} noValidate>
-          <div className={styles.formGroup}>
-            <label className={styles.label} htmlFor="patientName">Nombre del paciente</label>
-            <input
-              id="patientName"
-              className={styles.input}
-              aria-invalid={!!errors.patientName}
-              placeholder="Ej. María García"
-              {...register("patientName")}
-            />
-            {errors.patientName && <div className={styles.fieldError} role="alert">{errors.patientName.message}</div>}
-          </div>
-
-          <div className={styles.formRow}>
-            <div className={styles.formGroup}>
-              <label className={styles.label} htmlFor="queueId">Cola</label>
-              <input id="queueId" className={styles.input} placeholder="ej. QUEUE-01" {...register("queueId")} />
-              {errors.queueId && <div className={styles.fieldError} role="alert">{errors.queueId.message}</div>}
+      {/* Panel izquierdo: Estado de la cola */}
+      <section className={styles.statusPanel}>
+        <header className={styles.panelHeader}>
+          <h2 className={styles.panelTitle}>Estado de la cola</h2>
+          <span className={styles.queueBadge}>{watchedQueueId}</span>
+        </header>
+        <div className={styles.panelBody}>
+          {queueState && (
+            <div className={styles.statsGrid}>
+              <div className={styles.statCard}>
+                <span className={styles.statValue}>{queueState.currentCount}</span>
+                <span className={styles.statLabel}>En espera</span>
+              </div>
+              <div className={styles.statCard}>
+                <span className={styles.statValue}>{queueState.maxCapacity}</span>
+                <span className={styles.statLabel}>Capacidad</span>
+              </div>
+              <div className={styles.statCard}>
+                <span className={styles.statValue}>{queueState.availableSpots}</span>
+                <span className={styles.statLabel}>Disponibles</span>
+              </div>
             </div>
-            <div className={styles.formGroup}>
-              <label className={styles.label} htmlFor="priority">Prioridad</label>
-              <select id="priority" className={styles.input} {...register("priority")}>
-                {VALID_PRIORITIES.map((p) => <option key={p} value={p}>{PRIORITY_LABELS[p]}</option>)}
-              </select>
+          )}
+
+          {patients.length === 0 ? (
+            <div className={styles.emptyState}>
+              <span className={styles.emptyIcon}>🪑</span>
+              <p>No hay pacientes en la cola.</p>
             </div>
-          </div>
-
-          <div className={styles.formRow}>
-            <div className={styles.formGroup}>
-              <label className={styles.label} htmlFor="consultationType">Tipo de consulta</label>
-              <select id="consultationType" className={styles.input} {...register("consultationType")}>
-                {CONSULTATION_TYPES.map((ct) => <option key={ct} value={ct}>{CONSULTATION_TYPE_LABELS[ct]}</option>)}
-              </select>
-            </div>
-            <div className={styles.formGroup}>
-              <label className={styles.label} htmlFor="age">Edad (opcional)</label>
-              <input id="age" type="number" min={0} max={120} className={styles.input} placeholder="Ej. 35" {...register("age", { valueAsNumber: true })} />
-            </div>
-          </div>
-
-          <div className={styles.formGroup}>
-            <label className={styles.checkboxLabel}>
-              <input type="checkbox" {...register("isPregnant")} />
-              Paciente embarazada
-            </label>
-          </div>
-
-          <div className={styles.formGroup}>
-            <label className={styles.label} htmlFor="notes">Notas (opcional)</label>
-            <input id="notes" className={styles.input} placeholder="Observaciones adicionales" {...register("notes")} />
-          </div>
-
-          <button type="submit" disabled={submitting} className={styles.submitBtn}>
-            {submitting ? "Enviando..." : "Registrar check-in"}
-          </button>
-        </form>
+          ) : (
+            <ul className={styles.patientList}>
+              {patients.map((p) => (
+                <li key={p.patientId} className={styles.patientItem}>
+                  <div className={styles.patientInfo}>
+                    <span className={styles.patientName}>{p.patientName}</span>
+                    <span className={styles.patientId}>{p.patientId}</span>
+                  </div>
+                  <span className={styles.waitTime}>{p.waitTimeMinutes} min</span>
+                </li>
+              ))}
+            </ul>
+          )}
+        </div>
       </section>
 
-      {/* Panel derecho: Estado de la cola */}
-      <section className={styles.statusPanel}>
-        <h2 className={styles.panelTitle}>Estado de la cola</h2>
-        <p className={styles.queueLabel}>Cola: <strong>{watchedQueueId}</strong></p>
+      {/* Panel derecho: Formulario de check-in */}
+      <section className={styles.formPanel}>
+        <header className={styles.panelHeader}>
+          <h2 className={styles.panelTitle}>Recepción — Check-in</h2>
+        </header>
+        <div className={styles.panelBody}>
+          <form onSubmit={handleSubmit(onSubmit)} className={styles.form} noValidate>
+            <div className={styles.formGroup}>
+              <label className={styles.label} htmlFor="patientName">Nombre del paciente</label>
+              <input
+                id="patientName"
+                className={styles.input}
+                aria-invalid={!!errors.patientName}
+                placeholder="Ej. María García"
+                {...register("patientName")}
+              />
+              {errors.patientName && <div className={styles.fieldError} role="alert">{errors.patientName.message}</div>}
+            </div>
 
-        {queueState && (
-          <div className={styles.statsGrid}>
-            <div className={styles.statCard}>
-              <span className={styles.statValue}>{queueState.currentCount}</span>
-              <span className={styles.statLabel}>En espera</span>
+            <div className={styles.formRow}>
+              <div className={styles.formGroup}>
+                <label className={styles.label} htmlFor="queueId">Cola</label>
+                <input id="queueId" className={styles.input} placeholder="ej. QUEUE-01" {...register("queueId")} />
+                {errors.queueId && <div className={styles.fieldError} role="alert">{errors.queueId.message}</div>}
+              </div>
+              <div className={styles.formGroup}>
+                <label className={styles.label} htmlFor="priority">Prioridad</label>
+                <select id="priority" className={styles.input} {...register("priority")}>
+                  {VALID_PRIORITIES.map((p) => <option key={p} value={p}>{PRIORITY_LABELS[p]}</option>)}
+                </select>
+              </div>
             </div>
-            <div className={styles.statCard}>
-              <span className={styles.statValue}>{queueState.maxCapacity}</span>
-              <span className={styles.statLabel}>Capacidad</span>
-            </div>
-            <div className={styles.statCard}>
-              <span className={styles.statValue}>{queueState.availableSpots}</span>
-              <span className={styles.statLabel}>Disponibles</span>
-            </div>
-          </div>
-        )}
 
-        {patients.length === 0 ? (
-          <div className={styles.emptyState}>
-            <span className={styles.emptyIcon}>🪑</span>
-            <p>No hay pacientes en la cola.</p>
-          </div>
-        ) : (
-          <ul className={styles.patientList}>
-            {patients.map((p) => (
-              <li key={p.patientId} className={styles.patientItem}>
-                <div className={styles.patientInfo}>
-                  <span className={styles.patientName}>{p.patientName}</span>
-                  <span className={styles.patientId}>{p.patientId}</span>
-                </div>
-                <span className={styles.waitTime}>{p.waitTimeMinutes} min</span>
-              </li>
-            ))}
-          </ul>
-        )}
+            <div className={styles.formRow}>
+              <div className={styles.formGroup}>
+                <label className={styles.label} htmlFor="consultationType">Tipo de consulta</label>
+                <select id="consultationType" className={styles.input} {...register("consultationType")}>
+                  {CONSULTATION_TYPES.map((ct) => <option key={ct} value={ct}>{CONSULTATION_TYPE_LABELS[ct]}</option>)}
+                </select>
+              </div>
+              <div className={styles.formGroup}>
+                <label className={styles.label} htmlFor="age">Edad (opcional)</label>
+                <input id="age" type="number" min={0} max={120} className={styles.input} placeholder="Ej. 35" {...register("age", { valueAsNumber: true })} />
+              </div>
+            </div>
+
+            <div className={styles.formGroup}>
+              <label className={styles.checkboxLabel}>
+                <input type="checkbox" {...register("isPregnant")} />
+                Paciente embarazada
+              </label>
+            </div>
+
+            <div className={styles.formGroup}>
+              <label className={styles.label} htmlFor="notes">Notas (opcional)</label>
+              <input id="notes" className={styles.input} placeholder="Observaciones adicionales" {...register("notes")} />
+            </div>
+
+            <button type="submit" disabled={submitting} className={styles.submitBtn}>
+              {submitting ? "Enviando..." : "Registrar check-in"}
+            </button>
+          </form>
+        </div>
       </section>
     </main>
   );

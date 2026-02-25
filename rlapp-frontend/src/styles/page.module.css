@@ -67,6 +67,13 @@
   gap: 32px;
 }
 
+/* Restricción de ancho al 70% para páginas internas */
+.contentConstrained {
+  width: 70%;
+  margin-left: auto;
+  margin-right: auto;
+}
+
 /* Sticky header para título y status */
 .stickyHeader {
   position: sticky;

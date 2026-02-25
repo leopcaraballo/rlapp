@@ -1,5 +1,6 @@
 /* ==========================================
    CAJA — Layout dividido: lista + acciones
+   Colores hardcodeados para compatibilidad dark mode
    ========================================== */
 
 /* ── Layout principal ── */
@@ -9,14 +10,16 @@
   gap: 0;
   padding-top: var(--topnav-height, 64px);
   min-height: 100vh;
+  width: 70%;
+  margin: 0 auto;
 }
 
 /* ═══════════════════════════════════════════
    PANEL IZQUIERDO — Lista de pacientes
    ═══════════════════════════════════════════ */
 .listPanel {
-  background: var(--color-surface);
-  border-right: 1px solid var(--color-border-light);
+  background: #ffffff;
+  border-right: 1px solid #f1f5f9;
   display: flex;
   flex-direction: column;
   overflow: hidden;
@@ -27,14 +30,14 @@
   align-items: center;
   justify-content: space-between;
   padding: 20px 24px;
-  border-bottom: 1px solid var(--color-border-light);
-  background: var(--color-surface-alt);
+  border-bottom: 1px solid #f1f5f9;
+  background: #f8fafc;
 }
 
 .listTitle {
   font-size: 16px;
   font-weight: 700;
-  color: var(--color-text-primary);
+  color: #0b1324;
   display: flex;
   align-items: center;
   gap: 10px;
@@ -51,7 +54,7 @@
   font-size: 12px;
   font-weight: 700;
   color: #fff;
-  background: linear-gradient(135deg, var(--color-blue-500), var(--color-blue-600));
+  background: linear-gradient(135deg, #3b82f6, #2563eb);
   border-radius: 99px;
 }
 
@@ -60,9 +63,9 @@
   font-size: 13px;
   font-weight: 600;
   color: #fff;
-  background: linear-gradient(135deg, var(--color-blue-500), var(--color-blue-600));
+  background: linear-gradient(135deg, #3b82f6, #2563eb);
   border: none;
-  border-radius: var(--radius-sm);
+  border-radius: 8px;
   cursor: pointer;
   transition: opacity 0.15s ease, transform 0.1s ease;
 }
@@ -83,7 +86,7 @@
   align-items: center;
   justify-content: center;
   gap: 12px;
-  color: var(--color-text-tertiary);
+  color: #94a3b8;
   padding: 48px 24px;
 }
 .emptyIcon {
@@ -111,19 +114,19 @@
   padding: 14px 16px;
   background: transparent;
   border: 1px solid transparent;
-  border-radius: var(--radius-md);
+  border-radius: 12px;
   cursor: pointer;
   transition: all 0.15s ease;
   text-align: left;
   font-family: var(--font-stack);
 }
 .patientItem:hover {
-  background: var(--color-surface-alt);
-  border-color: var(--color-border-light);
+  background: #f8fafc;
+  border-color: #f1f5f9;
 }
 .patientItemSelected {
-  background: var(--color-blue-50);
-  border-color: var(--color-blue-200);
+  background: #eff6ff;
+  border-color: #bfdbfe;
   box-shadow: 0 0 0 2px rgba(59, 130, 246, 0.08);
 }
 
@@ -135,11 +138,11 @@
 .patientName {
   font-size: 14px;
   font-weight: 600;
-  color: var(--color-text-primary);
+  color: #0b1324;
 }
 .patientId {
   font-size: 12px;
-  color: var(--color-text-tertiary);
+  color: #94a3b8;
   font-family: monospace;
 }
 
@@ -170,19 +173,19 @@
   border: 1px solid #fed7aa;
 }
 .priorityMedium {
-  background: var(--color-blue-50);
-  color: var(--color-blue-600);
-  border: 1px solid var(--color-blue-200);
+  background: #eff6ff;
+  color: #2563eb;
+  border: 1px solid #bfdbfe;
 }
 .priorityLow {
-  background: var(--color-green-50);
+  background: #f0fdf4;
   color: #16a34a;
   border: 1px solid #bbf7d0;
 }
 
 .waitTime {
   font-size: 12px;
-  color: var(--color-text-tertiary);
+  color: #94a3b8;
   font-weight: 500;
 }
 
@@ -191,7 +194,7 @@
    ═══════════════════════════════════════════ */
 .actionPanel {
   padding: 48px 40px 32px;
-  background: var(--color-surface-alt);
+  background: #f8fafc;
   display: flex;
   flex-direction: column;
   gap: 20px;
@@ -199,16 +202,16 @@
 
 .queueLabel {
   font-size: 13px;
-  color: var(--color-text-tertiary);
+  color: #94a3b8;
   margin: 0;
 }
 
 /* ── Tarjeta de paciente seleccionado ── */
 .selectedCard {
-  background: var(--color-surface);
-  border-radius: var(--radius-lg);
-  box-shadow: var(--shadow-md);
-  border: 1px solid var(--color-border-light);
+  background: #ffffff;
+  border-radius: 16px;
+  box-shadow: 0 4px 16px rgba(15, 23, 42, 0.08);
+  border: 1px solid #f1f5f9;
   padding: 28px 32px;
   display: flex;
   flex-direction: column;
@@ -223,7 +226,7 @@
 .selectedName {
   font-size: 20px;
   font-weight: 700;
-  color: var(--color-text-primary);
+  color: #0b1324;
 }
 
 .selectedDetails {
@@ -231,8 +234,8 @@
   flex-direction: column;
   gap: 12px;
   padding: 16px 0;
-  border-top: 1px solid var(--color-border-light);
-  border-bottom: 1px solid var(--color-border-light);
+  border-top: 1px solid #f1f5f9;
+  border-bottom: 1px solid #f1f5f9;
 }
 .detailRow {
   display: flex;
@@ -242,14 +245,14 @@
 .detailLabel {
   font-size: 12px;
   font-weight: 700;
-  color: var(--color-text-tertiary);
+  color: #94a3b8;
   text-transform: uppercase;
   letter-spacing: 0.5px;
 }
 .detailValue {
   font-size: 14px;
   font-weight: 500;
-  color: var(--color-text-primary);
+  color: #0b1324;
 }
 
 /* ── Botones de acción ── */
@@ -267,7 +270,7 @@
   font-size: 14px;
   font-weight: 600;
   border: none;
-  border-radius: var(--radius-sm);
+  border-radius: 8px;
   cursor: pointer;
   transition: opacity 0.15s ease, transform 0.1s ease;
   font-family: var(--font-stack);
@@ -292,15 +295,15 @@
   color: #fff;
 }
 .btnPending {
-  background: linear-gradient(135deg, var(--color-amber-500), #d97706);
+  background: linear-gradient(135deg, #f59e0b, #d97706);
   color: #fff;
 }
 .btnAbsent {
-  background: linear-gradient(135deg, var(--color-slate-400), #64748b);
+  background: linear-gradient(135deg, #94a3b8, #64748b);
   color: #fff;
 }
 .btnCancel {
-  background: linear-gradient(135deg, var(--color-red-600), #b91c1c);
+  background: linear-gradient(135deg, #dc2626, #b91c1c);
   color: #fff;
 }
 
@@ -312,7 +315,7 @@
   align-items: center;
   justify-content: center;
   gap: 12px;
-  color: var(--color-text-tertiary);
+  color: #94a3b8;
   text-align: center;
   padding: 80px 24px;
 }
@@ -326,10 +329,11 @@
 @media (max-width: 900px) {
   .splitLayout {
     grid-template-columns: 1fr;
+    width: 100%;
   }
   .listPanel {
     border-right: none;
-    border-bottom: 1px solid var(--color-border-light);
+    border-bottom: 1px solid #f1f5f9;
     max-height: 50vh;
   }
 }

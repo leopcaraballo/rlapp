@@ -9,36 +9,55 @@
   gap: 0;
   padding-top: var(--topnav-height, 64px);
   min-height: 100vh;
+  width: 70%;
+  margin: 0 auto;
 }
 
 /* ═══════════════════════════════════════════
    PANEL IZQUIERDO — Estación
    ═══════════════════════════════════════════ */
 .stationPanel {
-  background: var(--color-surface);
-  border-right: 1px solid var(--color-border-light);
-  padding: 40px 28px;
+  background: #ffffff;
+  border-right: 1px solid #f1f5f9;
   display: flex;
   flex-direction: column;
-  gap: 20px;
+  overflow: hidden;
 }
 
 /* ═══════════════════════════════════════════
    PANEL DERECHO — Consulta
    ═══════════════════════════════════════════ */
 .consultPanel {
-  background: var(--color-surface-alt);
-  padding: 40px 48px;
+  background: #f8fafc;
   display: flex;
   flex-direction: column;
-  gap: 20px;
+  overflow: hidden;
+}
+
+/* ── Cabecera de panel (como cashier) ── */
+.panelHeader {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  padding: 20px 24px;
+  border-bottom: 1px solid #f1f5f9;
+  background: #f8fafc;
 }
 
 .panelTitle {
-  font-size: 22px;
+  font-size: 16px;
   font-weight: 700;
-  color: var(--color-text-primary);
+  color: #0b1324;
   margin: 0;
+}
+
+/* ── Cuerpo de panel ── */
+.panelBody {
+  padding: 28px 24px;
+  display: flex;
+  flex-direction: column;
+  gap: 20px;
+  flex: 1;
 }
 
 /* ── Campos de formulario ── */
@@ -51,7 +70,7 @@
 .label {
   font-size: 12px;
   font-weight: 700;
-  color: var(--color-text-secondary);
+  color: #475569;
   text-transform: uppercase;
   letter-spacing: 0.6px;
 }
@@ -61,29 +80,29 @@
   padding: 12px 16px;
   font-size: 15px;
   font-family: var(--font-stack);
-  border-radius: var(--radius-md);
-  border: 1px solid var(--color-border);
-  background: var(--color-surface-alt);
-  color: var(--color-text-primary);
+  border-radius: 12px;
+  border: 1px solid #e2e8f0;
+  background: #f8fafc;
+  color: #0b1324;
   transition: border-color 0.15s ease, box-shadow 0.15s ease, background 0.15s ease;
   -webkit-appearance: none;
   appearance: none;
 }
 .input:focus {
   outline: none;
-  border-color: var(--color-blue-500);
-  background: var(--color-surface);
+  border-color: #3b82f6;
+  background: #ffffff;
   box-shadow: 0 0 0 3px rgba(59, 130, 246, 0.12);
 }
 
 .fieldError {
   font-size: 13px;
-  color: var(--color-red-600);
+  color: #dc2626;
   font-weight: 500;
   padding: 6px 10px;
-  background: var(--color-red-50);
-  border-radius: var(--radius-sm);
-  border-left: 3px solid var(--color-red-600);
+  background: #fee2e2;
+  border-radius: 8px;
+  border-left: 3px solid #dc2626;
 }
 
 /* ── Botones de estación ── */
@@ -112,9 +131,9 @@
   padding: 12px 20px;
   font-size: 14px;
   font-weight: 600;
-  color: #fff;
+  color: #ffffff;
   border: none;
-  border-radius: var(--radius-sm);
+  border-radius: 8px;
   cursor: pointer;
   transition: opacity 0.15s ease, transform 0.1s ease;
   font-family: var(--font-stack);
@@ -139,23 +158,23 @@
 }
 
 .btnCallNext {
-  background: linear-gradient(135deg, var(--color-blue-500), var(--color-blue-600));
+  background: linear-gradient(135deg, #3b82f6, #2563eb);
 }
 .btnActivate {
   background: linear-gradient(135deg, #22c55e, #16a34a);
 }
 .btnDeactivate {
-  background: linear-gradient(135deg, var(--color-red-600), #b91c1c);
+  background: linear-gradient(135deg, #dc2626, #b91c1c);
 }
 .btnStart {
-  background: linear-gradient(135deg, var(--color-blue-500), var(--color-blue-600));
+  background: linear-gradient(135deg, #3b82f6, #2563eb);
   grid-column: 1 / -1;
 }
 .btnFinish {
   background: linear-gradient(135deg, #22c55e, #16a34a);
 }
 .btnAbsent {
-  background: linear-gradient(135deg, var(--color-slate-400), #64748b);
+  background: linear-gradient(135deg, #94a3b8, #64748b);
 }
 
 /* ═══════════════════════════════════════════
@@ -164,10 +183,11 @@
 @media (max-width: 900px) {
   .splitLayout {
     grid-template-columns: 1fr;
+    width: 100%;
   }
   .stationPanel {
     border-right: none;
-    border-bottom: 1px solid var(--color-border-light);
+    border-bottom: 1px solid #f1f5f9;
   }
   .consultActions {
     grid-template-columns: 1fr;
