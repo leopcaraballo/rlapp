@@ -21,7 +21,7 @@ export default function RecentHistory({ history }: Props) {
     <div className={styles.infoCard}>
       <span className={styles.cardHeading}>Historial reciente</span>
       <ol className={styles.historyList}>
-        {history.slice(0, 8).map(h => (
+        {history.map(h => (
           <li key={`${h.queueId}-${h.patientId}`} className={styles.historyItem}>
             <div className={styles.historyName}>{h.patientName}</div>
             <div className={styles.historyDate}>{new Date(h.completedAt).toLocaleString()}</div>

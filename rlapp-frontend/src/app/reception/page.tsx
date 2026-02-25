@@ -76,7 +76,7 @@ export default function ReceptionPage() {
         notes: data.notes ?? null,
         actor: "reception",
       });
-      router.push(`/waiting-room/${data.queueId}`);
+      router.push('/dashboard');
     } catch (e: unknown) {
       const msg = e instanceof Error ? e.message : String(e);
       alert.showError(msg ?? "Error al registrar check-in");

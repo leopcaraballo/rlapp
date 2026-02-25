@@ -1,117 +1,335 @@
 /* ==========================================
-   FORM PAGE — Guía de estilos compartida
-   Recepción · Caja · Médico
+   CAJA — Layout dividido: lista + acciones
    ========================================== */
 
-/* ── Wrapper de la página ── */
-.container {
-  max-width: 760px;
-  margin: 0 auto;
-  padding: 48px 24px 72px;
+/* ── Layout principal ── */
+.splitLayout {
+  display: grid;
+  grid-template-columns: 420px 1fr;
+  gap: 0;
+  padding-top: var(--topnav-height, 64px);
+  min-height: 100vh;
 }
 
-/* ── Tarjeta contenedora ── */
-.card {
+/* ═══════════════════════════════════════════
+   PANEL IZQUIERDO — Lista de pacientes
+   ═══════════════════════════════════════════ */
+.listPanel {
+  background: var(--color-surface);
+  border-right: 1px solid var(--color-border-light);
+  display: flex;
+  flex-direction: column;
+  overflow: hidden;
+}
+
+.listHeader {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  padding: 20px 24px;
+  border-bottom: 1px solid var(--color-border-light);
+  background: var(--color-surface-alt);
+}
+
+.listTitle {
+  font-size: 16px;
+  font-weight: 700;
+  color: var(--color-text-primary);
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  margin: 0;
+}
+
+.countBadge {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  min-width: 26px;
+  height: 26px;
+  padding: 0 8px;
+  font-size: 12px;
+  font-weight: 700;
+  color: #fff;
+  background: linear-gradient(135deg, var(--color-blue-500), var(--color-blue-600));
+  border-radius: 99px;
+}
+
+.callNextBtn {
+  padding: 8px 18px;
+  font-size: 13px;
+  font-weight: 600;
+  color: #fff;
+  background: linear-gradient(135deg, var(--color-blue-500), var(--color-blue-600));
+  border: none;
+  border-radius: var(--radius-sm);
+  cursor: pointer;
+  transition: opacity 0.15s ease, transform 0.1s ease;
+}
+.callNextBtn:hover:not(:disabled) {
+  opacity: 0.9;
+  transform: translateY(-1px);
+}
+.callNextBtn:disabled {
+  opacity: 0.5;
+  cursor: not-allowed;
+}
+
+/* ── Estado vacío ── */
+.emptyState {
+  flex: 1;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+  gap: 12px;
+  color: var(--color-text-tertiary);
+  padding: 48px 24px;
+}
+.emptyIcon {
+  font-size: 48px;
+}
+
+/* ── Lista scrolleable ── */
+.patientList {
+  list-style: none;
+  margin: 0;
+  padding: 8px;
+  overflow-y: auto;
+  flex: 1;
+  display: flex;
+  flex-direction: column;
+  gap: 4px;
+}
+
+/* ── Cada paciente ── */
+.patientItem {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  width: 100%;
+  padding: 14px 16px;
+  background: transparent;
+  border: 1px solid transparent;
+  border-radius: var(--radius-md);
+  cursor: pointer;
+  transition: all 0.15s ease;
+  text-align: left;
+  font-family: var(--font-stack);
+}
+.patientItem:hover {
+  background: var(--color-surface-alt);
+  border-color: var(--color-border-light);
+}
+.patientItemSelected {
+  background: var(--color-blue-50);
+  border-color: var(--color-blue-200);
+  box-shadow: 0 0 0 2px rgba(59, 130, 246, 0.08);
+}
+
+.patientInfo {
+  display: flex;
+  flex-direction: column;
+  gap: 2px;
+}
+.patientName {
+  font-size: 14px;
+  font-weight: 600;
+  color: var(--color-text-primary);
+}
+.patientId {
+  font-size: 12px;
+  color: var(--color-text-tertiary);
+  font-family: monospace;
+}
+
+.patientMeta {
+  display: flex;
+  flex-direction: column;
+  align-items: flex-end;
+  gap: 4px;
+}
+
+/* ── Badges de prioridad ── */
+.priorityBadge {
+  font-size: 11px;
+  font-weight: 700;
+  padding: 2px 10px;
+  border-radius: 99px;
+  text-transform: uppercase;
+  letter-spacing: 0.5px;
+}
+.priorityUrgent {
+  background: #fef2f2;
+  color: #dc2626;
+  border: 1px solid #fecaca;
+}
+.priorityHigh {
+  background: #fff7ed;
+  color: #ea580c;
+  border: 1px solid #fed7aa;
+}
+.priorityMedium {
+  background: var(--color-blue-50);
+  color: var(--color-blue-600);
+  border: 1px solid var(--color-blue-200);
+}
+.priorityLow {
+  background: var(--color-green-50);
+  color: #16a34a;
+  border: 1px solid #bbf7d0;
+}
+
+.waitTime {
+  font-size: 12px;
+  color: var(--color-text-tertiary);
+  font-weight: 500;
+}
+
+/* ═══════════════════════════════════════════
+   PANEL DERECHO — Acciones
+   ═══════════════════════════════════════════ */
+.actionPanel {
+  padding: 48px 40px 32px;
+  background: var(--color-surface-alt);
+  display: flex;
+  flex-direction: column;
+  gap: 20px;
+}
+
+.queueLabel {
+  font-size: 13px;
+  color: var(--color-text-tertiary);
+  margin: 0;
+}
+
+/* ── Tarjeta de paciente seleccionado ── */
+.selectedCard {
   background: var(--color-surface);
   border-radius: var(--radius-lg);
   box-shadow: var(--shadow-md);
   border: 1px solid var(--color-border-light);
-  padding: 36px 40px;
-}
-
-/* ── Formulario ── */
-.form {
+  padding: 28px 32px;
   display: flex;
   flex-direction: column;
-  gap: 20px;
-  margin-top: 28px;
+  gap: 24px;
 }
 
-/* ── Grupo de campo (label + input) ── */
-.formGroup {
+.selectedHeader {
   display: flex;
-  flex-direction: column;
-  gap: 6px;
+  align-items: center;
+  justify-content: space-between;
 }
-
-.label {
-  font-size: 12px;
+.selectedName {
+  font-size: 20px;
   font-weight: 700;
-  color: var(--color-text-secondary);
-  text-transform: uppercase;
-  letter-spacing: 0.6px;
-}
-
-.input {
-  width: 100%;
-  padding: 12px 16px;
-  font-size: 15px;
-  font-family: var(--font-stack);
-  border-radius: var(--radius-md);
-  border: 1px solid var(--color-border);
-  background: var(--color-surface-alt);
   color: var(--color-text-primary);
-  transition:
-    border-color 0.15s ease,
-    box-shadow 0.15s ease,
-    background 0.15s ease;
-  -webkit-appearance: none;
-  appearance: none;
 }
 
-.input:focus {
-  outline: none;
-  border-color: var(--color-blue-500);
-  background: var(--color-surface);
-  box-shadow: 0 0 0 3px rgba(59, 130, 246, 0.12);
+.selectedDetails {
+  display: flex;
+  flex-direction: column;
+  gap: 12px;
+  padding: 16px 0;
+  border-top: 1px solid var(--color-border-light);
+  border-bottom: 1px solid var(--color-border-light);
 }
-
-.input[aria-invalid="true"] {
-  border-color: var(--color-red-600);
-  background: var(--color-red-50);
-  box-shadow: 0 0 0 3px rgba(220, 38, 38, 0.08);
+.detailRow {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
 }
-
-/* ── Error de campo ── */
-.fieldError {
-  font-size: 13px;
-  color: var(--color-red-600);
-  font-weight: 500;
-  padding: 6px 10px;
-  background: var(--color-red-50);
-  border-radius: var(--radius-sm);
-  border-left: 3px solid var(--color-red-600);
-}
-
-/* ── Separador de sección ── */
-.sectionDivider {
-  font-size: 11px;
+.detailLabel {
+  font-size: 12px;
   font-weight: 700;
   color: var(--color-text-tertiary);
   text-transform: uppercase;
-  letter-spacing: 0.8px;
-  border-bottom: 1px solid var(--color-border-light);
-  padding-bottom: 10px;
-  margin-bottom: 0;
+  letter-spacing: 0.5px;
+}
+.detailValue {
+  font-size: 14px;
+  font-weight: 500;
+  color: var(--color-text-primary);
 }
 
-/* ── Fila de botones ── */
-.row {
-  display: flex;
+/* ── Botones de acción ── */
+.actionButtons {
+  display: grid;
+  grid-template-columns: 1fr 1fr;
   gap: 10px;
-  flex-wrap: wrap;
-  margin-top: 4px;
 }
 
-/* ── Botones — fuente única en styles/buttons.module.css ── */
-.btn       { composes: btn from '../../styles/buttons.module.css'; }
-.btnPrimary   { composes: btnPrimary from '../../styles/buttons.module.css'; }
-.btnSecondary { composes: btnSecondary from '../../styles/buttons.module.css'; }
-.btnWarning   { composes: btnWarning from '../../styles/buttons.module.css'; }
-.btnDanger    { composes: btnDanger from '../../styles/buttons.module.css'; }
+.btnValidate,
+.btnPending,
+.btnAbsent,
+.btnCancel {
+  padding: 12px 18px;
+  font-size: 14px;
+  font-weight: 600;
+  border: none;
+  border-radius: var(--radius-sm);
+  cursor: pointer;
+  transition: opacity 0.15s ease, transform 0.1s ease;
+  font-family: var(--font-stack);
+}
+.btnValidate:hover:not(:disabled),
+.btnPending:hover:not(:disabled),
+.btnAbsent:hover:not(:disabled),
+.btnCancel:hover:not(:disabled) {
+  opacity: 0.9;
+  transform: translateY(-1px);
+}
+.btnValidate:disabled,
+.btnPending:disabled,
+.btnAbsent:disabled,
+.btnCancel:disabled {
+  opacity: 0.5;
+  cursor: not-allowed;
+}
 
-/* ── Responsive ── */
-@media (max-width: 640px) {
-  .container { padding: 28px 16px 60px; }
-  .card      { padding: 24px 20px; }
+.btnValidate {
+  background: linear-gradient(135deg, #22c55e, #16a34a);
+  color: #fff;
+}
+.btnPending {
+  background: linear-gradient(135deg, var(--color-amber-500), #d97706);
+  color: #fff;
+}
+.btnAbsent {
+  background: linear-gradient(135deg, var(--color-slate-400), #64748b);
+  color: #fff;
+}
+.btnCancel {
+  background: linear-gradient(135deg, var(--color-red-600), #b91c1c);
+  color: #fff;
+}
+
+/* ── Estado sin selección ── */
+.noSelection {
+  flex: 1;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+  gap: 12px;
+  color: var(--color-text-tertiary);
+  text-align: center;
+  padding: 80px 24px;
+}
+.noSelectionIcon {
+  font-size: 48px;
+}
+
+/* ═══════════════════════════════════════════
+   RESPONSIVE
+   ═══════════════════════════════════════════ */
+@media (max-width: 900px) {
+  .splitLayout {
+    grid-template-columns: 1fr;
+  }
+  .listPanel {
+    border-right: none;
+    border-bottom: 1px solid var(--color-border-light);
+    max-height: 50vh;
+  }
 }

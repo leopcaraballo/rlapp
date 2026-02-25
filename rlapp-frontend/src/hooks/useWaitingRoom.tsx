@@ -48,7 +48,7 @@ export function useWaitingRoom(queueId: string, refreshInterval = 5000) {
         getMonitor(queueId),
         getQueueState(queueId),
         getNextTurn(queueId),
-        getRecentHistory(queueId, 10),
+        getRecentHistory(queueId, 100),
       ]);
       if (!mounted.current) return;
 

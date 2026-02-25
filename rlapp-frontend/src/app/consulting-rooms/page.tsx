@@ -67,7 +67,12 @@ export default function ConsultingRoomsPage() {
               key={room.stationId}
               className={room.active ? styles.cardActive : styles.cardInactive}
             >
+              <div className={room.active ? styles.roomIconActive : styles.roomIconInactive}>
+                {room.active ? "🩺" : "🚪"}
+              </div>
+
               <h3 className={styles.roomId}>{room.stationId}</h3>
+              <span className={styles.roomLabel}>Consultorio médico</span>
 
               <span
                 className={

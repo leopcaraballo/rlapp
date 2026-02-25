@@ -82,7 +82,7 @@ function buildAppointments(
   }
 
   // --- Historial reciente (completados) ---
-  for (const h of history.slice(0, 10)) {
+  for (const h of history) {
     // Evitar duplicados (IDs repetidos por reintentos)
     const compositeId = `${h.patientId}-${h.completedAt}`;
     if (result.some((a) => a.id === compositeId)) continue;

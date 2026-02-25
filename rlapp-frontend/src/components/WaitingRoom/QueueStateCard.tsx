@@ -30,7 +30,7 @@ export default function QueueStateCard({ queueState }: Props) {
       <div>
         <div className={styles.subHeading}>Pacientes próximos</div>
         <div className={styles.patientList}>
-          {queueState.patientsInQueue.slice(0, 6).map(p => (
+          {queueState.patientsInQueue.map(p => (
             <div key={p.patientId} className={styles.patientItem}>
               <div className={styles.patientName}>{p.patientName}</div>
               <div className={styles.patientMeta}>{p.priority} · {p.waitTimeMinutes} min</div>
