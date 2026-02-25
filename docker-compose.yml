@@ -39,12 +39,15 @@ services:
       RABBITMQ_DEFAULT_USER: guest
       RABBITMQ_DEFAULT_PASS: guest
       RABBITMQ_DEFAULT_VHOST: "/"
+      RABBITMQ_ENABLED_PLUGINS_FILE: /etc/rabbitmq/enabled_plugins
     ports:
       - "5672:5672"
       - "15672:15672"
+      - "15692:15692"
     volumes:
       - rabbitmq_data:/var/lib/rabbitmq
       - ./rlapp-backend/infrastructure/rabbitmq/rabbitmq.conf:/etc/rabbitmq/rabbitmq.conf:ro
+      - ./rlapp-backend/infrastructure/rabbitmq/enabled_plugins:/etc/rabbitmq/enabled_plugins:ro
       - ./rlapp-backend/infrastructure/rabbitmq/init-rabbitmq.sh:/docker-entrypoint-initdb.d/init-rabbitmq.sh:ro
     healthcheck:
       test: rabbitmq-diagnostics -q ping
@@ -255,6 +258,22 @@ services:
       - rlapp-network
     depends_on:
       - postgres
+
+  # ---------------------------------------------------------------------------
+  # PostgreSQL Exporter — Metricas de PostgreSQL para Prometheus
+  # ---------------------------------------------------------------------------
+  postgres_exporter:
+    image: prometheuscommunity/postgres-exporter:latest
+    container_name: rlapp-postgres-exporter
+    environment:
+      DATA_SOURCE_NAME: "postgresql://rlapp:rlapp_secure_password@postgres:5432/rlapp_waitingroom?sslmode=disable"
+    ports:
+      - "9187:9187"
+    depends_on:
+      postgres:
+        condition: service_healthy
+    networks:
+      - rlapp-network
 
 networks:
   rlapp-network:
