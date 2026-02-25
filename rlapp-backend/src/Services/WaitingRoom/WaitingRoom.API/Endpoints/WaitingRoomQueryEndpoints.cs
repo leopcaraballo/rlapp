@@ -242,6 +242,8 @@ public static class WaitingRoomQueryEndpoints
     private static async Task<IResult> RebuildProjectionAsync(
         string queueId,
         IProjection projection,
+        IHostApplicationLifetime hostApplicationLifetime,
+        ILoggerFactory loggerFactory,
         CancellationToken cancellationToken)
     {
         if (string.IsNullOrWhiteSpace(queueId))
@@ -253,11 +255,19 @@ public static class WaitingRoomQueryEndpoints
 
         try
         {
-            // Fire off async rebuild (don't await)
-            // In real app, would use background service/queue
-            _ = Task.Run(
-                async () => await projection.RebuildAsync(cancellationToken),
-                cancellationToken);
+            var logger = loggerFactory.CreateLogger("WaitingRoomQueryEndpoints");
+
+            _ = Task.Run(async () =>
+            {
+                try
+                {
+                    await projection.RebuildAsync(hostApplicationLifetime.ApplicationStopping);
+                }
+                catch (Exception ex)
+                {
+                    logger.LogError(ex, "Projection rebuild failed for queue {QueueId}", queueId);
+                }
+            }, hostApplicationLifetime.ApplicationStopping);
 
             return Results.Accepted(
                 $"/api/v1/waiting-room/{queueId}/monitor",

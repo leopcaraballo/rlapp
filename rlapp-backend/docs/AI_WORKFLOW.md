@@ -75,3 +75,34 @@ Este documento registra la colaboracion humano-IA para el backend. Es evidencia 
 - Evidencia: docker compose up --force-recreate pgadmin, curl <http://127.0.0.1:5050/misc/ping>
 - Observaciones: Se utilizo <admin@rlapp.com> para evitar dominio reservado.
 - Estado: Done
+
+### 2026-02-25
+
+- Tipo: Ejecucion
+- Actor: IA
+- Solicitud: Fase 2 del backend con precondicion de Docker operativo
+- Resultado: Se levanto stack Docker, se verifico salud y se ejecuto Fase 2 tecnica en backend
+- Archivos: rlapp-backend/src/Services/WaitingRoom/**, rlapp-backend/src/Tests/WaitingRoom.Tests.Integration/**, rlapp-backend/docs/**
+- Commits: N/A
+- Evidencia: docker compose up -d, docker compose ps, dotnet test RLAPP.slnx (96/96)
+- Estado: Done
+
+### 2026-02-25
+
+- Tipo: Arquitectura
+- Actor: IA
+- Solicitud: Reducir acoplamiento en adapter HTTP y fortalecer validacion de borde
+- Resultado: Se extrajo reproyeccion repetida a helper comun en API y se aplico filtro transversal de validacion para DTOs con DataAnnotations
+- Archivos: rlapp-backend/src/Services/WaitingRoom/WaitingRoom.API/Program.cs, rlapp-backend/src/Services/WaitingRoom/WaitingRoom.API/Validation/RequestValidationFilter.cs, rlapp-backend/src/Services/WaitingRoom/WaitingRoom.Application/DTOs/*.cs
+- Commits: N/A
+- Estado: Done
+
+### 2026-02-25
+
+- Tipo: Seguridad y robustez
+- Actor: IA
+- Solicitud: Endurecer configuracion y mejorar ejecucion asincrona de rebuild
+- Resultado: Se removieron secretos hardcodeados de appsettings de API/Worker y se desacoplo el rebuild de proyeccion del token HTTP, con logging de error explicito
+- Archivos: rlapp-backend/src/Services/WaitingRoom/WaitingRoom.API/appsettings.json, rlapp-backend/src/Services/WaitingRoom/WaitingRoom.API/appsettings.Development.json, rlapp-backend/src/Services/WaitingRoom/WaitingRoom.Worker/appsettings.json, rlapp-backend/src/Services/WaitingRoom/WaitingRoom.API/Endpoints/WaitingRoomQueryEndpoints.cs
+- Commits: N/A
+- Estado: Done
