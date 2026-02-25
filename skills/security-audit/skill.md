@@ -1,12 +1,7 @@
 ---
 name: "security-audit"
 description: "Offensive and defensive security auditing, vulnerability analysis (OWASP), infrastructure hardening, and secrets management."
-trigger: "When feedback mentions security, vulnerabilities, audit, authentication, authorization, OWASP, secrets, certificates, encryption, or pen-testing."
-scope: "backend/producer/src/, backend/consumer/src/, frontend/src/, docker-compose.yml, .env.example"
-author: "Orchestrator Team"
-version: "1.0.0 (Elite Grade)"
 license: "MIT"
-autoinvoke: true
 ---
 
 # Skill: Security Audit (Elite Grade)

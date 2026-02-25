@@ -1,5 +1,6 @@
 "use client";
 import React from "react";
+
 import type { NextTurnView } from "../../services/api/types";
 
 type Props = { nextTurn: NextTurnView | null };

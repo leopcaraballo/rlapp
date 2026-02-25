@@ -1,5 +1,6 @@
 "use client";
 import React from "react";
+
 import type { QueueStateView } from "../../services/api/types";
 
 type Props = { queueState: QueueStateView | null };

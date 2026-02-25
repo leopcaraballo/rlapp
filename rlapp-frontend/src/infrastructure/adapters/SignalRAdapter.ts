@@ -1,10 +1,11 @@
-import { HubConnectionBuilder, LogLevel, HttpTransportType } from "@microsoft/signalr";
-import { RealTimePort } from "@/domain/ports/RealTimePort";
-import { Appointment } from "@/domain/Appointment";
+import { HttpTransportType, HubConnection, HubConnectionBuilder, LogLevel } from "@microsoft/signalr";
+
 import { env } from "@/config/env";
+import { Appointment } from "@/domain/Appointment";
+import { RealTimePort } from "@/domain/ports/RealTimePort";
 
 export class SignalRAdapter implements RealTimePort {
-  private connection: any = null;
+  private connection: HubConnection | null = null;
   private connected = false;
 
   private snapshotCb: ((a: Appointment[]) => void) | null = null;
@@ -33,10 +34,11 @@ export class SignalRAdapter implements RealTimePort {
       this.updateCb?.(payload?.data as Appointment);
     });
 
-    this.connection.onclose((err: any) => {
+    this.connection.onclose((err?: unknown) => {
       this.connected = false;
       this.onDisconnectCb?.();
-      if (err) this.onErrorCb?.(err as Error);
+      if (err instanceof Error) this.onErrorCb?.(err);
+      else if (err != null) this.onErrorCb?.(new Error(String(err)));
     });
 
     this.connection.onreconnected(() => {
@@ -44,16 +46,18 @@ export class SignalRAdapter implements RealTimePort {
       this.onConnectCb?.();
     });
 
-    this.connection.onreconnecting((err: any) => {
-      this.onErrorCb?.(err as Error);
+    this.connection.onreconnecting((err?: unknown) => {
+      if (err instanceof Error) this.onErrorCb?.(err);
+      else if (err != null) this.onErrorCb?.(new Error(String(err)));
     });
 
     // start connection
     void this.connection.start().then(() => {
       this.connected = true;
       this.onConnectCb?.();
-    }).catch((err: any) => {
-      this.onErrorCb?.(err as Error);
+    }).catch((err?: unknown) => {
+      if (err instanceof Error) this.onErrorCb?.(err);
+      else this.onErrorCb?.(new Error(String(err)));
     });
   }
 

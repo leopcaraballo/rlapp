@@ -5,10 +5,10 @@ export type AppointmentPriority = "high" | "medium" | "low";
 export interface Appointment {
   id: string;
   fullName: string;
-  idCard: number;
+  idCard: string | number;
   office: string | null;
   timestamp: number;
-  completedAt?: number;
+  completedAt?: number | null;
   status: AppointmentStatus;
   priority: AppointmentPriority;
 }

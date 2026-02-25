@@ -1,12 +1,7 @@
 ---
 name: frontend-ui (Senior Level)
 description: High-performance interfaces, accessibility (A11y), and reactive and decoupled state management.
-trigger: When feedback mentions UI components, WebSocket, CSS, styling, pages, dashboard, or frontend behavior.
-scope: frontend/src/
-author: "Orchestrator Team"
-version: "2.0.0 (Senior Grade)"
 license: "MIT"
-autoinvoke: true
 ---
 
 # Skill: Frontend & UI (Senior Grade)

@@ -1,12 +1,7 @@
 ---
 name: backend-api (Senior Level)
 description: Development of high-performance NestJS microservices, message orchestration, and pure domain logic.
-trigger: When feedback mentions services, controllers, DTOs, validation, message queues, ack/nack, or business logic in the backend.
-scope: backend/producer/src/, backend/consumer/src/
-author: "Orchestrator Team"
-version: "2.0.0 (Senior Grade)"
 license: "MIT"
-autoinvoke: true
 ---
 
 # Skill: Backend API (Senior Grade)

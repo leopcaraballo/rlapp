@@ -1,4 +1,5 @@
 import React, { useEffect } from "react";
+
 import { useWaitingRoom } from "../hooks/useWaitingRoom";
 import { connect, disconnect } from "../services/signalr/waitingRoomSignalR";
 
@@ -15,12 +16,12 @@ export default function WaitingRoomDemo({ queueId = "default-queue" }: { queueId
           onMonitor: (payload) => { if (mounted) setMonitor(payload); },
           onQueueState: (payload) => { if (mounted) setQueueState(payload); },
           onNextTurn: (payload) => { if (mounted) setNextTurn(payload); },
-          onAny: (_event, payload) => { /* optionally handle generic payloads */ },
+          onAny: () => {},
         });
 
         // If connection established, request immediate refresh
         if (conn) refresh();
-      } catch (err) {
+      } catch {
         // ignore connection errors; polling will keep data fresh
       }
     })();
