@@ -9,9 +9,8 @@ import { env } from "@/config/env";
 import { useAlert } from "@/context/AlertContext";
 import { useConsultingRooms } from "@/hooks/useConsultingRooms";
 import { useMedicalStation } from "@/hooks/useMedicalStation";
-import sharedStyles from "@/styles/page.module.css";
 
-import localStyles from "./page.module.css";
+import styles from "./page.module.css";
 
 // stationId es requerido: el dominio exige ConsultingRoomId en ClaimNextPatient,
 // ActivateConsultingRoom y DeactivateConsultingRoom.
@@ -83,115 +82,70 @@ export default function MedicalPage() {
   }
 
   return (
-    <main className={`${localStyles.container} ${sharedStyles.dashboardContainer}`}>
-      <div className={localStyles.card}>
-        <h2 className={sharedStyles.title}>Área Médica</h2>
-        <form className={localStyles.form} onSubmit={handleSubmit(onStartConsult)} noValidate>
+    <main>
+      <form className={styles.splitLayout} onSubmit={handleSubmit(onStartConsult)} noValidate>
+        {/* Panel izquierdo: Estación */}
+        <section className={styles.stationPanel}>
+          <h2 className={styles.panelTitle}>Estación Médica</h2>
 
-          <div className={localStyles.formGroup}>
-            <label className={localStyles.label} htmlFor="queueId">Cola</label>
-            <input
-              id="queueId"
-              className={localStyles.input}
-              placeholder="ej. QUEUE-01"
-              {...register("queueId")}
-            />
+          <div className={styles.formGroup}>
+            <label className={styles.label} htmlFor="queueId">Cola</label>
+            <input id="queueId" className={styles.input} placeholder="ej. QUEUE-01" {...register("queueId")} />
+            {errors.queueId && <div className={styles.fieldError} role="alert">{errors.queueId.message}</div>}
           </div>
-          {errors.queueId && (
-            <div className={localStyles.fieldError} role="alert">{errors.queueId.message}</div>
-          )}
 
-          {/* stationId debe ir antes de los botones de cola/estación */}
-          <div className={localStyles.formGroup}>
-            <label className={localStyles.label} htmlFor="stationId">Estación</label>
-            <select id="stationId" className={localStyles.input} {...register("stationId")}>
-              <option value="">-- Seleccionar consultorio --</option>
+          <div className={styles.formGroup}>
+            <label className={styles.label} htmlFor="stationId">Consultorio</label>
+            <select id="stationId" className={styles.input} {...register("stationId")}>
+              <option value="">-- Seleccionar --</option>
               <option value="CONS-01">CONS-01</option>
               <option value="CONS-02">CONS-02</option>
               <option value="CONS-03">CONS-03</option>
               <option value="CONS-04">CONS-04</option>
             </select>
+            {errors.stationId && <div className={styles.fieldError} role="alert">{errors.stationId.message}</div>}
           </div>
-          {errors.stationId && (
-            <div className={localStyles.fieldError} role="alert">{errors.stationId.message}</div>
-          )}
 
-          <div className={localStyles.row}>
-            <button
-              type="button"
-              onClick={handleSubmit(onCallNext)}
-              disabled={busy}
-              className={`${localStyles.btn} ${localStyles.btnSecondary}`}
-            >
+          <div className={styles.stationActions}>
+            <button type="button" onClick={handleSubmit(onCallNext)} disabled={busy} className={styles.btnCallNext}>
               Llamar siguiente
             </button>
-            <button
-              type="button"
-              onClick={handleSubmit(onActivate)}
-              disabled={busy}
-              className={`${localStyles.btn} ${localStyles.btnSecondary}`}
-            >
+            <button type="button" onClick={handleSubmit(onActivate)} disabled={busy} className={styles.btnActivate}>
               Activar estación
             </button>
-            <button
-              type="button"
-              onClick={handleSubmit(onDeactivate)}
-              disabled={busy}
-              className={`${localStyles.btn} ${localStyles.btnDanger}`}
-            >
+            <button type="button" onClick={handleSubmit(onDeactivate)} disabled={busy} className={styles.btnDeactivate}>
               Desactivar estación
             </button>
           </div>
+        </section>
 
-          <div className={localStyles.sectionDivider}>Gestión de consulta</div>
+        {/* Panel derecho: Gestión de consulta */}
+        <section className={styles.consultPanel}>
+          <h2 className={styles.panelTitle}>Gestión de Consulta</h2>
 
-          <div className={localStyles.formGroup}>
-            <label className={localStyles.label} htmlFor="patientId">ID de paciente</label>
-            <input
-              id="patientId"
-              className={localStyles.input}
-              placeholder="Ej. p-1700000000000"
-              {...register("patientId")}
-            />
+          <div className={styles.formGroup}>
+            <label className={styles.label} htmlFor="patientId">ID de paciente</label>
+            <input id="patientId" className={styles.input} placeholder="Ej. p-1700000000000" {...register("patientId")} />
           </div>
 
-          <div className={localStyles.formGroup}>
-            <label className={localStyles.label} htmlFor="outcome">Resultado de la consulta (opcional)</label>
-            <input
-              id="outcome"
-              className={localStyles.input}
-              placeholder="Ej. Diagnóstico, tratamiento indicado..."
-              {...register("outcome")}
-            />
+          <div className={styles.formGroup}>
+            <label className={styles.label} htmlFor="outcome">Resultado (opcional)</label>
+            <input id="outcome" className={styles.input} placeholder="Ej. Diagnóstico, tratamiento..." {...register("outcome")} />
           </div>
 
-          <div className={localStyles.row}>
-            <button
-              type="submit"
-              disabled={busy}
-              className={`${localStyles.btn} ${localStyles.btnPrimary}`}
-            >
+          <div className={styles.consultActions}>
+            <button type="submit" disabled={busy} className={styles.btnStart}>
               Iniciar consulta
             </button>
-            <button
-              type="button"
-              onClick={handleSubmit(onFinishConsult)}
-              disabled={busy}
-              className={`${localStyles.btn} ${localStyles.btnSecondary}`}
-            >
+            <button type="button" onClick={handleSubmit(onFinishConsult)} disabled={busy} className={styles.btnFinish}>
               Finalizar consulta
             </button>
-            <button
-              type="button"
-              onClick={handleSubmit(onMarkAbsent)}
-              disabled={busy}
-              className={`${localStyles.btn} ${localStyles.btnWarning}`}
-            >
+            <button type="button" onClick={handleSubmit(onMarkAbsent)} disabled={busy} className={styles.btnAbsent}>
               Marcar ausente
             </button>
           </div>
-        </form>
-      </div>
+        </section>
+      </form>
     </main>
   );
 }
