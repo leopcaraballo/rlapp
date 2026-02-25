@@ -1,199 +1,118 @@
-# WaitingRoom Operating Model (Definitivo)
+# Operating model
 
-## Objetivo
+## 1. Purpose
 
-Definir el modelo operativo de clínica para producción con flujo estricto, trazabilidad completa y separación por rol.
+Modelo operativo del flujo clinico de sala de espera. Describe las reglas de prioridad, el modelo de colas por fase, los roles con sus permisos de pantalla y el plan de adopcion por fases.
 
-## Principios
+## 2. Context
 
-1. Máquina de estados estricta.
-2. FIFO como regla base.
-3. Prioridad administrativa automática para gestantes, menores y adultos > 65.
-4. Pago obligatorio en taquilla.
-5. Múltiples médicos según consultorios activos.
-6. Pantallas independientes por rol.
-7. Sin pago online.
-8. Sin citas por horario.
-9. Todo cambio de estado debe generar evento auditable.
+El flujo clinico se rige por tres principios fundamentales:
 
-## Prioridad automática
+1. **Prioridad clinica primero.** Todo paciente con prioridad Urgent o High se atiende antes que Medium o Low, independientemente del orden de llegada.
+2. **FIFO dentro de cada nivel de prioridad.** Pacientes del mismo nivel se atienden en orden de registro.
+3. **Cola doble separada por fase.** La cola de taquilla y la de consulta son independientes. Un paciente pasa de una a otra solo tras validar pago.
 
-La prioridad se asigna en registro:
+Orden de prioridad:
 
-- Gestante: Alta
-- Menor de edad: Alta
-- Mayor de 65: Alta
-- Resto: Normal
+| Prioridad | Valor numerico | Significado clinico |
+|---|---|---|
+| Urgent | 1 | Emergencia: atencion inmediata |
+| High | 2 | Alta: condicion critica no inmediata |
+| Medium | 3 | Moderada: condicion estable con sintomas |
+| Low | 4 | Baja: control rutinario |
 
-Reglas de cola:
+## 3. Technical Details
 
-- Se atiende primero la cola prioritaria.
-- Dentro de cada nivel se respeta FIFO.
+### Modelo de colas
 
-## Máquina de estados canónica
+```mermaid
+flowchart LR
+    Recepcion -->|check-in| ColaTaquilla["Cola taquilla<br/>(prioridad + FIFO)"]
+    ColaTaquilla -->|pago validado| ColaConsulta["Cola consulta<br/>(prioridad + FIFO)"]
+    ColaConsulta -->|llamado a consultorio| Atencion["En consulta"]
+    Atencion -->|finalizado| Completado
+```
 
-Ruta principal:
+Cada cola mantiene su propio ordenamiento por prioridad + FIFO. El paciente solo avanza de cola tras completar la fase anterior.
 
-`Registrado -> EnEsperaTaquilla -> EnTaquilla -> PagoValidado -> EnEsperaConsulta -> LlamadoConsulta -> EnConsulta -> Finalizado`
+### Maquina de estados por fase
 
-Estados alternativos:
+#### Fase taquilla
 
-- `PagoPendiente`
-- `AusenteTaquilla`
-- `CanceladoPorPago`
-- `AusenteConsulta`
-- `CanceladoPorAusencia`
+| Estado origen | Accion | Estado destino | Regla |
+|---|---|---|---|
+| EsperandoPago | `call-next` | LlamadoTaquilla | Prioridad + FIFO |
+| LlamadoTaquilla | `validate-payment` | PagoValidado | Pasa a cola de consulta |
+| LlamadoTaquilla | `mark-payment-pending` | PagoPendiente | Maximo 3 intentos |
+| LlamadoTaquilla | `mark-absent` | ReencoladoTaquilla | Maximo 2 ausencias |
+| PagoPendiente | `validate-payment` | PagoValidado | Resuelve pendiente |
+| PagoPendiente | `cancel-payment` | Cancelado | Supera limite de intentos |
+| ReencoladoTaquilla | `call-next` | LlamadoTaquilla | Vuelve a ser llamado |
 
-## Reglas de transición obligatorias
+#### Fase consulta
 
-1. No pasa a consulta sin `PagoValidado`.
-2. No inicia consulta sin `LlamadoConsulta`.
-3. No se permite doble turno activo por paciente.
-4. Prioridad alta siempre antes que normal.
-5. Consultorios activos determinan disponibilidad médica.
-6. Transiciones inválidas se rechazan con error de dominio.
+| Estado origen | Accion | Estado destino | Regla |
+|---|---|---|---|
+| EsperandoConsulta | `call-next` | LlamadoConsulta | Requiere consultorio activo |
+| LlamadoConsulta | `start-consultation` | EnConsulta | Inicia atencion medica |
+| EnConsulta | `finish-consultation` | Completado | Fin del flujo |
+| LlamadoConsulta | `mark-absent` | ReencoladoConsulta | 1 reintento, luego cancelado |
 
-## Modelo de colas
+### Permisos por rol y pantalla
 
-Taquilla:
+#### Recepcion
 
-- `ColaPrioritariaTaquilla`
-- `ColaNormalTaquilla`
+| Capacidad | Permitido |
+|---|---|
+| Registrar paciente (check-in) | Si |
+| Ver cola de espera | Si |
+| Llamar siguiente | No |
+| Validar pago | No |
+| Activar consultorio | No |
 
-Consulta:
+#### Taquilla
 
-- `ColaPrioritariaConsulta`
-- `ColaNormalConsulta`
+| Capacidad | Permitido |
+|---|---|
+| Registrar paciente | No |
+| Ver cola de taquilla | Si |
+| Llamar siguiente para pago | Si |
+| Validar pago | Si |
+| Marcar ausencia | Si |
+| Cancelar turno | Si |
 
-## Pantallas por rol
+#### Medico
 
-### Recepción (UI)
+| Capacidad | Permitido |
+|---|---|
+| Registrar paciente | No |
+| Activar/desactivar consultorio | Si |
+| Llamar siguiente para consulta | Si |
+| Iniciar consulta | Si |
+| Finalizar consulta | Si |
+| Marcar ausencia en consulta | Si |
 
-Puede:
+### Plan de adopcion por fases
 
-- Registrar paciente
-- Ver colas y estados
-- Ver prioridad asignada
+| Fase | Alcance | Rol cubierto | Estado |
+|---|---|---|---|
+| 1 - MVP | Check-in + claim-next + complete | Recepcion + medico (flujo directo) | Completado |
+| 2 - Flujo taquilla | Cola taquilla + pago + ausencias | Taquilla | Completado |
+| 3 - Consultorios | Activacion de consultorios + llamado medico | Medico | Completado |
+| 4 - Monitor | Read models + proyecciones + dashboard | Operaciones | En progreso |
 
-No puede:
+### Estado actual vs objetivo
 
-- Validar pago
-- Operar consulta
+| Dimension | Estado actual | Objetivo |
+|---|---|---|
+| Endpoints publicados | 22 (comando + query + health) | Estable |
+| Roles cubiertos | Recepcion, taquilla, medico | Completo para MVP |
+| Read models | 4 (monitor, queue-state, next-turn, history) | Agregar metricas |
+| Mecanismo de prioridad | Prioridad clinica + FIFO | Sin cambios planificados |
+| Manejo de ausencias | Reintentos con limite + cancelacion | Sin cambios planificados |
 
-### Taquilla (UI)
+## 4. Operational / Maintenance Notes
 
-Puede:
-
-- Llamar siguiente paciente
-- Validar pago
-- Marcar ausencia
-- Reintentar llamado
-- Cancelar por pago
-
-No puede:
-
-- Registrar pacientes
-- Operar consulta
-
-### Médico (UI)
-
-Puede:
-
-- Ver cola de consulta
-- Llamar siguiente
-- Iniciar consulta
-- Finalizar consulta
-- Marcar ausencia
-
-No puede:
-
-- Validar pago
-- Registrar pacientes
-
-## Eventos de dominio (implementados)
-
-- `PatientCheckedIn`
-- `PatientCalledAtCashier`
-- `PatientPaymentValidated`
-- `PatientPaymentPending`
-- `PatientAbsentAtCashier`
-- `PatientCancelledByPayment`
-- `PatientClaimedForAttention`
-- `PatientCalled`
-- `PatientAbsentAtConsultation`
-- `PatientAttentionCompleted`
-- `PatientCancelledByAbsence`
-- `ConsultingRoomActivated`
-- `ConsultingRoomDeactivated`
-
-## Endpoints por rol (runtime actual)
-
-### Recepción (API)
-
-- `POST /api/reception/register`
-- `GET /api/reception/queue-overview/{queueId}`
-- `GET /api/reception/patient-status/{queueId}/{patientId}`
-
-Nota: actualmente los dos GET de recepción se resuelven vía endpoints de query globales (`/api/v1/waiting-room/...`).
-
-### Taquilla (API)
-
-- `POST /api/cashier/call-next`
-- `POST /api/cashier/validate-payment`
-- `POST /api/cashier/mark-absent`
-- `POST /api/cashier/mark-payment-pending`
-- `POST /api/cashier/cancel-payment`
-
-### Médico (API)
-
-- `POST /api/medical/consulting-room/activate`
-- `POST /api/medical/consulting-room/deactivate`
-- `POST /api/medical/call-next`
-- `POST /api/medical/start-consultation`
-- `POST /api/medical/finish-consultation`
-- `POST /api/medical/mark-absent`
-
-## Parámetros operativos
-
-- Ausencia en taquilla: máximo 2 reintentos.
-- Intentos de pago: máximo 3.
-- Ausencia en consulta: máximo 1 reintento.
-- Timeout de presencia en taquilla: 2 minutos (configurable).
-
-## Compatibilidad con arquitectura actual
-
-Este modelo es compatible con:
-
-- Hexagonal Architecture
-- Event Sourcing
-- CQRS
-- Outbox
-- Idempotencia en proyecciones
-
-## Plan de adopción por fases
-
-### Fase 1
-
-- Prioridad automática en registro
-- Bloqueo de doble turno activo
-- Separar colas de taquilla vs consulta
-
-### Fase 2
-
-- Flujo completo de taquilla con reintentos y cancelación por pago
-- Eventos y proyecciones de taquilla
-
-### Fase 3
-
-- Gestión de consultorios activos
-- Flujo médico completo (`LlamadoConsulta -> EnConsulta -> Finalizado`)
-
-### Fase 4
-
-- Endpoints y pantallas por rol
-- Hardening de observabilidad y métricas operativas
-
-## Estado actual vs target
-
-- Estado actual: flujo clínico completo de recepción+taquilla+consulta, con consultorios activos/inactivos, transiciones estrictas y endpoints por rol.
-- Brecha actual: el agregado mantiene una sola atención médica activa por cola; para paralelismo completo por múltiples consultorios se requiere extender modelo a atención activa por consultorio.
+- Las reglas de prioridad y limites de reintento son invariantes de dominio codificados en el agregado `WaitingQueue`. No se configuran externamente.
+- El orden de las colas se determina en la capa de dominio, no en queries SQL.
+- La activacion de consultorios es prerrequisito para el llamado medico. Si no hay consultorio activo, `call-next` medico retorna error 400.

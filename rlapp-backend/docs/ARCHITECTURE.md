@@ -1,797 +1,304 @@
-# RLAPP — Arquitectura Detallada
+# Architecture
 
-**Documento técnico que explica la arquitectura hexagonal, event sourcing y decisiones clave.**
+## 1. Purpose
 
----
+Documentacion tecnica de la arquitectura del backend RLAPP. Describe los patrones arquitectonicos implementados, el bounded context, la maquina de estados del dominio, el catalogo de eventos, y los mecanismos de persistencia y comunicacion entre componentes.
 
-## 📐 Modelo Arquitectónico
+## 2. Context
 
-### Patrón Principal: Hexagonal (Ports & Adapters)
+### Bounded context
 
-La arquitectura está organizada en **capas concéntricas** independientes:
+El sistema opera bajo un unico bounded context: `WaitingRoom`. Este contexto encapsula la gestion del flujo de pacientes en una sala de espera medica, desde el registro hasta la finalizacion de la atencion.
 
-```
-┌─────────────────────────────────────────────────────────────┐
-│                  PRESENTATION LAYER                          │
-│  ┌─────────────────────────────────────────────────────┐    │
-│  │  ASP.NET Core Minimal APIs + Middleware              │    │
-│  │  - CorrelationIdMiddleware                           │    │
-│  │  - ExceptionHandlerMiddleware                        │    │
-│  │  - Endpoints (POST /check-in, GET /monitor, etc.)   │    │
-│  │  ✗ NO lógica de negocios                            │    │
-│  │  ✓ Mapeo DTO → Command                              │    │
-│  └─────────────────────────────────────────────────────┘    │
-└────────────────────┬────────────────────────────────────────┘
-                     │ COMANDOS
-                     ▼
-┌─────────────────────────────────────────────────────────────┐
-│              APPLICATION LAYER                               │
-│  ┌─────────────────────────────────────────────────────┐    │
-│  │  CheckInPatientCommandHandler                        │    │
-│  │  - Carga agregado del EventStore                     │    │
-│  │  - Delega reglas al Domain                           │    │
-│  │  - Persiste eventos                                  │    │
-│  │  - Publica a IEventPublisher (Outbox)               │    │
-│  │  ✗ NO reglas de negocios aquí                       │    │
-│  │  ✓ PURE ORCHESTRATION                               │    │
-│  │                                                       │    │
-│  │  Excepciones:                                        │    │
-│  │  - AggregateNotFoundException                        │    │
-│  │  - EventConflictException                            │    │
-│  │  - ApplicationException                              │    │
-│  └─────────────────────────────────────────────────────┘    │
-└────────────────────┬────────────────────────────────────────┘
-                     │ EVENTOS
-                     ▼
-┌─────────────────────────────────────────────────────────────┐
-│                    DOMAIN LAYER                              │
-│  ┌─────────────────────────────────────────────────────┐    │
-│  │                                                       │    │
-│  │  AGREGADOS:                                          │    │
-│  │  └─ WaitingQueue                                     │    │
-│  │     ├─ Propiedades: Id, Version, Patients[]         │    │
-│  │     ├─ Métodos:                                      │    │
-│  │     │  ├─ Create()      → WaitingQueueCreated       │    │
-│  │     │  ├─ CheckInPatient() → PatientCheckedIn       │    │
-│  │     │  └─ When() [privado] → apply events           │    │
-│  │     └─ Invariantes:                                  │    │
-│  │        ├─ MaxCapacity never exceeded                │    │
-│  │        ├─ No duplicate patients                     │    │
-│  │        └─ Valid priorities only                     │    │
-│  │                                                       │    │
-│  │  EVENTOS DE DOMINIO:                                 │    │
-│  │  ├─ WaitingQueueCreated                              │    │
-│  │  └─ PatientCheckedIn                                 │    │
-│  │                                                       │    │
-│  │  VALUE OBJECTS:                                      │    │
-│  │  ├─ WaitingQueueId                                   │    │
-│  │  ├─ PatientId                                        │    │
-│  │  ├─ Priority (Low, Medium, High, Urgent)            │    │
-│  │  └─ ConsultationType (General, Cardiology, etc.)    │    │
-│  │                                                       │    │
-│  │  ENTIDADES:                                          │    │
-│  │  └─ WaitingPatient (dentro del agregado)            │    │
-│  │                                                       │    │
-│  │  INVARIANTES:                                        │    │
-│  │  └─ WaitingQueueInvariants                           │    │
-│  │                                                       │    │
-│  │  ✓ ZERO external dependencies                        │    │
-│  │  ✓ PURE business logic                              │    │
-│  │  ✓ TESTABLE sin mock (reflection en AggregateRoot)  │    │
-│  │  ✓ DETERMINISTIC (same input → same output)         │    │
-│  │                                                       │    │
-│  └─────────────────────────────────────────────────────┘    │
-└────────────────────┬────────────────────────────────────────┘
-                     │
-                     │ PERSISTENCIA → EventStore
-                     │ QUERIES → IEventPublisher
-                     │
-┌────────────────────▼────────────────────────────────────────┐
-│             INFRASTRUCTURE LAYER                             │
-│  ┌─────────────────────────────────────────────────────┐    │
-│  │  PERSISTENCE:                                        │    │
-│  │  ├─ PostgresEventStore (IEventStore impl.)          │    │
-│  │  │  ├─ SaveAsync: Insert events + Outbox (atomic)  │    │
-│  │  │  ├─ LoadAsync: Replay events                     │    │
-│  │  │  └─ GetAllEventsAsync: Deterministic order       │    │
-│  │  │                                                   │    │
-│  │  │  Tabla: waiting_room_events (JSONB)             │    │
-│  │  │  Tabla: waiting_room_outbox (status tracking)   │    │
-│  │  │                                                   │    │
-│  │  ├─ PostgresOutboxStore (IOutboxStore impl.)       │    │
-│  │  │  ├─ GetPendingAsync: Fetch retry backoff        │    │
-│  │  │  ├─ MarkDispatchedAsync: Status update          │    │
-│  │  │  └─ MarkFailedAsync: Retry scheduling           │    │
-│  │  │                                                   │    │
-│  │  MESSAGING:                                         │    │
-│  │  ├─ OutboxEventPublisher (IEventPublisher impl.)   │    │
-│  │  │  └─ No-op: Outbox worker es el único publisher  │    │
-│  │  │                                                   │    │
-│  │  ├─ RabbitMqEventPublisher (dispatch to broker)    │    │
-│  │  │  └─ PublishAsync → RabbitMQ topics              │    │
-│  │  │                                                   │    │
-│  │  SERIALIZATION:                                     │    │
-│  │  ├─ EventSerializer (JSON → Domain Events)         │    │
-│  │  └─ EventTypeRegistry (event type mapping)         │    │
-│  │                                                       │    │
-│  │  OBSERVABILITY:                                     │    │
-│  │  ├─ PostgresEventLagTracker                         │    │
-│  │  └─ EventLagMetrics (CREATED/PUBLISHED/PROCESSED)  │    │
-│  │                                                       │    │
-│  │  UTILITY:                                            │    │
-│  │  ├─ SystemClock (IClock impl.)                      │    │
-│  │  └─ EventStoreSchema (DDL)                          │    │
-│  │                                                       │    │
-│  └─────────────────────────────────────────────────────┘    │
-│                                                               │
-│  EXTERNAL SYSTEMS:                                           │
-│  ├─ PostgreSQL (Event Store + Outbox + Lag Metrics)        │
-│  ├─ RabbitMQ (Event distribution)                           │
-│  ├─ Prometheus (Metrics scraping)                           │
-│  └─ Grafana (Dashboards)                                    │
-│                                                               │
-└─────────────────────────────────────────────────────────────┘
+### Patrones arquitectonicos
+
+| Patron | Descripcion |
+|---|---|
+| Arquitectura Hexagonal | Separacion en capas: Dominio, Aplicacion, Infraestructura, Adaptadores de entrada |
+| Event Sourcing | El estado del agregado se reconstruye a partir del stream de eventos |
+| CQRS | Separacion fisica entre el modelo de escritura (event store) y el modelo de lectura (proyecciones) |
+| Outbox Pattern | Entrega confiable de eventos al message broker dentro de la misma transaccion |
+
+### Agregado raiz
+
+`WaitingQueue` es el unico agregado del bounded context. Gestiona la lista de pacientes (`WaitingPatient`), consultorios activos, y aplica las invariantes de negocio definidas en `WaitingQueueInvariants`.
+
+## 3. Technical Details
+
+### Diagrama de arquitectura hexagonal (completo)
+
+```mermaid
+graph TB
+    subgraph "Adaptadores de Entrada"
+        HTTP[WaitingRoom.API<br>ASP.NET Core Minimal API<br>Puerto 5000]
+        WS[WaitingRoomHub<br>SignalR WebSocket<br>Placeholder]
+    end
+
+    subgraph "Capa de Aplicacion"
+        CH[12 Command Handlers]
+        CMDS[12 Application Commands]
+        DTOS[14 DTOs con DataAnnotations]
+        IES[IEventStore]
+        IEP[IEventPublisher]
+        IOS[IOutboxStore]
+    end
+
+    subgraph "Capa de Dominio"
+        WQ[WaitingQueue<br>Agregado Raiz]
+        WP[WaitingPatient<br>Entidad]
+        EVTS[14 Eventos de Dominio]
+        VOS["Value Objects<br>PatientId, Priority,<br>ConsultationType, WaitingQueueId"]
+        INVS[WaitingQueueInvariants]
+        DE[DomainException]
+    end
+
+    subgraph "Capa de Infraestructura"
+        PES[PostgresEventStore<br>Dapper + Npgsql]
+        POS[PostgresOutboxStore]
+        RMQP[RabbitMqEventPublisher<br>Topic Exchange]
+        OEP[OutboxEventPublisher<br>No-op]
+        ES[EventSerializer<br>Newtonsoft.Json]
+        ETR[EventTypeRegistry]
+        PELT[PostgresEventLagTracker<br>P50 P95 P99]
+    end
+
+    subgraph "Procesos Independientes"
+        WORKER[WaitingRoom.Worker<br>OutboxWorker + OutboxDispatcher]
+        PROJ[WaitingRoom.Projections<br>ProjectionWorker]
+    end
+
+    subgraph "Infraestructura Externa"
+        PG[(PostgreSQL 16+<br>Event Store + Outbox + Read Models)]
+        RMQ[/RabbitMQ 3<br>Topic Exchange: waiting_room_events/]
+    end
+
+    HTTP --> CH
+    CH --> IES
+    CH --> IEP
+    CH --> WQ
+    WQ --> WP
+    WQ --> EVTS
+    WQ --> VOS
+    WQ --> INVS
+    WQ --> DE
+    IES -.-> PES
+    IEP -.-> OEP
+    IOS -.-> POS
+    PES --> PG
+    POS --> PG
+    WORKER --> POS
+    WORKER --> RMQP
+    RMQP --> RMQ
+    RMQ --> PROJ
+    PROJ --> PG
 ```
 
----
-
-## 🔀 Flujo de Dependencias
-
-### Dirección de Dependencias (Sempre hacia adentro - centro)
+### Maquina de estados del paciente (13 estados)
 
 ```
-PRESENTATION ──┐
-               │
-APPLICATION ──┤─→ DOMAIN
-               │
-INFRASTRUCTURE─┘
+Registrado
+  +-- EnEsperaTaquilla
+        +-- EnTaquilla
+              |-- PagoValidado -- EnEsperaConsulta
+              |     +-- ReclamadoParaAtencion
+              |           +-- LlamadoConsulta
+              |                 |-- EnConsulta -- Finalizado
+              |                 +-- AusenteEnConsulta (1 reintento)
+              |                       +-- CanceladoPorAusencia
+              |-- PagoPendiente (hasta 3 intentos)
+              |     +-- CanceladoPorPago
+              +-- AusenteEnTaquilla (hasta 2 reintentos)
+                    +-- CanceladoPorAusencia
 ```
 
-**Regla de Oro:** Domain NUNCA depende de nadie.
+Estados:
 
-```
-✓ OK:    Application → Domain
-✓ OK:    Infrastructure → Domain
-✓ OK:    Infrastructure → Application Ports
-✓ OK:    Presentation → Application
-✗ NEVER: Domain → anything
-✗ NEVER: Domain → Infrastructure
-```
+1. Registrado
+2. EnEsperaTaquilla
+3. EnTaquilla
+4. PagoValidado
+5. PagoPendiente
+6. AusenteEnTaquilla
+7. CanceladoPorPago
+8. EnEsperaConsulta
+9. ReclamadoParaAtencion
+10. LlamadoConsulta
+11. EnConsulta
+12. Finalizado
+13. CanceladoPorAusencia
 
-### Acoplamiento Verificable
+### Invariantes de negocio
 
-| Capa | Dependencias Permitidas | Dependencias Prohibidas |
-|------|------------------------|-----------------------|
-| Domain | Solo .NET Framework | EF, DB, HTTP, Config |
-| Application | Domain + Ports (Interfaces) | Infrastructure |
-| Infrastructure | Application Ports + External | Domain business logic |
-| Presentation | Application + Exceptions | Infrastructure impls |
+| Invariante | Parametro |
+|---|---|
+| Capacidad maxima de la cola | Configurable por cola (`MaxCapacity`) |
+| Duplicado de check-in (case-insensitive) | - |
+| Ausencias en taquilla | `MaxCashierAbsences = 2` |
+| Intentos de pago | `MaxPaymentRetries = 3` |
+| Ausencias en consulta | `MaxConsultationAbsences = 1` |
+| Consultorio activo requerido para reclamar | - |
+| Orden de prioridad en reclamacion | Urgent(4) > High(3) > Medium(2) > Low(1) |
+| Transiciones de estado validas | Maquina de estados estricta |
 
----
+### Escalamiento automatico de prioridad
 
-## 🎯 Patrones Implementados
+El `CheckInPatientCommandHandler` eleva la prioridad automaticamente para pacientes embarazadas, menores de 18 anios y mayores de 65 anios.
 
-### 1. Event Sourcing
+### Catalogo de eventos de dominio (14 eventos)
 
-**Principio:** El estado se reconstruye desde eventos, no se persiste directamente.
+| Event Name | Aggregate | Version | Description |
+|---|---|---|---|
+| `WaitingQueueCreated` | `WaitingQueue` | 1 | Cola de espera creada |
+| `PatientCheckedIn` | `WaitingQueue` | 1 | Paciente registrado en la cola |
+| `PatientCalledAtCashier` | `WaitingQueue` | 1 | Paciente llamado a taquilla |
+| `PatientPaymentValidated` | `WaitingQueue` | 1 | Pago del paciente validado |
+| `PatientPaymentPending` | `WaitingQueue` | 1 | Pago del paciente pendiente |
+| `PatientAbsentAtCashier` | `WaitingQueue` | 1 | Paciente ausente en taquilla |
+| `PatientCancelledByPayment` | `WaitingQueue` | 1 | Paciente cancelado por fallos de pago |
+| `PatientClaimedForAttention` | `WaitingQueue` | 1 | Paciente reclamado por un consultorio |
+| `PatientCalled` | `WaitingQueue` | 1 | Paciente llamado a consulta |
+| `PatientAttentionCompleted` | `WaitingQueue` | 1 | Atencion del paciente finalizada |
+| `PatientAbsentAtConsultation` | `WaitingQueue` | 1 | Paciente ausente en consulta |
+| `PatientCancelledByAbsence` | `WaitingQueue` | 1 | Paciente cancelado por ausencias |
+| `ConsultingRoomActivated` | `WaitingQueue` | 1 | Consultorio activado |
+| `ConsultingRoomDeactivated` | `WaitingQueue` | 1 | Consultorio desactivado |
 
-```csharp
-// Write: Solo eventos se persisten
-queue.CheckInPatient(...);  // Genera PatientCheckedIn event
-await eventStore.SaveAsync(queue);  // Persiste evento
+Todos los eventos heredan de `DomainEvent` (record inmutable). Cada evento incluye `EventMetadata` con: `EventId`, `AggregateId`, `Version`, `OccurredAt`, `CorrelationId`, `CausationId`, `IdempotencyKey`, `Actor`, `SchemaVersion`.
 
-// Read: Estado se reconstruye
-var events = await eventStore.GetEventsAsync(queueId);
-var queue = AggregateRoot.LoadFromHistory<WaitingQueue>(queueId, events);
-```
+### CQRS
 
-**Ventajas:**
+```mermaid
+graph LR
+    subgraph "Lado de Escritura (Commands)"
+        CMD_HTTP[Comando HTTP POST]
+        CMD_H[Command Handler]
+        AGG[WaitingQueue<br>Agregado]
+        EVS[(PostgreSQL<br>waiting_room_events)]
+    end
 
-- Auditoria completa (todos los cambios son eventos)
-- Determinismo (replay → mismo estado)
-- Escalabilidad (eventos → cache → queries)
+    subgraph "Lado de Lectura (Queries)"
+        QRY_HTTP[Query HTTP GET]
+        VIEWS[4 Vistas In-Memory<br>ConcurrentDictionary]
+        PE[ProjectionEventProcessor]
+        PHs[9 Projection Handlers]
+    end
 
-**Invariantes:**
+    subgraph "Transporte"
+        OBX[(PostgreSQL<br>waiting_room_outbox)]
+        RMQ[/RabbitMQ<br>Topic Exchange/]
+    end
 
-- Eventos son inmutables (record type)
-- Versión auto-incrementa
-- Idempotency key previene duplicados
-
-### 2. CQRS (Command Query Responsibility Segregation)
-
-**Write Model:**
-
-```
-Command → CheckInPatientCommandHandler → Domain → Events → EventStore
-                                            ↓
-                                        Outbox
-```
-
-**Read Model:**
-
-```
-Events → ProjectionEventProcessor → ProjectionHandlers → Views
-                ↓
-       EventLagTracker → Metrics
-```
-
-**Separación:** Escribir y leer son completamente independientes.
-
-### 3. Outbox Pattern (Garantía de Entrega)
-
-```
-┌──────────────────┐
-│  CheckIn Command │
-└────────┬─────────┘
-         │
-         ▼
-┌─────────────────────────────┐  ATOMIC
-│  EventStore                 │  TRANSACTION
-│  + OutboxTable              │
-│  (save in single TX)         │
-└──────────┬───────────────────┘
-           │
-           │ (success)
-           ▼
-┌──────────────────────────────────┐
-│  OutboxWorker (BackgroundService) │
-│  - Poll every 5 seconds           │
-│  - Fetch pending messages         │
-│  - Publish to RabbitMQ (idempotent)
-│  - Mark as dispatched             │
-└──────────────────────────────────┘
-           │
-           ▼
-┌──────────────────────────────┐
-│  RabbitMQ                    │
-│  (broker keeps until consumed)
-└─────────────┬────────────────┘
-              │
-              ▼
-        ┌─────────────┐
-        │ Projections │
-        └─────────────┘
+    CMD_HTTP --> CMD_H
+    CMD_H --> AGG
+    AGG --> EVS
+    EVS --> OBX
+    OBX --> RMQ
+    RMQ --> PE
+    PE --> PHs
+    PHs --> VIEWS
+    QRY_HTTP --> VIEWS
 ```
 
-**Garantías:**
+Escritura: Los comandos HTTP ingresan a traves de los endpoints POST. Cada command handler carga el agregado mediante `IEventStore.LoadAsync`, ejecuta la operacion de dominio que genera eventos, y persiste los eventos atomicamente en `waiting_room_events` junto con el registro de outbox en `waiting_room_outbox`.
 
-- Si TX falla → evento no se persiste
-- Si Outbox falla → worker lo reintenta
-- Si RabbitMQ falla → backed off retry
+Lectura: Los eventos se transportan via Outbox + RabbitMQ hacia el servicio de proyecciones. El `ProjectionEventProcessor` delega a los 9 handlers de proyeccion, que actualizan las vistas en memoria. Los endpoints GET leen directamente de estas vistas.
 
-### 4. Hexagonal Architecture (Ports & Adapters)
+### Event Store
 
-**Puertos (Interfaces):**
+PostgreSQL actua como event store. La tabla `waiting_room_events` almacena todos los eventos del agregado con indices unicos en `(aggregate_id, version)` e `(idempotency_key)`. El estado del agregado `WaitingQueue` se reconstruye aplicando secuencialmente los eventos del stream. Se implementa deteccion de conflictos de concurrencia por version del agregado. Los eventos son records C# inmutables con soporte de versionado via `SchemaVersion` en la metadata.
 
-```csharp
-public interface IEventStore  // Port
-{
-    Task<WaitingQueue?> LoadAsync(string aggregateId, ...);
-    Task SaveAsync(WaitingQueue aggregate, ...);
-    Task<IEnumerable<DomainEvent>> GetAllEventsAsync(...);
-}
+### Outbox Pattern
 
-public interface IEventPublisher  // Port
-{
-    Task PublishAsync(IEnumerable<DomainEvent> events, ...);
-}
+```mermaid
+sequenceDiagram
+    participant CH as Command Handler
+    participant PG as PostgreSQL
+    participant OW as OutboxWorker
+    participant OD as OutboxDispatcher
+    participant RMQ as RabbitMQ
+
+    CH->>PG: BEGIN TRANSACTION
+    CH->>PG: INSERT evento en waiting_room_events
+    CH->>PG: INSERT mensaje en waiting_room_outbox
+    CH->>PG: COMMIT
+
+    loop Polling cada 5s
+        OW->>PG: SELECT mensajes pendientes
+        PG-->>OW: Mensajes
+        OW->>OD: Despachar mensajes
+        OD->>RMQ: Publicar evento
+        RMQ-->>OD: ACK
+        OD->>PG: Marcar como dispatched
+    end
+
+    Note over OD,RMQ: Retry con backoff exponencial:<br>base 30s, max 1h, 5 intentos.<br>Mensajes envenenados: retry 365 dias.
 ```
 
-**Adaptadores (Implementaciones):**
+Los eventos se persisten en la tabla `waiting_room_outbox` dentro de la misma transaccion que el event store. Un `OutboxWorker` (BackgroundService) realiza polling periodico (cada 5 segundos) y delega al `OutboxDispatcher` para publicar los mensajes pendientes en RabbitMQ. El retry aplica backoff exponencial con base de 30 segundos, maximo de 1 hora y 5 intentos. Los mensajes que exceden los reintentos se marcan con retry de 365 dias para intervencion manual.
 
-```csharp
-internal class PostgresEventStore : IEventStore { }
-internal class OutboxEventPublisher : IEventPublisher { }
-internal class RabbitMqEventPublisher : IEventPublisher { }
-```
+### Read Models (4 proyecciones)
 
-**Beneficio:** Cambiar de DB o broker sin tocar Domain/Application.
+| Vista | Descripcion |
+|---|---|
+| `WaitingRoomMonitorView` | Contadores de pacientes por prioridad (total, alta, normal, baja) con timestamp de actualizacion |
+| `QueueStateView` | Estado detallado de la cola con lista de pacientes y sus propiedades |
+| `NextTurnView` | Informacion del paciente en turno (id, nombre, estado: claimed o called) |
+| `RecentAttentionRecordView` | Historial de atenciones finalizadas con prioridad, tipo de consulta y fecha |
 
-### 5. Repository Pattern (vía Event Sourcing)
+Motor de proyecciones: `WaitingRoomProjectionEngine` con 9 handlers especializados. Contexto de proyeccion in-memory con `ConcurrentDictionary` (thread-safe). Las proyecciones son idempotentes (mismo evento procesado multiples veces produce el mismo estado) y reconstruibles (rebuild completo desde el event store).
 
-```csharp
-// CheckInPatientCommandHandler
-public async Task<int> HandleAsync(CheckInPatientCommand command, ...)
-{
-    // Load = Reconstruct from history
-    var queue = await _eventStore.LoadAsync(command.QueueId, ...)
-        ?? throw new AggregateNotFoundException(...);
+### Esquema de base de datos
 
-    // Execute domain logic
-    queue.CheckInPatient(...);  // If invalid → throw DomainException
+Base de datos `rlapp_waitingroom` (Event Store):
 
-    // Persist = Save new events (atomically with Outbox)
-    await _eventStore.SaveAsync(queue, ...);
+| Tabla | Proposito | Indices unicos |
+|---|---|---|
+| `waiting_room_events` | Almacen de eventos | `(aggregate_id, version)`, `(idempotency_key)` |
+| `waiting_room_outbox` | Outbox pattern | `(event_id)` |
+| `event_processing_lag` | Metricas de lag | `(event_id)` |
+| `projection_checkpoints` | Checkpoints de proyeccion | `(idempotency_key)` |
 
-    // Publish = Queue for async distribution
-    await _eventPublisher.PublishAsync(queue.UncommittedEvents, ...);
+Base de datos `rlapp_waitingroom_read` (Read Models):
 
-    return queue.UncommittedEvents.Count;
-}
-```
+| Tabla | Proposito | Indices |
+|---|---|---|
+| `waiting_queue_view` | Vista de colas | PK: `queue_id` |
+| `waiting_patients_view` | Vista de pacientes | PK: `(queue_id, patient_id)`, idx: status |
+| `event_lag_metrics` | Metricas de lag | idx: `metric_timestamp`, `event_name` |
 
----
+### Flujo de dependencias entre proyectos
 
-## 📊 Capas y Responsabilidades Detalladas
+| Proyecto | Dependencias |
+|---|---|Si un dato no existe en la auditoría, debes omitirlo
+| BuildingBlocks.EventSourcing | Ninguna |
+| BuildingBlocks.Messaging | Ninguna |
+| BuildingBlocks.Observability | Ninguna |
+| WaitingRoom.Domain | BuildingBlocks.EventSourcing |
+| WaitingRoom.Application | Domain |
+| WaitingRoom.Infrastructure | Application, Domain, BuildingBlocks.* |
+| WaitingRoom.API | Application, Infrastructure, Projections, BuildingBlocks.* |
+| WaitingRoom.Projections | Application, Domain, Infrastructure, BuildingBlocks.* |
+| WaitingRoom.Worker | Application, Infrastructure, BuildingBlocks.* |
 
-### Domain Layer (WaitingRoom.Domain)
+Las dependencias fluyen exclusivamente hacia adentro: API hacia Application hacia Domain. Infraestructura depende de Application (puertos) y Domain (eventos).
 
-**Responsabilidades:**
+## 4. Operational / Maintenance Notes
 
-- Modelar la realidad del negocio (Wait Room)
-- Ejecutar reglas de negocio
-- Generar eventos que representan decisiones
-- Validar invariantes
+### Observabilidad
 
-**Estructura:**
+- Lag tracking con percentiles P50, P95, P99 (`PostgresEventLagTracker`).
+- Prometheus con reglas de alerta predefinidas (3 grupos).
+- Grafana con dashboards preconfigurados: procesamiento de eventos e infraestructura.
+- Serilog con logging estructurado y correlacion (`CorrelationIdMiddleware`).
+- Seq como servidor de logging centralizado.
 
-```
-Aggregates/
-├─ WaitingQueue (root aggregate)
-   └─ Entities/WaitingPatient (only accessible from aggregate)
+### Health checks
 
-ValueObjects/
-├─ WaitingQueueId
-├─ PatientId
-├─ Priority
-└─ ConsultationType
+| Endpoint | Tipo | Verificacion |
+|---|---|---|
+| `/health/live` | Liveness | Siempre healthy |
+| `/health/ready` | Readiness | Verifica conexion a PostgreSQL |
 
-Events/
-├─ WaitingQueueCreated
-└─ PatientCheckedIn
+### CORS
 
-Invariants/
-└─ WaitingQueueInvariants
-
-Entities/
-└─ WaitingPatient
-
-Exceptions/
-└─ DomainException
-```
-
-**Reglas de Negocio Codificadas:**
-
-- Queue capacity never exceeded
-- No duplicate patient check-ins
-- Priority must be valid
-- Patient name cannot be empty
-- Valid consultation types
-
-### Application Layer (WaitingRoom.Application)
-
-**Responsabilidades:**
-
-- Orquestar caso de uso
-- Cargar/guardar agregado
-- Publicar eventos
-- Manejar excepciones de dominio
-
-**Estructura:**
-
-```
-Commands/
-├─ CheckInPatientCommand
-
-CommandHandlers/
-├─ CheckInPatientCommandHandler
-
-DTOs/
-├─ CheckInPatientDto
-├─ PatientInQueueDto
-└─ WaitingQueueDto
-
-Ports/ (interfaces)
-├─ IEventStore
-└─ IEventPublisher
-
-Services/
-└─ SystemClock (IClock impl)
-
-Exceptions/
-├─ ApplicationException
-├─ AggregateNotFoundException
-└─ EventConflictException
-```
-
-**Flujo Típico:**
-
-```csharp
-1. Recibe Command desde API
-2. Carga Agregado: await eventStore.LoadAsync(id)
-3. Ejecuta caso de uso: aggregate.DoSomething(...)
-   → Si falla → DomainException bubbles
-4. Guarda eventos: await eventStore.SaveAsync(aggregate)
-   → EventStore + Outbox (transacción atómica)
-5. Publica: await eventPublisher.PublishAsync(events)
-6. Retorna result
-```
-
-### Infrastructure Layer (WaitingRoom.Infrastructure)
-
-**Responsabilidades:**
-
-- Persistir eventos en PostgreSQL
-- Gestionar tabla de Outbox
-- Publicar a RabbitMQ
-- Serializar/deserializar eventos
-- Rastrear lag de proyecciones
-
-**Estructura:**
-
-```
-Persistence/
-├─ EventStore/
-│  ├─ PostgresEventStore (IEventStore impl)
-│  └─ EventStoreSchema
-│
-├─ Outbox/
-│  ├─ PostgresOutboxStore (IOutboxStore impl)
-│  ├─ OutboxMessage
-│  └─ IOutboxStore
-
-Messaging/
-├─ RabbitMqEventPublisher (IEventPublisher impl)
-├─ OutboxEventPublisher (IEventPublisher impl - no-op)
-└─ RabbitMqOptions
-
-Serialization/
-├─ EventSerializer (IEventSerializer impl)
-└─ EventTypeRegistry
-
-Observability/
-└─ PostgresEventLagTracker (IEventLagTracker impl)
-```
-
-**Decisiones Técnicas:**
-
-- **Dapper** (no EF) → control fino SQL, performance
-- **JSONB en PostgreSQL** → flexible schema, queryable
-- **Npgsql** → driver nativo, confiable
-- **RabbitMQ.Client** → directo, bajo nivel de control
-
-### Presentation Layer (WaitingRoom.API)
-
-**Responsabilidades:**
-
-- Exponar endpoints HTTP
-- Mapear DTOs → Commands
-- Inyectar CorrelationId
-- Manejar excepciones globales
-- Proporcionar health checks
-
-**Estructura:**
-
-```
-Program.cs
-├─ DI Container setup
-├─ Middleware pipeline
-└─ Endpoint registration
-
-Middleware/
-├─ CorrelationIdMiddleware
-└─ ExceptionHandlerMiddleware
-
-Endpoints/
-└─ WaitingRoomQueryEndpoints
-
-(No "Controllers" - Minimal APIs)
-```
-
----
-
-## 🔄 Flujo Completo de Ejecución
-
-### Caso: Patient Check-In
-
-```
-1. CLIENT REQUEST
-   POST /api/waiting-room/check-in
-   {
-     queueId: "QUEUE-01",
-     patientId: "PAT-001",
-     patientName: "John Doe",
-     priority: "High",
-     consultationType: "General",
-     actor: "nurse-001"
-   }
-
-2. PRESENTATION LAYER
-   ↓
-   CorrelationIdMiddleware
-   ├─ Extract CorrelationId from header OR generate new
-   ├─ Add to HttpContext.Items
-   └─ Add to response headers
-   ↓
-   Endpoint: POST /api/waiting-room/check-in
-   ├─ Map DTO → CheckInPatientCommand
-   ├─ Extract correlationId from context
-   └─ Call CheckInPatientCommandHandler.HandleAsync(command)
-
-3. APPLICATION LAYER
-   ↓
-   CheckInPatientCommandHandler.HandleAsync()
-   ├─ LoadAsync(queueId)
-   │  └─ Aggregate reconstructed from events
-   │
-   ├─ queue.CheckInPatient() [Domain layer call]
-   │  └─ Validates all business rules
-   │     └─ If violation → throw DomainException
-   │  └─ If valid → raises PatientCheckedIn event
-   │     └─ Event added to UncommittedEvents
-   │
-   ├─ SaveAsync(queue)
-   │  ├─ BEGIN TRANSACTION
-   │  ├─ INSERT into waiting_room_events (PatientCheckedIn)
-   │  ├─ INSERT into waiting_room_outbox (same TX)
-   │  ├─ COMMIT TRANSACTION
-   │  └─ queue.ClearUncommittedEvents()
-   │
-   ├─ PublishAsync(events)
-   │  └─ OutboxEventPublisher.PublishAsync() [no-op]
-   │  └─ Events are already in Outbox
-   │
-   └─ Return eventCount
-
-4. INFRASTRUCTURE LAYER (Async - Background Worker)
-   ↓
-   OutboxWorker [BackgroundService]
-   ├─ Every 5 seconds
-   ├─ Call dispatcher.DispatchBatchAsync()
-   │  ├─ GetPendingAsync(batchSize: 100)
-   │  │  └─ SELECT * FROM waiting_room_outbox WHERE status = 'Pending'
-   │  │
-   │  ├─ For each message:
-   │  │  ├─ Deserialize to DomainEvent
-   │  │  ├─ PublishAsync to RabbitMQ
-   │  │  ├─ MarkDispatchedAsync() [UPDATE status = 'Dispatched']
-   │  │
-   │  └─ If failed → MarkFailedAsync() with retry backoff
-
-5. MESSAGE BROKER (RabbitMQ)
-   ↓
-   Topic: waiting_room_events.patient_checked_in
-   ├─ Message persisted until consumed
-   └─ Subscribers: Projections, External systems
-
-6. PROJECTIONS (Async - Event subscribers)
-   ↓
-   ProjectionEventProcessor
-   ├─ Receive PatientCheckedIn from RabbitMQ
-   ├─ FindHandler() for PatientCheckedIn
-   │  └─ PatientCheckedInProjectionHandler
-   │
-   ├─ CheckIdempotency() via idempotency key
-   │  └─ If already processed → skip
-   │
-   ├─ HandleAsync()
-   │  ├─ UpdateMonitorViewAsync() - increment counter for High priority
-   │  ├─ AddPatientToQueueAsync() - add to queue list
-   │  └─ MarkProcessedAsync() - mark idempotency key as done
-   │
-   └─ SaveCheckpointAsync() - track progress (version)
-
-7. RESPONSE TO CLIENT
-   ↓
-   HTTP 200 OK
-   {
-     "success": true,
-     "message": "Patient checked in successfully",
-     "correlationId": "<same as in header>",
-     "eventCount": 1
-   }
-```
-
----
-
-## ⚡ Características de Desacoplamiento
-
-### 1. Commands vs Events
-
-**Commands (intent):**
-
-- `CheckInPatientCommand` - "Check in a patient"
-- NOT persisted
-- Can fail (returns exception)
-- Synchronous in handler
-
-**Events (fact):**
-
-- `PatientCheckedIn` - "Patient was checked in"
-- Persisted immutably
-- ALWAYS happened (already persisted)
-- Distributed asynchronously
-
-### 2. Write Model vs Read Model
-
-**Write Model (OLTP):**
-
-- `WaitingQueue` aggregate
-- Strict consistency
-- Validates once per command
-- Source of truth
-
-**Read Model (OLAP):**
-
-- `WaitingRoomMonitorView`, `QueueStateView`
-- Eventual consistency
-- Optimized for queries
-- Derived from events
-
-**Nota:** Lectura viene de proyecciones, no de agregado en EventStore.
-
-### 3. Synchronous vs Asynchronous
-
-**Synchronous (Blocking):**
-
-- Command execution (application handler)
-- Domain logic validation
-- EventStore save
-
-**Asynchronous (Non-Blocking):**
-
-- Outbox dispatch → RabbitMQ
-- Projection updates
-- Lag tracking
-
-Esto permite que la API responda rápido sin esperar a que todos los proyecciones se actualicen (`eventual consistency`).
-
----
-
-## 🎬 Estados y Transiciones
-
-### Queue Lifecycle
-
-```
-POST /api/reception/register
-   -> EnEsperaTaquilla
-POST /api/cashier/call-next
-   -> EnTaquilla
-POST /api/cashier/validate-payment
-   -> PagoValidado -> EnEsperaConsulta
-POST /api/medical/consulting-room/activate
-   -> ConsultingRoomActivated
-POST /api/medical/call-next (stationId activo)
-   -> LlamadoConsulta
-POST /api/medical/start-consultation
-   -> EnConsulta
-POST /api/medical/finish-consultation
-   -> Finalizado
-
-Alternos:
-- cashier/mark-payment-pending -> PagoPendiente
-- cashier/mark-absent -> AusenteTaquilla -> EnEsperaTaquilla
-- cashier/cancel-payment -> CanceladoPorPago
-- medical/mark-absent -> AusenteConsulta (1 reintento) o CanceladoPorAusencia
-```
-
----
-
-## 🔐 Invariantes y Validaciones
-
-### Niveles de Validación
-
-```
-API Layer:
-└─ DTO validation (range, format)
-
-Application Layer:
-├─ Command validation (not null)
-└─ Aggregate existence check
-
-Domain Layer: ⭐⭐⭐
-├─ WaitingQueueInvariants
-│  ├─ ValidateCapacity(currentCount, maxCapacity)
-│  ├─ ValidateDuplicateCheckIn(patientId, queuedPatientIds)
-│  ├─ ValidatePriority(priority)
-│  └─ ValidateQueueName(queueName)
-│
-└─ ValueObject creation
-   ├─ PatientId.Create() checks not empty
-   ├─ Priority.Create() validates against whitelist
-   └─ ConsultationType.Create() validates length
-```
-
-**Invariante crítica:** Si Domain.CheckInPatient() no lanza excepción, entonces el evento es válido.
-
----
-
-## 🛠️ Extensibilidad
-
-### Agregar Nuevo Evento
-
-1. **Domain:** Create new event class in `Domain/Events/`
-2. **ValueObjects:** Add supporting value objects if needed
-3. **Aggregate:** Add `When(NewEvent)` handler method
-4. **Registry:** Add to `EventTypeRegistry.CreateDefault()`
-5. **Serializer:** Automatic (reflection-based)
-6. **Projection:** Create new handler in `Projections/Handlers/`
-7. **Tests:** Add tests for new business rule
-
-### Agregar Nueva Proyección
-
-1. **Define View:** Create new DTO in `Projections/Views/`
-2. **Implement Handler:** Create `IProjectionHandler` in `Projections/Handlers/`
-3. **Register:** Add to `WaitingRoomProjectionEngine._handlers`
-4. **Query Endpoint:** Add to `WaitingRoomQueryEndpoints`
-5. **Context Method:** Add to `IWaitingRoomProjectionContext`
-6. **Tests:** Add projection tests
-
----
-
-## 📈 Performance Considerations
-
-### Event Store Lookup
-
-```csharp
-// O(N) - Loads ALL events for an aggregate
-var events = await eventStore.GetEventsAsync(aggregateId);
-var queue = AggregateRoot.LoadFromHistory<WaitingQueue>(id, events);
-```
-
-**Optimización para agregados grandes:**
-
-- Implementar Snapshot pattern
-- Persistir snapshot cada 100 eventos
-- Cargar último snapshot + delta
-
-### Projection Updates
-
-```csharp
-// O(1) per event - Direct in-memory updates
-await context.UpdateMonitorViewAsync(queueId, priority, "increment");
-```
-
-**Escalamiento:**
-
-- Proyecciones actuales: In-Memory (tests)
-- Futuro: PostgreSQL con índices
-- Muy future: Redis cache
-
----
-
-## 🔍 Debugging y Observabilidad
-
-### Correlation ID
-
-Cada request tiene un ID único rastreado a través de todos los logs:
-
-```
-Request: X-Correlation-Id: f47ac10b-58cc-4372-a567-0e02b2c3d479
-
-Logs:
-  CorrelationId: f47ac10b-58cc-4372-a567-0e02b2c3d479 - CheckIn request
-  CorrelationId: f47ac10b-58cc-4372-a567-0e02b2c3d479 - EventStore save
-  CorrelationId: f47ac10b-58cc-4372-a567-0e02b2c3d479 - Outbox dispatch
-  CorrelationId: f47ac10b-58cc-4372-a567-0e02b2c3d479 - Projection update
-```
-
-### Event Lag Tracking
-
-```
-EventLagMetrics:
-├─ EventCreatedAt: 2026-02-19T10:00:00Z
-├─ EventPublishedAt: 2026-02-19T10:00:05Z (5s - Outbox dispatch)
-├─ EventProcessedAt: 2026-02-19T10:00:07Z (2s - Projection)
-└─ TotalLagMs: 7000 (Event creation to projection update)
-```
-
-Monitor en Grafana para detectar bottlenecks.
-
----
-
-## ✅ Resumen de Decisiones Arquitectónicas
-
-| Decisión | Justificación | Alternativas |
-|----------|--------------|--------------|
-| **Event Sourcing** | Auditoría completa, replay, determinismo | CRUD + Snapshots |
-| **CQRS** | Modelo de lectura optimizado, escala | Unified model |
-| **Outbox Pattern** | Garantía de entrega sin duplicados | Direct publish (risky) |
-| **Hexagonal** | Máxima independencia de infraestructura | Monolítico acoplado |
-| **Dapper** (no EF) | Control fino, performance, simplicity | EF (overkill for events) |
-| **PostgreSQL JSONB** | Flexible schema, queryable, ACID | Document DB (eventual)  |
-| **In-Memory Projections** | Tests rápidos, simplicity | PostgreSQL projections |
-
----
-
-**Última actualización:** Febrero 2026
+Origenes permitidos: `http://localhost:3000`, `http://localhost:3001`.
