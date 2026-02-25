@@ -14,7 +14,7 @@ export class AppointmentFactory {
       status: "waiting",
       office: null,
       timestamp,
-      completedAt: null,
+      completedAt: undefined,
       ...overrides,
     };
   }

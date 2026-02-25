@@ -1,7 +1,8 @@
 "use client";
 import React, { useEffect, useState } from "react";
 import { useRouter, useSearchParams } from "next/navigation";
-import styles from "./page.module.css";
+import localStyles from "./page.module.css";
+import sharedStyles from "@/styles/page.module.css";
 import Alert from "@/components/Alert";
 import { useAlert } from "@/context/AlertContext";
 import { checkInPatient } from "../../services/api/waitingRoom";
@@ -59,16 +60,15 @@ export default function ReceptionPage() {
   }
 
   return (
-    <main className={styles.container}>
-      <h2>Recepción — Check-in</h2>
-      <form onSubmit={handleSubmit(onSubmit)} className={styles.form} noValidate>
+    <main className={`${localStyles.container} ${sharedStyles.dashboardContainer}`}>
+      <h2 className={sharedStyles.title}>Recepción — Check-in</h2>
+      <form onSubmit={handleSubmit(onSubmit)} className={localStyles.form} noValidate>
         <label style={{ display: "block" }}>
           Nombre del paciente
           <input
             aria-invalid={!!errors.patientName}
             aria-describedby={errors.patientName ? "patientName-error" : undefined}
             {...register("patientName")}
-            className={styles.input}
           />
         </label>
         {errors.patientName && (
@@ -79,7 +79,7 @@ export default function ReceptionPage() {
 
         <label style={{ display: "block" }}>
           Cola
-          <input {...register("queueId")} className={styles.input} aria-label="Cola" />
+          <input {...register("queueId")} aria-label="Cola" />
         </label>
         {errors.queueId && (
           <div style={{ color: "#b00020" }} role="alert">
@@ -88,7 +88,7 @@ export default function ReceptionPage() {
         )}
 
         {/* Global alerts shown by AlertProvider */}
-        <div className={styles.row}>
+        <div className={localStyles.row}>
           <button type="submit" disabled={submitting}>
             {submitting ? "Enviando..." : "Registrar check-in"}
           </button>

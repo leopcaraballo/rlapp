@@ -27,8 +27,8 @@ function getPriorityBadge(priority: string): string {
   }
 }
 
-function calculateDuration(start: number, end?: number): string {
-  if (!end) return "N/A";
+function calculateDuration(start: number, end?: number | null): string {
+  if (end == null) return "N/A";
   const seconds = Math.floor((end - start) / 1000);
   if (seconds < 60) return `${seconds}s`;
   const minutes = Math.floor(seconds / 60);

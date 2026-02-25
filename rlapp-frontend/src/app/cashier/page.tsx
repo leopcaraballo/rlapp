@@ -8,7 +8,8 @@ import {
   markAbsentAtCashier,
   cancelByPayment,
 } from "../../services/api/waitingRoom";
-import styles from "./page.module.css";
+import localStyles from "./page.module.css";
+import sharedStyles from "@/styles/page.module.css";
 import Alert from "@/components/Alert";
 import { useAlert } from "@/context/AlertContext";
 import { useForm } from "react-hook-form";
@@ -79,12 +80,12 @@ export default function CashierPage() {
   }
 
   return (
-    <main className={styles.container}>
-      <h2>Caja</h2>
-      <form onSubmit={handleSubmit(onValidate)} className={styles.form} noValidate>
+    <main className={`${localStyles.container} ${sharedStyles.dashboardContainer}`}>
+      <h2 className={sharedStyles.title}>Caja</h2>
+      <form onSubmit={handleSubmit(onValidate)} className={localStyles.form} noValidate>
         <label>
           Cola
-          <input {...register("queueId")} name="queueId" className={styles.input} />
+          <input {...register("queueId")} name="queueId" className={localStyles.input} />
         </label>
         {errors.queueId && <div style={{ color: "#b00020" }}>{errors.queueId.message}</div>}
 
@@ -94,12 +95,12 @@ export default function CashierPage() {
 
         <label>
           PatientId
-          <input {...register("patientId")} name="patientId" className={styles.input} />
+          <input {...register("patientId")} name="patientId" className={localStyles.input} />
         </label>
         {errors.patientId && <div style={{ color: "#b00020" }}>{errors.patientId.message}</div>}
 
         {/* Alerts rendered globally by AlertProvider */}
-        <div className={styles.row}>
+        <div className={localStyles.row}>
           <button type="submit" disabled={busy}>
             Validar pago
           </button>

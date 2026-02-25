@@ -1,12 +1,7 @@
 ---
 name: docker-infra (Senior Level)
 description: Resilient infrastructure orchestration, image optimization, and deployment security.
-trigger: When feedback mentions Docker, healthchecks, credentials, environment variables, ports, volumes, deployment, or infrastructure security.
-scope: docker-compose.yml, .env, .env.example, backend/producer/Dockerfile, backend/consumer/Dockerfile, frontend/Dockerfile
-author: "Orchestrator Team"
-version: "2.0.0 (Senior Grade)"
 license: "MIT"
-autoinvoke: true
 ---
 
 # Skill: Docker & Infrastructure (Senior Grade)

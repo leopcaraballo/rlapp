@@ -12,7 +12,8 @@ import {
 import { useForm } from "react-hook-form";
 import { zodResolver } from "@hookform/resolvers/zod";
 import * as z from "zod";
-import styles from "./page.module.css";
+import localStyles from "./page.module.css";
+import sharedStyles from "@/styles/page.module.css";
 import Alert from "@/components/Alert";
 import { useAlert } from "@/context/AlertContext";
 
@@ -111,16 +112,16 @@ export default function MedicalPage() {
   }
 
   return (
-    <main className={styles.container}>
-      <h2>Área Médica</h2>
-      <form className={styles.form} onSubmit={handleSubmit(onStartConsult)} noValidate>
+    <main className={`${localStyles.container} ${sharedStyles.dashboardContainer}`}>
+      <h2 className={sharedStyles.title}>Área Médica</h2>
+      <form className={localStyles.form} onSubmit={handleSubmit(onStartConsult)} noValidate>
         <label>
           Cola
-          <input {...register("queueId")} name="queueId" className={styles.input} />
+          <input {...register("queueId")} name="queueId" />
         </label>
         {errors.queueId && <div style={{ color: "#b00020" }}>{errors.queueId.message}</div>}
 
-        <div className={styles.row}>
+        <div className={localStyles.row}>
           <button type="button" onClick={doCallNext} disabled={busy}>
             Llamar siguiente
           </button>
@@ -134,17 +135,17 @@ export default function MedicalPage() {
 
         <label>
           Estación
-          <input {...register("stationId")} name="stationId" className={styles.input} />
+          <input {...register("stationId")} name="stationId" />
         </label>
 
         <label>
           PatientId
-          <input {...register("patientId")} name="patientId" className={styles.input} />
+          <input {...register("patientId")} name="patientId" />
         </label>
         {errors.patientId && <div style={{ color: "#b00020" }}>{errors.patientId.message}</div>}
 
         {/* Alerts rendered globally by AlertProvider */}
-        <div className={styles.row}>
+        <div className={localStyles.row}>
           <button type="submit" disabled={busy}>
             Iniciar consulta
           </button>
