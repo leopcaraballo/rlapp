@@ -13,7 +13,7 @@ using System.Reflection;
 [assembly: System.Reflection.AssemblyCompanyAttribute("WaitingRoom.API")]
 [assembly: System.Reflection.AssemblyConfigurationAttribute("Debug")]
 [assembly: System.Reflection.AssemblyFileVersionAttribute("1.0.0.0")]
-[assembly: System.Reflection.AssemblyInformationalVersionAttribute("1.0.0+64fa23403ba20b8f12c6dc8969da27d9f9d2fda8")]
+[assembly: System.Reflection.AssemblyInformationalVersionAttribute("1.0.0+2f4cd6d868878c7120b2fd3aa6cae0403c549b60")]
 [assembly: System.Reflection.AssemblyProductAttribute("WaitingRoom.API")]
 [assembly: System.Reflection.AssemblyTitleAttribute("WaitingRoom.API")]
 [assembly: System.Reflection.AssemblyVersionAttribute("1.0.0.0")]

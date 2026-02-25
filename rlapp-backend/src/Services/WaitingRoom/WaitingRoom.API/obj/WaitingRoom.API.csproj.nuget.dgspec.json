@@ -1098,6 +1098,10 @@
             "Serilog.Sinks.Console": {
               "target": "Package",
               "version": "[6.0.0, )"
+            },
+            "prometheus-net.AspNetCore": {
+              "target": "Package",
+              "version": "[8.*, )"
             }
           },
           "imports": [
