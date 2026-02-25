@@ -1,3 +1,6 @@
+using Scalar.AspNetCore;
+using Microsoft.AspNetCore.OpenApi;
+using Microsoft.OpenApi;
 using Serilog;
 using WaitingRoom.API.Validation;
 using WaitingRoom.API.Middleware;
@@ -123,7 +126,38 @@ services.AddSingleton<IProjection>(sp =>
 // ==============================================================================
 
 services.AddEndpointsApiExplorer();
-services.AddOpenApi();  // Use native .NET 10 OpenAPI instead of Swagger
+services.AddOpenApi(options =>
+{
+    options.AddDocumentTransformer((document, context, cancellationToken) =>
+    {
+        document.Info = new OpenApiInfo
+        {
+            Title = "RLAPP — WaitingRoom API",
+            Version = "v1",
+            Description = "API REST para gestion de sala de espera medica en tiempo real. "
+                + "Arquitectura hexagonal con Event Sourcing, CQRS y Outbox Pattern. "
+                + "Los comandos escriben eventos en el Event Store (PostgreSQL) y las consultas "
+                + "leen proyecciones denormalizadas.",
+            Contact = new OpenApiContact
+            {
+                Name = "Equipo RLAPP",
+                Email = "soporte@rlapp.dev"
+            },
+            License = new OpenApiLicense
+            {
+                Name = "Uso interno"
+            }
+        };
+
+        // // HUMAN CHECK — Ajustar los servidores segun el entorno de despliegue real
+        document.Servers =
+        [
+            new OpenApiServer { Url = "http://localhost:5204", Description = "Desarrollo local" }
+        ];
+
+        return Task.CompletedTask;
+    });
+});
 services.AddSignalR();
 
 services.AddCors(options =>
@@ -158,10 +192,22 @@ app.UseCorrelationId();
 app.UseMiddleware<ExceptionHandlerMiddleware>();
 app.UseCors("FrontendDev");
 
-// Development tools
+// OpenAPI schema + Scalar interactive UI
+// // HUMAN CHECK — En produccion real (no Docker local), considerar restringir acceso
+// a la documentacion mediante autenticacion o deshabilitar completamente.
+app.MapOpenApi();  // Serve OpenAPI schema at /openapi/v1.json
+
+app.MapScalarApiReference(options =>
+{
+    options
+        .WithTitle("RLAPP — WaitingRoom API")
+        .WithTheme(ScalarTheme.BluePlanet)
+        .WithDefaultHttpClient(ScalarTarget.CSharp, ScalarClient.HttpClient);
+});
+
+// Development-only tools
 if (app.Environment.IsDevelopment())
 {
-    app.MapOpenApi();  // Serve OpenAPI schema at /openapi/v1.json
     app.UseHttpsRedirection();
 }
 
@@ -268,6 +314,9 @@ commandGroup.MapPost("/api/waiting-room/check-in", async (
 })
 .WithName("CheckInPatient")
 .WithTags("WaitingRoom")
+.WithSummary("Registrar paciente en cola de espera")
+.WithDescription("Registra un nuevo paciente en la cola de espera indicada. Genera evento PatientCheckedIn en el Event Store.")
+.Accepts<CheckInPatientDto>("application/json")
 .Produces(200)
 .Produces(400)
 .Produces(404)
@@ -311,6 +360,9 @@ commandGroup.MapPost("/api/reception/register", async (
 })
 .WithName("RegisterPatientReception")
 .WithTags("Reception")
+.WithSummary("Registrar paciente desde recepcion")
+.WithDescription("Punto de entrada para recepcionistas. Registra paciente con los mismos datos que check-in pero desde el modulo de recepcion.")
+.Accepts<CheckInPatientDto>("application/json")
 .Produces(200)
 .Produces(400)
 .Produces(404)
@@ -349,6 +401,9 @@ commandGroup.MapPost("/api/cashier/call-next", async (
 })
 .WithName("CallNextCashier")
 .WithTags("Cashier")
+.WithSummary("Llamar siguiente paciente a caja")
+.WithDescription("El cajero solicita el siguiente paciente en la cola para proceso de pago. Genera evento PatientCalledToCashier.")
+.Accepts<CallNextCashierDto>("application/json")
 .Produces(200)
 .Produces(400)
 .Produces(404)
@@ -388,6 +443,9 @@ commandGroup.MapPost("/api/cashier/validate-payment", async (
 })
 .WithName("ValidatePayment")
 .WithTags("Cashier")
+.WithSummary("Validar pago del paciente")
+.WithDescription("Confirma que el paciente ha completado el pago. Genera evento PaymentValidated y avanza el flujo hacia consulta medica.")
+.Accepts<ValidatePaymentDto>("application/json")
 .Produces(200)
 .Produces(400)
 .Produces(404)
@@ -427,6 +485,9 @@ commandGroup.MapPost("/api/cashier/mark-payment-pending", async (
 })
 .WithName("MarkPaymentPending")
 .WithTags("Cashier")
+.WithSummary("Marcar pago como pendiente")
+.WithDescription("Indica que el paciente tiene un pago pendiente. El paciente permanece en cola pero no avanza hasta que se resuelva.")
+.Accepts<MarkPaymentPendingDto>("application/json")
 .Produces(200)
 .Produces(400)
 .Produces(404)
@@ -465,6 +526,9 @@ commandGroup.MapPost("/api/cashier/mark-absent", async (
 })
 .WithName("MarkAbsentAtCashier")
 .WithTags("Cashier")
+.WithSummary("Marcar paciente ausente en caja")
+.WithDescription("Registra que el paciente no se presento cuando fue llamado a caja. Genera evento de ausencia.")
+.Accepts<MarkAbsentAtCashierDto>("application/json")
 .Produces(200)
 .Produces(400)
 .Produces(404)
@@ -504,6 +568,9 @@ commandGroup.MapPost("/api/cashier/cancel-payment", async (
 })
 .WithName("CancelByPayment")
 .WithTags("Cashier")
+.WithSummary("Cancelar atencion por politica de pago")
+.WithDescription("Cancela la atencion del paciente por incumplimiento de pago. Genera evento CancelledByPayment.")
+.Accepts<CancelByPaymentDto>("application/json")
 .Produces(200)
 .Produces(400)
 .Produces(404)
@@ -542,6 +609,9 @@ commandGroup.MapPost("/api/medical/call-next", async (
 })
 .WithName("MedicalCallNext")
 .WithTags("Medical")
+.WithSummary("Llamar siguiente paciente para consulta medica")
+.WithDescription("El medico solicita el siguiente paciente que ya completo el pago. Genera evento PatientClaimedForConsultation.")
+.Accepts<ClaimNextPatientDto>("application/json")
 .Produces(200)
 .Produces(400)
 .Produces(404)
@@ -580,6 +650,9 @@ commandGroup.MapPost("/api/medical/consulting-room/activate", async (
 })
 .WithName("ActivateConsultingRoom")
 .WithTags("Medical")
+.WithSummary("Activar consultorio medico")
+.WithDescription("Marca un consultorio como disponible para recibir pacientes. Genera evento ConsultingRoomActivated.")
+.Accepts<ActivateConsultingRoomDto>("application/json")
 .Produces(200)
 .Produces(400)
 .Produces(404)
@@ -618,6 +691,9 @@ commandGroup.MapPost("/api/medical/consulting-room/deactivate", async (
 })
 .WithName("DeactivateConsultingRoom")
 .WithTags("Medical")
+.WithSummary("Desactivar consultorio medico")
+.WithDescription("Marca un consultorio como no disponible. Los pacientes no seran asignados a este consultorio hasta reactivacion.")
+.Accepts<DeactivateConsultingRoomDto>("application/json")
 .Produces(200)
 .Produces(400)
 .Produces(404)
@@ -656,6 +732,9 @@ commandGroup.MapPost("/api/medical/start-consultation", async (
 })
 .WithName("StartConsultation")
 .WithTags("Medical")
+.WithSummary("Iniciar consulta medica")
+.WithDescription("Registra que el paciente ha ingresado a consulta con el medico. Genera evento ConsultationStarted.")
+.Accepts<CallPatientDto>("application/json")
 .Produces(200)
 .Produces(400)
 .Produces(404)
@@ -696,6 +775,9 @@ commandGroup.MapPost("/api/medical/finish-consultation", async (
 })
 .WithName("FinishConsultation")
 .WithTags("Medical")
+.WithSummary("Finalizar consulta medica")
+.WithDescription("Registra la finalizacion de la consulta con resultado y notas. Genera evento AttentionCompleted.")
+.Accepts<CompleteAttentionDto>("application/json")
 .Produces(200)
 .Produces(400)
 .Produces(404)
@@ -734,6 +816,9 @@ commandGroup.MapPost("/api/medical/mark-absent", async (
 })
 .WithName("MarkAbsentAtConsultation")
 .WithTags("Medical")
+.WithSummary("Marcar paciente ausente en consulta")
+.WithDescription("Registra que el paciente no se presento a la consulta medica programada. Genera evento de ausencia.")
+.Accepts<MarkAbsentAtConsultationDto>("application/json")
 .Produces(200)
 .Produces(400)
 .Produces(404)
@@ -778,6 +863,9 @@ commandGroup.MapPost("/api/waiting-room/claim-next", async (
 })
 .WithName("ClaimNextPatient")
 .WithTags("WaitingRoom")
+.WithSummary("Reclamar siguiente paciente")
+.WithDescription("Reclama el siguiente paciente disponible en la cola para atencion. Asigna la estacion indicada al paciente.")
+.Accepts<ClaimNextPatientDto>("application/json")
 .Produces(200)
 .Produces(400)
 .Produces(404)
@@ -816,6 +904,9 @@ commandGroup.MapPost("/api/waiting-room/call-patient", async (
 })
 .WithName("CallPatient")
 .WithTags("WaitingRoom")
+.WithSummary("Llamar paciente especifico")
+.WithDescription("Llama a un paciente especifico de la cola para atencion. Genera evento PatientCalled.")
+.Accepts<CallPatientDto>("application/json")
 .Produces(200)
 .Produces(400)
 .Produces(404)
@@ -856,6 +947,9 @@ commandGroup.MapPost("/api/waiting-room/complete-attention", async (
 })
 .WithName("CompleteAttention")
 .WithTags("WaitingRoom")
+.WithSummary("Completar atencion del paciente")
+.WithDescription("Marca la atencion del paciente como finalizada con resultado y notas opcionales. Genera evento AttentionCompleted.")
+.Accepts<CompleteAttentionDto>("application/json")
 .Produces(200)
 .Produces(400)
 .Produces(404)
