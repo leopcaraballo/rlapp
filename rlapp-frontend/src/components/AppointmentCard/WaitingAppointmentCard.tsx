@@ -52,6 +52,9 @@ export function WaitingAppointmentCard({
           </span>
         </div>
       </div>
+      <div className={styles.cardFooter}>
+        <span className={styles.horaLabel}>{timeIcon}</span>
+      </div>
     </li>
   );
 }

@@ -1,21 +1,22 @@
 "use client";
-import React, { useEffect, useState } from "react";
+import { zodResolver } from "@hookform/resolvers/zod";
 import { useSearchParams } from "next/navigation";
+import React, { useEffect, useState } from "react";
+import { useForm } from "react-hook-form";
+import * as z from "zod";
+
+import { useAlert } from "@/context/AlertContext";
+import sharedStyles from "@/styles/page.module.css";
+
 import {
-  callNextMedical,
   activateConsultingRoom,
+  callNextMedical,
   deactivateConsultingRoom,
-  startConsultation,
   finishConsultation,
   markAbsentMedical,
+  startConsultation,
 } from "../../services/api/waitingRoom";
-import { useForm } from "react-hook-form";
-import { zodResolver } from "@hookform/resolvers/zod";
-import * as z from "zod";
 import localStyles from "./page.module.css";
-import sharedStyles from "@/styles/page.module.css";
-import Alert from "@/components/Alert";
-import { useAlert } from "@/context/AlertContext";
 
 const MedicalSchema = z.object({
   queueId: z.string().min(1, "La cola es obligatoria"),
@@ -49,8 +50,9 @@ export default function MedicalPage() {
     setBusy(true);
     try {
       await callNextMedical({ queueId: (document.querySelector('input[name="queueId"]') as HTMLInputElement)?.value || "default-queue", actor: "medical" });
-    } catch (err) {
-      alert.showError((err as any)?.message ?? "Error al llamar siguiente");
+    } catch (e: unknown) {
+      const msg = e instanceof Error ? e.message : String(e);
+      alert.showError(msg ?? "Error al llamar siguiente");
     } finally {
       setBusy(false);
     }
@@ -60,8 +62,9 @@ export default function MedicalPage() {
     setBusy(true);
     try {
       await activateConsultingRoom({ queueId: data.queueId, actor: "medical", stationId: data.stationId });
-    } catch (err) {
-      alert.showError((err as any)?.message ?? "Error al activar estación");
+    } catch (e: unknown) {
+      const msg = e instanceof Error ? e.message : String(e);
+      alert.showError(msg ?? "Error al activar estación");
     } finally {
       setBusy(false);
     }
@@ -71,8 +74,9 @@ export default function MedicalPage() {
     setBusy(true);
     try {
       await deactivateConsultingRoom({ queueId: data.queueId, actor: "medical", stationId: data.stationId });
-    } catch (err) {
-      alert.showError((err as any)?.message ?? "Error al desactivar estación");
+    } catch (e: unknown) {
+      const msg = e instanceof Error ? e.message : String(e);
+      alert.showError(msg ?? "Error al desactivar estación");
     } finally {
       setBusy(false);
     }
@@ -82,8 +86,9 @@ export default function MedicalPage() {
     setBusy(true);
     try {
       await startConsultation({ queueId: data.queueId, patientId: data.patientId, actor: "medical", stationId: data.stationId });
-    } catch (err) {
-      alert.showError((err as any)?.message ?? "Error al iniciar consulta");
+    } catch (e: unknown) {
+      const msg = e instanceof Error ? e.message : String(e);
+      alert.showError(msg ?? "Error al iniciar consulta");
     } finally {
       setBusy(false);
     }
@@ -93,8 +98,9 @@ export default function MedicalPage() {
     setBusy(true);
     try {
       await finishConsultation({ queueId: data.queueId, patientId: data.patientId, actor: "medical", stationId: data.stationId });
-    } catch (err) {
-      alert.showError((err as any)?.message ?? "Error al finalizar consulta");
+    } catch (e: unknown) {
+      const msg = e instanceof Error ? e.message : String(e);
+      alert.showError(msg ?? "Error al finalizar consulta");
     } finally {
       setBusy(false);
     }
@@ -104,8 +110,9 @@ export default function MedicalPage() {
     setBusy(true);
     try {
       await markAbsentMedical({ queueId: data.queueId, patientId: data.patientId, actor: "medical" });
-    } catch (err) {
-      alert.showError((err as any)?.message ?? "Error al marcar ausente");
+    } catch (e: unknown) {
+      const msg = e instanceof Error ? e.message : String(e);
+      alert.showError(msg ?? "Error al marcar ausente");
     } finally {
       setBusy(false);
     }

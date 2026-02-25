@@ -1,13 +1,15 @@
 "use client";
-import React, { useEffect } from "react";
 import Link from "next/link";
-import { useWaitingRoom } from "../../../hooks/useWaitingRoom";
-import MonitorCard from "../../../components/WaitingRoom/MonitorCard";
-import QueueStateCard from "../../../components/WaitingRoom/QueueStateCard";
-import NextTurnCard from "../../../components/WaitingRoom/NextTurnCard";
-import RecentHistory from "../../../components/WaitingRoom/RecentHistory";
-import NetworkStatus from "../../../components/NetworkStatus";
+import React, { useEffect } from "react";
+
 import styles from "@/styles/page.module.css";
+
+import NetworkStatus from "../../../components/NetworkStatus";
+import MonitorCard from "../../../components/WaitingRoom/MonitorCard";
+import NextTurnCard from "../../../components/WaitingRoom/NextTurnCard";
+import QueueStateCard from "../../../components/WaitingRoom/QueueStateCard";
+import RecentHistory from "../../../components/WaitingRoom/RecentHistory";
+import { useWaitingRoom } from "../../../hooks/useWaitingRoom";
 
 type Props = { params: { queueId: string } };
 

@@ -1,20 +1,21 @@
 "use client";
-import React, { useEffect, useState } from "react";
+import { zodResolver } from "@hookform/resolvers/zod";
 import { useSearchParams } from "next/navigation";
+import React, { useEffect, useState } from "react";
+import { useForm } from "react-hook-form";
+import * as z from "zod";
+
+import { useAlert } from "@/context/AlertContext";
+import sharedStyles from "@/styles/page.module.css";
+
 import {
   callNextCashier,
-  validatePayment,
-  markPaymentPending,
-  markAbsentAtCashier,
   cancelByPayment,
+  markAbsentAtCashier,
+  markPaymentPending,
+  validatePayment,
 } from "../../services/api/waitingRoom";
 import localStyles from "./page.module.css";
-import sharedStyles from "@/styles/page.module.css";
-import Alert from "@/components/Alert";
-import { useAlert } from "@/context/AlertContext";
-import { useForm } from "react-hook-form";
-import { zodResolver } from "@hookform/resolvers/zod";
-import * as z from "zod";
 
 const CashierSchema = z.object({
   queueId: z.string().min(1, "La cola es obligatoria"),
@@ -48,8 +49,9 @@ export default function CashierPage() {
     // clear handled by provider
     try {
       await callNextCashier({ queueId: (document.querySelector('input[name="queueId"]') as HTMLInputElement)?.value || "default-queue", actor: "cashier" });
-    } catch (err) {
-      alert.showError((err as any)?.message ?? "Error al llamar siguiente");
+    } catch (e: unknown) {
+      const msg = e instanceof Error ? e.message : String(e);
+      alert.showError(msg ?? "Error al llamar siguiente");
     } finally {
       setBusy(false);
     }
@@ -59,8 +61,9 @@ export default function CashierPage() {
     setBusy(true);
     try {
       await validatePayment({ queueId: data.queueId, patientId: data.patientId, actor: "cashier" });
-    } catch (err) {
-      alert.showError((err as any)?.message ?? "Error al validar pago");
+    } catch (e: unknown) {
+      const msg = e instanceof Error ? e.message : String(e);
+      alert.showError(msg ?? "Error al validar pago");
     } finally {
       setBusy(false);
     }
@@ -72,8 +75,9 @@ export default function CashierPage() {
       if (action === "pending") await markPaymentPending({ queueId: data.queueId, patientId: data.patientId, actor: "cashier" });
       if (action === "absent") await markAbsentAtCashier({ queueId: data.queueId, patientId: data.patientId, actor: "cashier" });
       if (action === "cancel") await cancelByPayment({ queueId: data.queueId, patientId: data.patientId, actor: "cashier" });
-    } catch (err) {
-      alert.showError((err as any)?.message ?? "Error en la acción");
+    } catch (e: unknown) {
+      const msg = e instanceof Error ? e.message : String(e);
+      alert.showError(msg ?? "Error en la acción");
     } finally {
       setBusy(false);
     }

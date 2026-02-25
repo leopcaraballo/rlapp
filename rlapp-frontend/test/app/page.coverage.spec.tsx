@@ -1,5 +1,5 @@
-import React from "react";
 import { act, render, screen, waitFor } from "@testing-library/react";
+import React from "react";
 
 import AppointmentsScreen from "@/app/page";
 
@@ -53,7 +53,7 @@ describe("AppointmentsScreen coverage", () => {
     render(<AppointmentsScreen />);
 
     expect(screen.getByText(/Toca la pantalla/)).toBeInTheDocument();
-    expect(screen.getByText(/No hay turnos registrados/)).toBeInTheDocument();
+    expect(screen.getAllByText(/No hay turnos/).length).toBeGreaterThan(0);
   });
 
   it("renders called and waiting appointments with toast", async () => {

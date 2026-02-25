@@ -1,14 +1,15 @@
 "use client";
-import React, { useEffect, useState } from "react";
-import { useRouter, useSearchParams } from "next/navigation";
-import localStyles from "./page.module.css";
-import sharedStyles from "@/styles/page.module.css";
-import Alert from "@/components/Alert";
-import { useAlert } from "@/context/AlertContext";
-import { checkInPatient } from "../../services/api/waitingRoom";
-import { useForm } from "react-hook-form";
 import { zodResolver } from "@hookform/resolvers/zod";
+import { useRouter, useSearchParams } from "next/navigation";
+import React, { useEffect, useState } from "react";
+import { useForm } from "react-hook-form";
 import * as z from "zod";
+
+import { useAlert } from "@/context/AlertContext";
+import sharedStyles from "@/styles/page.module.css";
+
+import { checkInPatient } from "../../services/api/waitingRoom";
+import localStyles from "./page.module.css";
 
 const CheckInSchema = z.object({
   patientName: z.string().min(2, "El nombre es obligatorio (mínimo 2 caracteres)"),
@@ -51,9 +52,9 @@ export default function ReceptionPage() {
         actor: "reception",
       });
       router.push(`/waiting-room/${data.queueId}`);
-    } catch (err) {
-      const msg = (err as any)?.message ?? "Error al registrar check-in";
-      alert.showError(msg);
+    } catch (e: unknown) {
+      const msg = e instanceof Error ? e.message : String(e);
+      alert.showError(msg ?? "Error al registrar check-in");
     } finally {
       setSubmitting(false);
     }

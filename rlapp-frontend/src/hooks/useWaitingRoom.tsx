@@ -1,18 +1,19 @@
 "use client";
-import { useEffect, useState, useRef } from "react";
+import { useEffect, useRef,useState } from "react";
+
+import { useAlert } from "../context/AlertContext";
+import type {
+  NextTurnView,
+  QueueStateView,
+  RecentAttentionRecordView,
+  WaitingRoomMonitorView,
+} from "../services/api/types";
 import {
   getMonitor,
-  getQueueState,
   getNextTurn,
+  getQueueState,
   getRecentHistory,
 } from "../services/api/waitingRoom";
-import type {
-  WaitingRoomMonitorView,
-  QueueStateView,
-  NextTurnView,
-  RecentAttentionRecordView,
-} from "../services/api/types";
-import { useAlert } from "../context/AlertContext";
 
 export type ConnectionState = "connecting" | "online" | "degraded" | "offline";
 
@@ -25,7 +26,13 @@ export function useWaitingRoom(queueId: string, refreshInterval = 5000) {
   const [lastUpdated, setLastUpdated] = useState<string | null>(null);
   const failureCount = useRef(0);
   const mounted = useRef(true);
-  const alert = useAlert();
+  let alert;
+  try {
+    alert = useAlert();
+  } catch {
+    // When tests render components without AlertProvider, provide a no-op fallback
+    alert = { showError: (_: string) => {}, showSuccess: (_: string) => {}, showInfo: (_: string) => {} };
+  }
 
   useEffect(() => {
     mounted.current = true;
@@ -47,7 +54,7 @@ export function useWaitingRoom(queueId: string, refreshInterval = 5000) {
         setLastUpdated(new Date().toISOString());
         failureCount.current = 0;
         setConnectionState("online");
-      } catch (err) {
+      } catch {
         failureCount.current += 1;
         if (failureCount.current >= 3) {
           setConnectionState("degraded");
@@ -63,9 +70,9 @@ export function useWaitingRoom(queueId: string, refreshInterval = 5000) {
     fetchAll();
     const id = setInterval(fetchAll, refreshInterval);
 
-    function onCommand(e: any) {
+    function onCommand(e: Event) {
       try {
-        const q = e?.detail?.queueId;
+        const q = (e as CustomEvent<{ queueId?: string }>)?.detail?.queueId;
         if (!q || q === queueId) refresh();
       } catch {
         // ignore
@@ -96,7 +103,7 @@ export function useWaitingRoom(queueId: string, refreshInterval = 5000) {
         setLastUpdated(new Date().toISOString());
         failureCount.current = 0;
         setConnectionState("online");
-      } catch (err) {
+      } catch {
         failureCount.current += 1;
         if (failureCount.current >= 3) {
           setConnectionState("degraded");

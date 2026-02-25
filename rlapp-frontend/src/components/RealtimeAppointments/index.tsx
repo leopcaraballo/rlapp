@@ -1,17 +1,19 @@
 "use client";
 import React, { useCallback, useEffect, useState } from "react";
+
 import {
   CalledAppointmentCard,
-  WaitingAppointmentCard,
   CompletedAppointmentCard,
+  WaitingAppointmentCard,
 } from "@/components/AppointmentCard";
 import AppointmentSkeleton from "@/components/AppointmentSkeleton";
+import WaitingRoomDemo from "@/components/WaitingRoomDemo";
 import WebSocketStatus from "@/components/WebSocketStatus";
+import { ConnectionStatus } from "@/components/WebSocketStatus";
 import { Appointment } from "@/domain/Appointment";
 import { useAppointmentsWebSocket } from "@/hooks/useAppointmentsWebSocket";
 import { audioService } from "@/services/AudioService";
 import styles from "@/styles/page.module.css";
-import WaitingRoomDemo from "@/components/WaitingRoomDemo";
 
 type Props = {
   layout?: "split" | "container";
@@ -26,7 +28,7 @@ export default function RealtimeAppointments({
   title = "Turnos Disponibles",
   demoQueueId = null,
 }: Props) {
-  const [audioEnabled, setAudioEnabled] = useState(false);
+  const [audioEnabled, setAudioEnabled] = useState(() => audioService.isEnabled());
   const [showToast, setShowToast] = useState<string | null>(null);
 
   const handleUpdate = useCallback((appointment: Appointment) => {
@@ -80,7 +82,7 @@ export default function RealtimeAppointments({
       <main className={styles.dashboardContainer}>
         <header className={styles.stickyHeader}>
           <h1 className={styles.title}>{title}</h1>
-            <WebSocketStatus status={connectionStatus as any} variant="block" />
+            <WebSocketStatus status={connectionStatus as ConnectionStatus} variant="block" />
           {!audioEnabled && <p className={styles.audioHint}>Toca la pantalla para activar sonido 🔔</p>}
           {error && <p className={styles.error}>{error}</p>}
         </header>
@@ -156,7 +158,7 @@ export default function RealtimeAppointments({
       <section className={styles.leftPanel}>
         <header className={styles.stickyHeader}>
           <h1 className={styles.title}>{title}</h1>
-          <WebSocketStatus status={connectionStatus as any} variant="block" />
+            <WebSocketStatus status={connectionStatus as ConnectionStatus} variant="block" />
           {!audioEnabled && <p className={styles.audioHint}>Toca la pantalla para activar sonido 🔔</p>}
           {error && <p className={styles.error}>{error}</p>}
         </header>

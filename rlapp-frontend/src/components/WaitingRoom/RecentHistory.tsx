@@ -1,5 +1,6 @@
 "use client";
 import React from "react";
+
 import type { RecentAttentionRecordView } from "../../services/api/types";
 
 type Props = { history: RecentAttentionRecordView[] };
