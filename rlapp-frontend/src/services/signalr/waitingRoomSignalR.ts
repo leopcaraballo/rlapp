@@ -1,11 +1,13 @@
-import { HttpTransportType, HubConnection, HubConnectionBuilder, HubConnectionState,LogLevel } from "@microsoft/signalr";
+import { HttpTransportType, HubConnection, HubConnectionBuilder, HubConnectionState, LogLevel } from "@microsoft/signalr";
 
-const WS_BASE = (process.env.NEXT_PUBLIC_WS_URL || process.env.NEXT_PUBLIC_API_BASE_URL || "http://localhost:5000").replace(/\/$/, '');
+const WS_BASE = (process.env.NEXT_PUBLIC_WS_URL || process.env.NEXT_PUBLIC_API_BASE_URL || "http://localhost:5000").replace(/\/$/, "");
 
 /** Si es true, todos los intentos de conectar se omiten silenciosamente. */
 const WS_DISABLED = process.env.NEXT_PUBLIC_WS_DISABLED === "true";
 
 let connection: HubConnection | null = null;
+/** queueId de la última conexión, usado para re-registrar tras reconexión. */
+let lastQueueId: string | null = null;
 
 export type WaitingRoomHandlers = {
   onMonitor?: (payload: unknown) => void;
@@ -14,6 +16,7 @@ export type WaitingRoomHandlers = {
   onRecentHistory?: (payload: unknown) => void;
   onAny?: (event: string, payload: unknown) => void;
   onConnected?: () => void;
+  onDisconnected?: () => void;
 };
 
 /**
@@ -23,10 +26,10 @@ export type WaitingRoomHandlers = {
 async function startWithRetry(
   conn: HubConnection,
   isActive: () => boolean,
-  maxAttempts = 2,
+  maxAttempts = 3,
 ): Promise<void> {
   let attempt = 0;
-  const base = 500;
+  const base = 1000;
   while (attempt < maxAttempts) {
     if (!isActive()) {
       throw new Error("SignalR: conexión detenida externamente, se abortan los reintentos.");
@@ -39,16 +42,25 @@ async function startWithRetry(
       if (!isActive()) {
         throw new Error("SignalR: conexión detenida externamente durante reintento, se aborta.");
       }
-      const delay = base * Math.pow(2, attempt);
+      if (attempt >= maxAttempts) break;
+      const delay = base * Math.pow(2, attempt - 1);
       const errMsg = err instanceof Error ? err.message : String(err);
-      console.warn(`SignalR: intento ${attempt} fallido, reintentando en ${delay}ms —`, errMsg);
+      console.warn(`SignalR: intento ${attempt}/${maxAttempts} fallido, reintentando en ${delay}ms —`, errMsg);
       await new Promise<void>((r) => setTimeout(r, delay));
     }
   }
-  throw new Error("SignalR: no se pudo establecer la conexión tras los reintentos.");
+  throw new Error(`SignalR: no se pudo establecer la conexión tras ${maxAttempts} reintentos.`);
 }
 
-export async function connect(queueId: string, handlers: WaitingRoomHandlers = {}) {
+/**
+ * Conecta al Hub de SignalR para la cola indicada.
+ * Si la conexión ya existe y está activa, la reutiliza.
+ *
+ * Los handlers registrados escuchan eventos push del servidor.
+ * El polling REST sigue siendo la fuente primaria de datos;
+ * SignalR actúa como canal de baja latencia cuando el servidor emite eventos.
+ */
+export async function connect(queueId: string, handlers: WaitingRoomHandlers = {}): Promise<HubConnection | null> {
   // Salida rápida si SignalR está deshabilitado por variable de entorno
   if (WS_DISABLED) {
     console.info("SignalR: deshabilitado por NEXT_PUBLIC_WS_DISABLED. Usando solo polling REST.");
@@ -69,6 +81,7 @@ export async function connect(queueId: string, handlers: WaitingRoomHandlers = {
     connection = null;
   }
 
+  lastQueueId = queueId;
   const url = `${WS_BASE}/ws/waiting-room`;
   const newConn = new HubConnectionBuilder()
     .withUrl(url, {
@@ -77,17 +90,24 @@ export async function connect(queueId: string, handlers: WaitingRoomHandlers = {
       withCredentials: true,
       headers: { "X-Queue-Id": queueId },
     })
-    .withAutomaticReconnect([1000, 3000, 5000])
+    .withAutomaticReconnect([1000, 3000, 5000, 10000])
     .configureLogging(LogLevel.Warning)
     .build();
 
   connection = newConn;
 
-  // Registrar manejadores de eventos conocidos
+  // ─── Registrar manejadores de eventos push del servidor ───
+  // Estos se activarán cuando el backend soporte notificaciones push.
   newConn.on("MonitorUpdated", (payload: unknown) => handlers.onMonitor?.(payload));
   newConn.on("QueueStateUpdated", (payload: unknown) => handlers.onQueueState?.(payload));
   newConn.on("NextTurn", (payload: unknown) => handlers.onNextTurn?.(payload));
   newConn.on("RecentHistoryUpdated", (payload: unknown) => handlers.onRecentHistory?.(payload));
+
+  // Evento genérico de actualización de proyección (emitido tras rebuild u otros cambios)
+  newConn.on("projectionUpdated", (payload: unknown) => {
+    handlers.onMonitor?.(payload);
+    handlers.onAny?.("projectionUpdated", payload);
+  });
 
   // Manejadores genéricos
   newConn.on("Message", (payload: unknown) => handlers.onAny?.("Message", payload));
@@ -110,11 +130,13 @@ export async function connect(queueId: string, handlers: WaitingRoomHandlers = {
     } else {
       console.info("SignalR: conexión cerrada.");
     }
+    handlers.onDisconnected?.();
   });
 
   try {
     // isActive: verifica que esta instancia sigue siendo la conexión vigente
     await startWithRetry(newConn, () => connection === newConn);
+    console.info(`SignalR: conectado al hub para la cola ${queueId}`);
     handlers.onConnected?.();
   } catch (err) {
     console.warn("SignalR: fallo definitivo al iniciar la conexión:", err);
@@ -127,18 +149,23 @@ export async function connect(queueId: string, handlers: WaitingRoomHandlers = {
   return connection ?? newConn;
 }
 
-export async function disconnect() {
+export async function disconnect(): Promise<void> {
   if (!connection) return;
   try {
     await connection.stop();
   } finally {
     connection = null;
+    lastQueueId = null;
   }
 }
 
-export function isConnected() {
+/** Devuelve el queueId de la conexión activa, o null. */
+export function getActiveQueueId(): string | null {
+  return lastQueueId;
+}
+
+export function isConnected(): boolean {
   if (!connection) return false;
-  // HubConnection does not always expose `state` in all typings, so narrow safely
   const connState = (connection as unknown as { state?: HubConnectionState }).state;
   return connState === HubConnectionState.Connected;
 }

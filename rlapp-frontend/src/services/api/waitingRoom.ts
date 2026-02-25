@@ -66,8 +66,10 @@ export async function getQueueState(queueId: string): Promise<QueueStateView> {
   return handleResponse<QueueStateView>(res);
 }
 
-export async function getNextTurn(queueId: string): Promise<NextTurnView> {
+export async function getNextTurn(queueId: string): Promise<NextTurnView | null> {
   const res = await fetch(`${API_BASE}/api/v1/waiting-room/${encodeURIComponent(queueId)}/next-turn`, { headers: baseHeaders() });
+  // 404 es normal cuando no hay turno activo (cola vacía o nadie llamado)
+  if (res.status === 404) return null;
   return handleResponse<NextTurnView>(res);
 }
 
