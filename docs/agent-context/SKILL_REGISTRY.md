@@ -13,6 +13,6 @@
 | `refactor-arch (Senior Level)` | `skills/refactor-arch/skill.md` | When feedback mentions architecture refactoring, hexagonal architecture, SOLID principles, design patterns, ports and adapters, domain isolation, coupling, decoupling, or dependency inversion. | `backend/producer/src/, backend/consumer/src/, frontend/src/` |
 | `security-audit` | `skills/security-audit/skill.md` | When feedback mentions security, vulnerabilities, audit, authentication, authorization, OWASP, secrets, certificates, encryption, or pen-testing. | `backend/producer/src/, backend/consumer/src/, frontend/src/, docker-compose.yml, .env.example` |
 | `skill-creator (Senior Level)` | `skills/skill-creator/skill.md` | When a task requires a specific capability not covered by existing skills in /skills. | `skills/, .agent/workflows/` |
-| `testing-qa (Senior Level)` | `skills/testing-qa/skill.md` | When feedback mentions tests, specs, unit testing, mocking, coverage, test failures, or QA validation. | `backend/producer/test/, backend/consumer/test/, backend/consumer/src/**/*.spec.ts, backend/producer/src/**/*.spec.ts` |
+| `testing-qa (Senior Level)` | `skills/testing-qa/skill.md` | When feedback mentions tests, specs, unit testing, mocking, coverage, test failures, or QA validation. | `backend/producer/test/, backend/consumer/test/, backend/consumer/src/**/*.spec.ts, backend/producer/src/**/*.spec.ts, rlapp-frontend/test/, rlapp-frontend/src/**/*.test.{ts,tsx}` |
 
 <!-- END SKILL REFERENCES -->
