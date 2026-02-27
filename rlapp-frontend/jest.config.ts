@@ -15,6 +15,11 @@ const config: Config = {
   moduleNameMapper: {
     "^@/(.*)$": "<rootDir>/src/$1",
     "^@test/(.*)$": "<rootDir>/test/$1",
+    "^until-async$": "<rootDir>/test/__mocks__/until-async.ts",
+  },
+  transformIgnorePatterns: ["node_modules/(?!msw|@mswjs/interceptors|until-async)/"],
+  testEnvironmentOptions: {
+    customExportConditions: ["node"],
   },
   testMatch: [
     "<rootDir>/test/hooks/**/*.spec.ts",

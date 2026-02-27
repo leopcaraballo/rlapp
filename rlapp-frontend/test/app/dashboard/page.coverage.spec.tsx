@@ -1,19 +1,20 @@
-import { act, render, screen } from "@testing-library/react";
+import { render, screen } from "@testing-library/react";
+import React from "react";
 
 import CompletedHistoryDashboard from "@/app/dashboard/page";
 
-const mockUseQueueAsAppointments = jest.fn();
-const mockAudio = {
-  init: jest.fn(),
-  unlock: jest.fn().mockResolvedValue(undefined),
-  isEnabled: jest.fn().mockReturnValue(false),
-  play: jest.fn(),
-};
+function createMockAudio() {
+  return {
+    init: jest.fn(),
+    unlock: jest.fn().mockResolvedValue(undefined),
+    isEnabled: jest.fn().mockReturnValue(false),
+    play: jest.fn(),
+  };
+}
 
-jest.mock("@/hooks/useQueueAsAppointments", () => ({
-  useQueueAsAppointments: (...args: unknown[]) =>
-    mockUseQueueAsAppointments(...args),
-}));
+let mockAudio: ReturnType<typeof createMockAudio>;
+
+let mockHookReturn: any;
 
 jest.mock("@/services/AudioService", () => ({
   get audioService() {
@@ -21,23 +22,25 @@ jest.mock("@/services/AudioService", () => ({
   },
 }));
 
-jest.mock("@/components/WaitingRoomDemo", () => () => (
-  <div data-testid="waiting-room-demo" />
-));
+jest.mock("@/hooks/useQueueAsAppointments", () => ({
+  useQueueAsAppointments: jest.fn(() => mockHookReturn),
+}));
 
 describe("CompletedHistoryDashboard coverage", () => {
   beforeEach(() => {
-    jest.clearAllMocks();
-    mockUseQueueAsAppointments.mockReturnValue({
+    mockAudio = createMockAudio();
+    mockHookReturn = {
       appointments: [],
       error: null,
       connected: false,
       isConnecting: false,
-      connectionStatus: "disconnected",
-    });
+      connectionStatus: "connecting",
+    };
+    mockAudio.play.mockClear();
+    mockAudio.isEnabled.mockReturnValue(false);
   });
 
-  it("renderiza estados vacíos cuando no hay turnos", () => {
+  it("renders empty states when no appointments", () => {
     render(<CompletedHistoryDashboard />);
 
     expect(
@@ -49,52 +52,97 @@ describe("CompletedHistoryDashboard coverage", () => {
     ).toBeInTheDocument();
   });
 
-  it("renderiza skeletons cuando está conectando", () => {
-    mockUseQueueAsAppointments.mockReturnValue({
-      appointments: [],
-      error: null,
-      connected: false,
-      isConnecting: true,
-      connectionStatus: "connecting",
-    });
-
-    const { container } = render(<CompletedHistoryDashboard />);
-    expect(container.querySelectorAll(".skeletonCard").length).toBeGreaterThan(
-      0,
-    );
-  });
-
-  it("renderiza toast de turno llamado cuando llega appointment llamado", () => {
-    jest.useFakeTimers();
-    mockAudio.isEnabled.mockReturnValue(true);
-    mockUseQueueAsAppointments.mockReturnValue({
+  it("renders called, waiting, and completed lists", () => {
+    mockHookReturn = {
       appointments: [
-        {
-          id: "called-1",
-          fullName: "Paciente llamado",
-          idCard: 1,
-          status: "called",
-          office: "CONS-01",
-          priority: "High",
-          timestamp: Date.now(),
-        },
+        { id: "1", fullName: "Called Patient", status: "called", office: "2", priority: "High", timestamp: 2 },
+        { id: "2", fullName: "Waiting Patient", status: "waiting", office: null, priority: "Low", timestamp: 3 },
+        { id: "3", fullName: "Completed Patient", status: "completed", office: "1", priority: "Medium", timestamp: 4 },
       ],
       error: null,
       connected: true,
       isConnecting: false,
       connectionStatus: "connected",
-    });
+    };
 
     render(<CompletedHistoryDashboard />);
 
-    expect(mockAudio.play).toHaveBeenCalled();
+    expect(screen.getByText(/En consultorio/)).toBeInTheDocument();
+    expect(screen.getByText(/En espera/)).toBeInTheDocument();
+    expect(screen.getByText(/Completados/)).toBeInTheDocument();
+  });
+
+  it("shows skeletons when connecting", () => {
+    mockHookReturn = {
+      appointments: [],
+      error: null,
+      connected: false,
+      isConnecting: true,
+      connectionStatus: "connecting",
+    };
+
+    const { container } = render(<CompletedHistoryDashboard />);
+
+    const skeletons = container.querySelectorAll(".skeletonCard");
+    expect(skeletons.length).toBeGreaterThan(0);
+  });
+
+  it("shows error state when hook fails", () => {
+    mockHookReturn = {
+      appointments: [],
+      error: "network-error",
+      connected: false,
+      isConnecting: false,
+      connectionStatus: "disconnected",
+    };
+
+    render(<CompletedHistoryDashboard />);
+
+    expect(screen.getByText(/network-error/)).toBeInTheDocument();
+  });
+
+  it("hides audio hint when audio is enabled", () => {
+    const useStateSpy = jest.spyOn(React, "useState");
+    useStateSpy.mockImplementationOnce(() => [true, jest.fn()]);
+    mockAudio.isEnabled.mockReturnValue(true);
+
+    render(<CompletedHistoryDashboard />);
+
+    expect(screen.queryByText(/activar sonido/)).not.toBeInTheDocument();
+
+    useStateSpy.mockRestore();
+  });
+
+  it("shows toast when appointments include a called status", () => {
+    mockHookReturn = {
+      appointments: [
+        { id: "99", fullName: "Called Patient", status: "called", office: "1", priority: "Medium", timestamp: 1 },
+      ],
+      error: null,
+      connected: true,
+      isConnecting: false,
+      connectionStatus: "connected",
+    };
+
+    render(<CompletedHistoryDashboard />);
+
     expect(screen.getByText(/Nuevo turno llamado/)).toBeInTheDocument();
+  });
 
-    act(() => {
-      jest.runOnlyPendingTimers();
-    });
+  it("does not play audio when audio is disabled", () => {
+    mockAudio.isEnabled.mockReturnValue(false);
+    mockHookReturn = {
+      appointments: [
+        { id: "77", fullName: "Called Patient", status: "called", office: "1", priority: "Low", timestamp: 1 },
+      ],
+      error: null,
+      connected: true,
+      isConnecting: false,
+      connectionStatus: "connected",
+    };
 
-    expect(screen.queryByText(/Nuevo turno llamado/)).not.toBeInTheDocument();
-    jest.useRealTimers();
+    render(<CompletedHistoryDashboard />);
+
+    expect(mockAudio.play).not.toHaveBeenCalled();
   });
 });

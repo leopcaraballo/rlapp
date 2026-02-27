@@ -5,7 +5,7 @@ import { render, screen } from "@testing-library/react";
 
 import Home from "@/app/page";
 
-// Mock del hook actual
+// Mock del hook que usa RealtimeAppointments
 jest.mock("@/hooks/useQueueAsAppointments", () => ({
   useQueueAsAppointments: () => ({
     appointments: [
@@ -32,10 +32,6 @@ jest.mock("@/hooks/useQueueAsAppointments", () => ({
     connectionStatus: "connected" as const,
   }),
 }));
-
-jest.mock("@/components/WaitingRoomDemo", () => () => (
-  <div data-testid="waiting-room-demo" />
-));
 
 describe("Home Page", () => {
   it("renders the title in Spanish", () => {
