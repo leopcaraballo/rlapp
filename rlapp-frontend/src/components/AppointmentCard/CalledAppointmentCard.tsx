@@ -17,12 +17,14 @@ export interface CalledAppointmentCardProps {
 }
 
 function getPriorityBadge(priority: string): string {
-  switch (priority.trim().toLowerCase()) {
-    case "high":
+  switch (priority) {
+    case "Urgent":
+      return "🔴 Urgente";
+    case "High":
       return "🔴 Alta";
-    case "medium":
+    case "Medium":
       return "🟡 Media";
-    case "low":
+    case "Low":
     default:
       return "🟢 Baja";
   }
@@ -43,8 +45,6 @@ export function CalledAppointmentCard({
   timeIcon = "🔔",
   showTime = true,
 }: CalledAppointmentCardProps) {
-  const normalizedPriority = appointment.priority.trim().toLowerCase();
-
   return (
     <li className={`${styles.appointmentCard} ${styles.called}`}>
       <div className={styles.cardHeader}>
@@ -59,7 +59,10 @@ export function CalledAppointmentCard({
         </div>
         <div className={styles.infoRow}>
           <span className={styles.label}>Prioridad:</span>
-          <span className={styles.statusBadge} data-status={normalizedPriority}>
+          <span
+            className={styles.statusBadge}
+            data-status={appointment.priority}
+          >
             {getPriorityBadge(appointment.priority)}
           </span>
         </div>

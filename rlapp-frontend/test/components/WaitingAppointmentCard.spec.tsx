@@ -101,7 +101,7 @@ describe("WaitingAppointmentCard", () => {
         <WaitingAppointmentCard appointment={mockAppointment} />,
       );
 
-      const statusBadge = container.querySelector('[data-status="high"]');
+      const statusBadge = container.querySelector('[data-status="High"]');
       expect(statusBadge).toBeInTheDocument();
     });
   });
