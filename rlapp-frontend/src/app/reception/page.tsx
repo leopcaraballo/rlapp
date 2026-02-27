@@ -7,13 +7,13 @@ import * as z from "zod";
 
 import { env } from "@/config/env";
 import { useAlert } from "@/context/AlertContext";
-import { useWaitingRoom } from "@/hooks/useWaitingRoom";
-
 import {
   CONSULTATION_TYPE_LABELS,
   type ConsultationType,
 } from "@/domain/patient/ConsultationType";
-import { registerReception } from "../../services/api/waitingRoom";
+import { useWaitingRoom } from "@/hooks/useWaitingRoom";
+import { registerReception } from "@/services/api/waitingRoom";
+
 import styles from "./page.module.css";
 
 const VALID_PRIORITIES = ["Low", "Medium", "High", "Urgent"] as const;
@@ -26,10 +26,14 @@ const PRIORITY_LABELS: Record<BackendPriority, string> = {
   Urgent: "Urgente",
 };
 
-const CONSULTATION_TYPES = Object.keys(CONSULTATION_TYPE_LABELS) as ConsultationType[];
+const CONSULTATION_TYPES = Object.keys(
+  CONSULTATION_TYPE_LABELS,
+) as ConsultationType[];
 
 const CheckInSchema = z.object({
-  patientName: z.string().min(2, "El nombre es obligatorio (mínimo 2 caracteres)"),
+  patientName: z
+    .string()
+    .min(2, "El nombre es obligatorio (mínimo 2 caracteres)"),
   queueId: z.string().min(1, "La cola es obligatoria"),
   priority: z.enum(VALID_PRIORITIES),
   consultationType: z.enum(["General", "Specialist", "Emergency"] as const),
@@ -54,7 +58,15 @@ export default function ReceptionPage() {
     formState: { errors },
   } = useForm<CheckInForm>({
     resolver: zodResolver(CheckInSchema),
-    defaultValues: { patientName: "", queueId: env.DEFAULT_QUEUE_ID, priority: "Medium", consultationType: "General", age: null, isPregnant: null, notes: null },
+    defaultValues: {
+      patientName: "",
+      queueId: env.DEFAULT_QUEUE_ID,
+      priority: "Medium",
+      consultationType: "General",
+      age: null,
+      isPregnant: null,
+      notes: null,
+    },
   });
 
   useEffect(() => {
@@ -80,7 +92,7 @@ export default function ReceptionPage() {
         notes: data.notes ?? null,
         actor: "reception",
       });
-      router.push('/dashboard');
+      router.push("/dashboard");
     } catch (e: unknown) {
       const msg = e instanceof Error ? e.message : String(e);
       alert.showError(msg ?? "Error al registrar check-in");
@@ -103,15 +115,21 @@ export default function ReceptionPage() {
           {queueState && (
             <div className={styles.statsGrid}>
               <div className={styles.statCard}>
-                <span className={styles.statValue}>{queueState.currentCount}</span>
+                <span className={styles.statValue}>
+                  {queueState.currentCount}
+                </span>
                 <span className={styles.statLabel}>En espera</span>
               </div>
               <div className={styles.statCard}>
-                <span className={styles.statValue}>{queueState.maxCapacity}</span>
+                <span className={styles.statValue}>
+                  {queueState.maxCapacity}
+                </span>
                 <span className={styles.statLabel}>Capacidad</span>
               </div>
               <div className={styles.statCard}>
-                <span className={styles.statValue}>{queueState.availableSpots}</span>
+                <span className={styles.statValue}>
+                  {queueState.availableSpots}
+                </span>
                 <span className={styles.statLabel}>Disponibles</span>
               </div>
             </div>
@@ -130,7 +148,9 @@ export default function ReceptionPage() {
                     <span className={styles.patientName}>{p.patientName}</span>
                     <span className={styles.patientId}>{p.patientId}</span>
                   </div>
-                  <span className={styles.waitTime}>{p.waitTimeMinutes} min</span>
+                  <span className={styles.waitTime}>
+                    {p.waitTimeMinutes} min
+                  </span>
                 </li>
               ))}
             </ul>
@@ -144,9 +164,15 @@ export default function ReceptionPage() {
           <h2 className={styles.panelTitle}>Recepción — Check-in</h2>
         </header>
         <div className={styles.panelBody}>
-          <form onSubmit={handleSubmit(onSubmit)} className={styles.form} noValidate>
+          <form
+            onSubmit={handleSubmit(onSubmit)}
+            className={styles.form}
+            noValidate
+          >
             <div className={styles.formGroup}>
-              <label className={styles.label} htmlFor="patientName">Nombre del paciente</label>
+              <label className={styles.label} htmlFor="patientName">
+                Nombre del paciente
+              </label>
               <input
                 id="patientName"
                 className={styles.input}
@@ -154,33 +180,78 @@ export default function ReceptionPage() {
                 placeholder="Ej. María García"
                 {...register("patientName")}
               />
-              {errors.patientName && <div className={styles.fieldError} role="alert">{errors.patientName.message}</div>}
+              {errors.patientName && (
+                <div className={styles.fieldError} role="alert">
+                  {errors.patientName.message}
+                </div>
+              )}
             </div>
 
             <div className={styles.formRow}>
               <div className={styles.formGroup}>
-                <label className={styles.label} htmlFor="queueId">Cola</label>
-                <input id="queueId" className={styles.input} placeholder="ej. QUEUE-01" {...register("queueId")} />
-                {errors.queueId && <div className={styles.fieldError} role="alert">{errors.queueId.message}</div>}
+                <label className={styles.label} htmlFor="queueId">
+                  Cola
+                </label>
+                <input
+                  id="queueId"
+                  className={styles.input}
+                  placeholder="ej. QUEUE-01"
+                  {...register("queueId")}
+                />
+                {errors.queueId && (
+                  <div className={styles.fieldError} role="alert">
+                    {errors.queueId.message}
+                  </div>
+                )}
               </div>
               <div className={styles.formGroup}>
-                <label className={styles.label} htmlFor="priority">Prioridad</label>
-                <select id="priority" className={styles.input} {...register("priority")}>
-                  {VALID_PRIORITIES.map((p) => <option key={p} value={p}>{PRIORITY_LABELS[p]}</option>)}
+                <label className={styles.label} htmlFor="priority">
+                  Prioridad
+                </label>
+                <select
+                  id="priority"
+                  className={styles.input}
+                  {...register("priority")}
+                >
+                  {VALID_PRIORITIES.map((p) => (
+                    <option key={p} value={p}>
+                      {PRIORITY_LABELS[p]}
+                    </option>
+                  ))}
                 </select>
               </div>
             </div>
 
             <div className={styles.formRow}>
               <div className={styles.formGroup}>
-                <label className={styles.label} htmlFor="consultationType">Tipo de consulta</label>
-                <select id="consultationType" className={styles.input} {...register("consultationType")}>
-                  {CONSULTATION_TYPES.map((ct) => <option key={ct} value={ct}>{CONSULTATION_TYPE_LABELS[ct]}</option>)}
+                <label className={styles.label} htmlFor="consultationType">
+                  Tipo de consulta
+                </label>
+                <select
+                  id="consultationType"
+                  className={styles.input}
+                  {...register("consultationType")}
+                >
+                  {CONSULTATION_TYPES.map((ct) => (
+                    <option key={ct} value={ct}>
+                      {CONSULTATION_TYPE_LABELS[ct]}
+                    </option>
+                  ))}
                 </select>
               </div>
               <div className={styles.formGroup}>
-                <label className={styles.label} htmlFor="age">Edad (opcional)</label>
-                <input id="age" type="number" min={0} max={120} className={styles.input} placeholder="Ej. 35" {...register("age", { valueAsNumber: true })} />
+                <label className={styles.label} htmlFor="age">
+                  Edad (opcional)
+                </label>
+                <input
+                  id="age"
+                  type="number"
+                  min={0}
+                  max={120}
+                  className={styles.input}
+                  placeholder="Ej. 35"
+                  {...register("age", { valueAsNumber: true })}
+                />
               </div>
             </div>
 
@@ -192,11 +263,22 @@ export default function ReceptionPage() {
             </div>
 
             <div className={styles.formGroup}>
-              <label className={styles.label} htmlFor="notes">Notas (opcional)</label>
-              <input id="notes" className={styles.input} placeholder="Observaciones adicionales" {...register("notes")} />
+              <label className={styles.label} htmlFor="notes">
+                Notas (opcional)
+              </label>
+              <input
+                id="notes"
+                className={styles.input}
+                placeholder="Observaciones adicionales"
+                {...register("notes")}
+              />
             </div>
 
-            <button type="submit" disabled={submitting} className={styles.submitBtn}>
+            <button
+              type="submit"
+              disabled={submitting}
+              className={styles.submitBtn}
+            >
               {submitting ? "Enviando..." : "Registrar check-in"}
             </button>
           </form>
