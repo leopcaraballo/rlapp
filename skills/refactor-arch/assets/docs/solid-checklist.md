@@ -14,7 +14,7 @@
 ```bash
 # Buscar clases que mezclan responsabilidades
 grep -rn "class.*Service" backend/*/src/ | head -20
-# Revisar que no importen mongoose/amqplib directamente
+# Revisar que no importen infraestructura directamente
 ```
 
 ### OCP — Open/Closed Principle
@@ -67,7 +67,7 @@ interface AppointmentReader {
 
 ```bash
 # DEBE dar 0 resultados
-grep -rn "import.*infrastructure\|import.*mongoose\|import.*@nestjs" backend/*/src/domain/
+grep -rn "using .*Infrastructure\|using Npgsql\|using RabbitMQ.Client\|using Microsoft.AspNetCore" rlapp-backend/src/Services/WaitingRoom/WaitingRoom.Domain
 ```
 
 ## Design Patterns Checklist
@@ -86,13 +86,13 @@ grep -rn "import.*infrastructure\|import.*mongoose\|import.*@nestjs" backend/*/s
 # Script completo de verificación
 echo "=== Domain Isolation ==="
 echo "Imports prohibidos en domain/:"
-grep -rn "import.*mongoose\|import.*@nestjs\|import.*amqplib" backend/*/src/domain/ && echo "FALLÓ" || echo "Domain limpio"
+grep -rn "using Npgsql\|using RabbitMQ.Client\|using Microsoft.AspNetCore" rlapp-backend/src/Services/WaitingRoom/WaitingRoom.Domain && echo "FALLÓ" || echo "Domain limpio"
 
 echo ""
 echo "=== Ports Defined ==="
-find backend/*/src/domain/ports -name "*.ts" 2>/dev/null | wc -l
+find rlapp-backend/src/Services/WaitingRoom/WaitingRoom.Application/Ports -name "*.cs" 2>/dev/null | wc -l
 
 echo ""
 echo "=== Adapters Implemented ==="
-find backend/*/src/infrastructure -name "*.ts" 2>/dev/null | wc -l
+find rlapp-backend/src/Services/WaitingRoom/WaitingRoom.Infrastructure -name "*.cs" 2>/dev/null | wc -l
 ```

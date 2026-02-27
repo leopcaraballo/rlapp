@@ -1,12 +1,12 @@
 # Estructura Hexagonal de Referencia
 
-## Backend — Producer
+## Backend — WaitingRoom Service
 
 ```
-backend/producer/src/
+rlapp-backend/src/Services/WaitingRoom/
 ├── domain/
 │   ├── entities/
-│   │   └── appointment.entity.ts        ← Clase pura, sin decoradores NestJS/Mongoose
+│   │   └── waiting-queue.entity.cs      ← Clase pura, sin dependencias de infraestructura
 │   ├── value-objects/
 │   │   ├── id-card.vo.ts                ← Validación de cédula encapsulada
 │   │   └── priority.enum.ts             ← Enum de prioridad
@@ -14,7 +14,7 @@ backend/producer/src/
 │   │   ├── inbound/
 │   │   │   └── create-appointment.port.ts   ← Interface del caso de uso
 │   │   └── outbound/
-│   │       ├── appointment.repository.ts    ← Interface de persistencia
+│   │       ├── event-store.port.cs          ← Interface de persistencia
 │   │       └── message-publisher.port.ts    ← Interface de mensajería
 │   └── services/
 │       └── appointment-domain.service.ts    ← Lógica de negocio pura
@@ -25,22 +25,23 @@ backend/producer/src/
 │       └── create-appointment.dto.ts        ← DTO con class-validator
 ├── infrastructure/
 │   ├── persistence/
-│   │   ├── schemas/
-│   │   │   └── appointment.schema.ts        ← Schema Mongoose
-│   │   └── mongoose-appointment.repository.ts  ← Implementa AppointmentRepository
+│   │   ├── event-store/
+│   │   │   └── postgres-event-store.cs      ← Implementa IEventStore
+│   │   └── outbox/
+│   │       └── postgres-outbox-store.cs     ← Implementa IOutboxStore
 │   ├── messaging/
 │   │   └── rabbitmq-publisher.adapter.ts    ← Implementa MessagePublisher
 │   ├── web/
 │   │   ├── appointments.controller.ts       ← REST adapter (entrada)
 │   │   └── appointments.gateway.ts          ← WebSocket adapter (entrada)
 │   └── config/
-│       └── appointments.module.ts           ← Wiring de NestJS (DI)
+│       └── composition-root.cs              ← Wiring de DI
 ```
 
-## Backend — Consumer
+## Backend — Worker
 
 ```
-backend/consumer/src/
+rlapp-backend/src/Services/WaitingRoom/WaitingRoom.Worker/
 ├── domain/
 │   ├── entities/
 │   │   └── appointment.entity.ts
@@ -57,8 +58,8 @@ backend/consumer/src/
 │       ├── process-appointment.use-case.ts
 │       └── assign-office.use-case.ts
 ├── infrastructure/
-│   ├── persistence/
-│   │   └── mongoose-appointment.repository.ts
+│   ├── outbox/
+│   │   └── outbox-dispatcher.cs
 │   ├── messaging/
 │   │   └── rabbitmq-consumer.adapter.ts     ← Listener de cola
 │   ├── web/

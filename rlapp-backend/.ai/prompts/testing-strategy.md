@@ -1,11 +1,11 @@
 # TESTING_STRATEGY.md
 
-**RLAPP — Estrategia Oficial de Testing**
+**RLAPP — Estrategia oficial de pruebas**
 
 ## 1. Principio Fundamental
 
 Si el dominio es correcto → el sistema es correcto.
-El testing protege:
+Las pruebas protegen:
 
 * Invariantes
 * Consistencia por eventos
@@ -15,9 +15,9 @@ El testing protege:
 
 ---
 
-## 2. Pirámide de Testing RLAPP
+## 2. Pirámide de pruebas RLAPP
 
-### Nivel 1 — Unit Tests (Dominio puro) ⭐ CRÍTICO
+### Nivel 1 — Pruebas unitarias (dominio puro) ⭐ CRÍTICO
 
 Sin:
 
@@ -38,7 +38,7 @@ Validan:
 
 ---
 
-### Nivel 2 — Application Tests
+### Nivel 2 — Pruebas de aplicación
 
 Validan:
 
@@ -51,7 +51,7 @@ Con mocks/fakes — nunca infraestructura real.
 
 ---
 
-### Nivel 3 — Projection Tests
+### Nivel 3 — Pruebas de proyecciones
 
 Validan:
 
@@ -62,7 +62,7 @@ Validan:
 
 ---
 
-### Nivel 4 — Integration Tests
+### Nivel 4 — Pruebas de integración
 
 Con infraestructura real:
 
@@ -70,12 +70,12 @@ Con infraestructura real:
 * Broker
 * DB lectura
 * Outbox
-* Reintentos
+* Retries
 * DLQ
 
 ---
 
-### Nivel 5 — E2E Tests
+### Nivel 5 — Pruebas E2E
 
 Validan flujo completo:
 
@@ -85,8 +85,8 @@ Check-in → Cola → Llamado → Monitor → Finalización
 
 ## 3. Reglas Obligatorias
 
-* El dominio debe pasar tests en aislamiento total
-* Tests deben ser determinísticos
+* El dominio debe pasar pruebas en aislamiento total
+* Las pruebas deben ser determinísticas
 * Debe validarse reprocesamiento completo
 * Debe probarse duplicación de eventos
 * Debe probarse idempotencia
@@ -94,7 +94,7 @@ Check-in → Cola → Llamado → Monitor → Finalización
 
 ---
 
-## 4. Tests Especiales de Event Sourcing
+## 4. Pruebas especiales de Event Sourcing
 
 * Replay completo desde cero
 * Replay con eventos duplicados
@@ -105,13 +105,12 @@ Check-in → Cola → Llamado → Monitor → Finalización
 
 ---
 
-## 5. Definition of Test Done
+## 5. Definición de completitud de pruebas
 
 El sistema es seguro si:
 
-* Dominio protegido por tests
+* Dominio protegido por pruebas
 * Event sourcing reproducible
 * Idempotencia garantizada
 * Proyecciones reconstruibles
-* Sin dependencia infra en unit tests
-
+* Sin dependencia de infraestructura en pruebas unitarias

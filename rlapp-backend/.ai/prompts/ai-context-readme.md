@@ -117,7 +117,7 @@ Domain Event → Projection → Realtime Gateway → Monitor
 
 ---
 
-# 6. Testing Strategy
+# 6. Estrategia de pruebas
 
 El dominio debe ejecutarse en aislamiento total.
 
@@ -137,13 +137,13 @@ Si el dominio necesita infraestructura → violación arquitectónica.
 
 # 7. Resiliencia
 
-## Retry Policy
+## Retry policy
 
 * 3 intentos
 * Backoff exponencial
 * Solo errores transitorios
 
-## Dead Letter Queue
+## Cola de mensajes fallidos
 
 Si falla tras retries:
 
@@ -268,7 +268,7 @@ Tipos:
 
 ---
 
-# 13. Definition of Done
+# 13. Definición de completitud
 
 Una tarea solo está terminada si:
 
@@ -348,4 +348,3 @@ Consistencia > Conveniencia
 Diseño > Implementación
 
 La arquitectura no es un detalle. Es el sistema.
-

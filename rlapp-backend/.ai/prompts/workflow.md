@@ -154,7 +154,7 @@ Si cambia → Arquitectura inválida.
 
 ---
 
-## 4.4 Side Effects Rule
+## 4.4 Regla de efectos laterales
 
 Todo efecto externo ocurre vía:
 
@@ -166,9 +166,9 @@ Nunca directo desde dominio.
 
 ---
 
-# 5. Git Engineering Protocol
+# 5. Protocolo de ingeniería Git
 
-## Branch Model
+## Modelo de ramas
 
 * main → Producción
 * develop → Integración
@@ -187,7 +187,7 @@ Nunca directo desde dominio.
 
 ---
 
-# 6. Commit Standard
+# 6. Estándar de commits
 
 Formato:
 
@@ -207,7 +207,7 @@ Tipos:
 
 ---
 
-# 7. Definition of Done — Engineering Level
+# 7. Definición de completitud — nivel de ingeniería
 
 Una tarea solo está terminada si:
 
@@ -244,7 +244,7 @@ Una tarea solo está terminada si:
 
 ---
 
-# 8. Testing Doctrine
+# 8. Doctrina de pruebas
 
 El Dominio debe correr:
 
@@ -267,13 +267,13 @@ Si necesita infra → violación DIP.
 
 # 9. Resiliencia
 
-## Retry Policy
+## Retry policy
 
 * 3 intentos
 * Backoff exponencial
 * Solo errores transitorios
 
-## Dead Letter Queue
+## Cola de mensajes fallidos (DLQ)
 
 Si falla:
 
@@ -283,7 +283,7 @@ Si falla:
 
 ---
 
-# 10. Human Check Protocol
+# 10. Protocolo de revisión humana
 
 Toda lógica crítica debe incluir:
 
@@ -349,4 +349,3 @@ El código debe ser:
 
 **Este documento es el estándar técnico oficial del proyecto RLAPP.
 Toda decisión arquitectónica debe respetarlo.**
-

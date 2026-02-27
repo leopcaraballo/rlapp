@@ -1,51 +1,46 @@
-# AGENT BOOTSTRAP — ENTERPRISE MODE
+# ARRANQUE DEL AGENTE — MODO EMPRESARIAL
 
-On startup the agent MUST execute this sequence:
+Al iniciar, el agente debe ejecutar esta secuencia obligatoria.
 
-## Load Governance
+## Cargar gobernanza
 
-1. Load AGENT_BIBLE.md
-2. Load AGENT_RUNTIME.md
-3. Load ARCHITECTURE_GUARDRAILS.md
-4. Load ENGINEERING_PRINCIPLES.md
-5. Load EVENT_MODEL_STANDARD.md
-6. Load TESTING_STRATEGY.md
-7. Load OBSERVABILITY.md
-8. Load WORKFLOW.md
+1. Cargar `AGENT_BIBLE.md`.
+2. Cargar `AGENT_RUNTIME.md`.
+3. Cargar `ARCHITECTURE_GUARDRAILS.md`.
+4. Cargar `ENGINEERING_PRINCIPLES.md`.
+5. Cargar `EVENT_MODEL_STANDARD.md`.
+6. Cargar `TESTING_STRATEGY.md`.
+7. Cargar `OBSERVABILITY.md`.
+8. Cargar `WORKFLOW.md`.
 
-## Mandatory First Scan
+## Validación inicial obligatoria
 
-The agent MUST:
+El agente debe:
 
-- Read the entire repository
-- Understand architecture
-- Detect violations
-- Detect anti-patterns
-- Detect risks
-- Validate domain integrity
-- Validate architecture boundaries
-- Validate observability
-- Validate testing coverage
-- Produce technical status report
+- Leer el repositorio completo dentro del alcance asignado.
+- Entender arquitectura, dominio y límites entre capas.
+- Detectar riesgos técnicos, deuda y violaciones de reglas.
+- Verificar coherencia entre código, configuración, pruebas y documentación.
+- Validar límites arquitectónicos y contratos de integración.
+- Producir un informe técnico de estado inicial.
 
-## Restrictions
+## Prohibiciones durante arranque
 
-The agent MUST NOT:
+El agente no debe:
 
-- Generate code
-- Modify files
-- Refactor
-- Create commits
+- Implementar cambios antes de terminar la lectura inicial.
+- Ejecutar modificaciones fuera del alcance autorizado.
+- Omitir validación de reglas de arquitectura y pruebas.
+- Asumir que la documentación histórica es fuente de verdad.
 
-Until the first scan is completed and system safety is confirmed.
+No se permiten cambios hasta completar el escaneo inicial y confirmar seguridad técnica.
 
-## Output required
+## Resultado esperado del arranque
 
-The agent must report:
+El agente debe reportar, como mínimo:
 
-1. Architecture state
-2. Violations
-3. Risks
-4. Domain integrity
-5. Readiness for autonomous operation
-6. Safest first action
+1. Estado de arquitectura.
+2. Estado de dominio y modelos.
+3. Estado de pruebas y riesgos de regresión.
+4. Estado de documentación frente al código real.
+5. Lista priorizada de acciones recomendadas.

@@ -1,180 +1,69 @@
-# Frontend — Sistema de Gestión de Turnos
+# RLAPP Frontend
 
-Frontend desarrollado con **Next.js (App Router)** para la visualización en tiempo real y registro de turnos.  
-Este proyecto implementa una arquitectura limpia, resiliente y preparada para escalar hacia tiempo real (SSE / WebSocket).
+## Resumen
 
-## Objetivo
+Frontend en Next.js 16 + React 19 para operación de sala de espera médica.
 
-Proveer una interfaz ligera, segura y resiliente para:
+Módulos operativos principales:
 
-- Visualizar turnos en pantalla en tiempo real (polling optimizado)
-- Registrar nuevos turnos desde formulario
-- Garantizar estabilidad ante fallos del backend
-- Mantener arquitectura desacoplada y mantenible
+- Recepción (`/reception`)
+- Caja (`/cashier`)
+- Área médica (`/medical`)
+- Vista de sala (`/waiting-room/[queueId]`)
+- Dashboard (`/dashboard`)
 
-## Stack Tecnológico
+## Integración real con backend
 
-| Tecnología  | Uso                  |
-| ----------- | -------------------- |
-| Next.js 16  | Framework principal  |
-| React 19    | UI                   |
-| TypeScript  | Tipado estático      |
-| App Router  | Arquitectura moderna |
-| CSS Modules | Estilos encapsulados |
-| Fetch API   | Cliente HTTP         |
-| ESLint      | Calidad de código    |
+La aplicación consume la API .NET en `NEXT_PUBLIC_API_BASE_URL`.
 
-## Características Técnicas
+Canales de actualización:
 
-### Arquitectura
+- Polling REST periódico (base de sincronización)
+- SignalR como canal de baja latencia
 
-- Clean Architecture (capas desacopladas)
-- Repository Pattern
-- Separación dominio / infraestructura / UI
-- Servicios desacoplados (AudioService)
-- Hooks especializados
+## Configuración
 
-### Resiliencia
-
-- Cliente HTTP centralizado
-- Retry automático
-- Timeout configurable
-- Circuit Breaker
-- Manejo de errores tipificado
-- Protección contra doble submit
-- Prevención de memory leaks
-
-### Seguridad
-
-- Sanitización de input
-- Rate limit en middleware
-- Security headers
-- CSP compatible con Next.js
-- Bloqueo de métodos no permitidos
-
-### Tiempo real (Polling optimizado)
-
-- Evita re-render innecesario
-- Evita loops duplicados
-- Evita fugas de memoria
-- Preparado para migrar a SSE / WebSocket
-
-### Audio desacoplado
-
-- Servicio independiente
-- No bloquea render
-- Activación por interacción del usuario
-
-## Estructura del Proyecto
-
-El proyecto sigue una arquitectura desacoplada y organizada por responsabilidades:
-
-```bash
-
-- app/**          → Rutas y páginas del App Router
-- components/**   → Componentes UI reutilizables
-- domain/**       → Modelos y contratos del negocio
-- repositories/** → Acceso a datos mediante Repository Pattern
-- hooks/**        → Lógica de negocio encapsulada en hooks
-- lib/**          → Infraestructura compartida
-- services/**     → Servicios desacoplados
-- config/**       → Variables y configuración de entorno
-- security/**     → Sanitización y protecciones básicas
-- styles/**       → Estilos globales
-- proxi.ts**      → Middleware
-
-```
-
-Arquitectura preparada para escalar hacia tiempo real, backend productivo y mayor seguridad sin refactor mayor.
-
-## Variables de Entorno
-
-Crear archivo `.env.local`:
+Crear `.env.local` con:
 
 ```env
-NEXT_PUBLIC_API_BASE_URL=http://localhost:3000/api/mock
-NEXT_PUBLIC_POLLING_INTERVAL=3000
+NEXT_PUBLIC_API_BASE_URL=http://localhost:5000
+NEXT_PUBLIC_WS_URL=http://localhost:5000
+NEXT_PUBLIC_WS_DISABLED=false
+NEXT_PUBLIC_DEFAULT_QUEUE_ID=QUEUE-01
+NEXT_PUBLIC_POLLING_INTERVAL=5000
 ```
 
-## Instalación
+## Ejecución
 
 ```bash
+cd rlapp-frontend
 npm install
-```
-
-## Ejecución en Desarrollo
-
-```bash
 npm run dev
 ```
 
-Aplicación disponible en:
+Aplicación disponible en `http://localhost:3000` (o `3001` en docker compose del proyecto).
 
-```
-http://localhost:3000
-```
+## Estructura funcional
 
-## Build Producción
+- `src/app`: rutas y pantallas
+- `src/hooks`: orquestación de estado y casos de uso de UI
+- `src/services/api`: endpoint client de sala de espera
+- `src/services/signalr`: conexión hub SignalR
+- `src/infrastructure/adapters`: HTTP y real-time adapters
+- `src/domain`: contratos y modelos de dominio
+- `test`: pruebas unitarias y de integración de frontend
 
-```bash
-npm run build
-npm start
-```
+## Observaciones técnicas relevantes
 
-## API Mock Incluida
+- Existe `SocketIoAdapter`, pero el runtime principal usa `SignalRAdapter`.
+- El archivo `src/proxi.ts` define middleware de seguridad y rate limiting; verificar convención de activación en Next.js (`middleware.ts`) para asegurar ejecución en producción.
+- El frontend envía `X-Correlation-Id` y `X-Idempotency-Key` en commands; el backend usa correlación y la idempotencia se materializa en event store y outbox.
 
-El proyecto incluye un endpoint mock:
+## Pruebas
 
-```
-GET  /api/mock/turnos
-POST /api/mock/turnos
-```
-
-Esto permite ejecutar el frontend sin backend real.
-
-## Decisiones Técnicas
-
-- No se utiliza estado global (no necesario para el dominio actual)
-- Polling en lugar de WebSocket para simplicidad del MVP, escalable a SSE / WebSocket
-- CSS Modules para evitar colisiones de estilos
-- Cliente HTTP centralizado para resiliencia
-- Arquitectura preparada para escalar sin refactor complejo
-
-## Preparado para Escalar
-
-El proyecto está diseñado para evolucionar hacia:
-
-- WebSocket / SSE
-- Backend real con colas (RabbitMQ)
-- Observabilidad (si se requiere)
-- Testing automatizado
-- Despliegue en contenedores
-- Multi-pantalla en tiempo real
-
-## Calidad de Código
-
-- Sin memory leaks
-- Sin loops duplicados
-- Sin re-render innecesario
-- Manejo de errores controlado
-- Sanitización de inputs
-- Código documentado
-- Separación de responsabilidades
-
-## Scripts
+Pruebas presentes en `test/**` con Jest y e2e con Playwright.
 
 ```bash
-npm run dev      # Desarrollo
-npm run build    # Build producción
-npm start        # Ejecutar build
-npm run lint     # Lint
+npm test
+npm run test:cov
 ```
-
-## Requisitos
-
-- Node.js 20+
-- NPM 9+
-
-## Estado del Proyecto
-
-**MVP funcional — estable — preparado para evolución.**

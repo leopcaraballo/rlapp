@@ -87,7 +87,7 @@ Replay → consistente
 
 Evento duplicado → sin corrupción
 
-5. Estructura Exacta de Solución
+1. Estructura Exacta de Solución
 src/
  ├── BuildingBlocks/
  │   ├── EventSourcing/
@@ -131,12 +131,11 @@ src/
      ├── Integration/
      └── E2E/
 
-6. Arquitectura de Eventos — Monitor en Tiempo Real
+2. Arquitectura de Eventos — Monitor en Tiempo Real
 
 Flujo:
 
 Domain Event → Event Store → Outbox → Broker → Projection → Realtime Gateway → Monitor Screen
-
 
 Realtime NO lee del Write Model.
 
@@ -150,7 +149,7 @@ Estado
 
 Backpressure obligatorio.
 
-7. Auditoría del Event Flow
+1. Auditoría del Event Flow
 
 Tu flujo debe cumplir:
 
@@ -168,7 +167,7 @@ Proyecciones reconstruibles
 
 Si uno falla → inconsistencia sistémica.
 
-8. Architecture Fitness Functions (Reglas ejecutables)
+1. Architecture Fitness Functions (Reglas ejecutables)
 
 Debes poder verificar automáticamente:
 
@@ -202,7 +201,7 @@ Eventos duplicados no rompen
 
 Docker reproducible
 
-9. Reglas Anti-Corrupción (Anti-Degradación)
+1. Reglas Anti-Corrupción (Anti-Degradación)
 Nunca permitir
 
 Lógica en Controllers
@@ -249,6 +248,6 @@ Determinista
 
 Reproducible
 
-Lista para realtime serio
+Lista para tiempo real robusto
 
 Lista para producción evolutiva
