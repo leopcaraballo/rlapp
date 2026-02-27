@@ -9,7 +9,7 @@ Sistema de gestion de sala de espera medica. Administra el flujo de pacientes de
 ### Stack tecnologico
 
 | Componente | Tecnologia | Version |
-|---|---|---|
+| --- | --- | --- |
 | Plataforma | .NET | 10.0 |
 | Lenguaje | C# | 13+ |
 | API | ASP.NET Core Minimal API | 10.0 |
@@ -76,7 +76,7 @@ graph LR
 
 ### Estructura del repositorio
 
-```
+```text
 rlapp-backend/
 ├── RLAPP.slnx
 ├── Dockerfile
@@ -122,7 +122,7 @@ rlapp-backend/
 ### Modelo de despliegue
 
 | Servicio | Rol | Puerto |
-|---|---|---|
+| --- | --- | --- |
 | WaitingRoom.API | Comandos HTTP, queries, WebSocket hub | 5000 |
 | WaitingRoom.Worker | Outbox dispatcher (despacha eventos a RabbitMQ) | - |
 | WaitingRoom.Projections | Consume eventos de RabbitMQ, actualiza read models | - |
@@ -137,7 +137,7 @@ rlapp-backend/
 ### Prerequisitos
 
 | Herramienta | Version minima |
-|---|---|
+| --- | --- |
 | .NET SDK | 10.0 |
 | Docker | 20.10+ |
 | Docker Compose | 2.0+ |
@@ -192,7 +192,7 @@ dotnet test RLAPP.slnx
 ### Variables de entorno
 
 | Variable | Descripcion |
-|---|---|
+| --- | --- |
 | `POSTGRES_USER` | Usuario de PostgreSQL |
 | `POSTGRES_PASSWORD` | Contrasena de PostgreSQL |
 | `RABBITMQ_DEFAULT_USER` | Usuario de RabbitMQ |
@@ -204,7 +204,7 @@ Valores por defecto documentados en `.env.template`.
 ### URLs de administracion
 
 | Servicio | URL |
-|---|---|
+| --- | --- |
 | API | `http://localhost:5000` |
 | RabbitMQ Management | `http://localhost:15672` |
 | Prometheus | `http://localhost:9090` |
