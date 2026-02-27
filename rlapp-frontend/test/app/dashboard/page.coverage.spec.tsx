@@ -1,4 +1,4 @@
-import { act, render, screen, waitFor } from "@testing-library/react";
+import { render, screen } from "@testing-library/react";
 import React from "react";
 
 import CompletedHistoryDashboard from "@/app/dashboard/page";
@@ -14,8 +14,7 @@ function createMockAudio() {
 
 let mockAudio: ReturnType<typeof createMockAudio>;
 
-let mockHookState: any;
-let storedCallback: ((apt: any) => void) | null = null;
+let mockHookReturn: any;
 
 jest.mock("@/services/AudioService", () => ({
   get audioService() {
@@ -23,29 +22,23 @@ jest.mock("@/services/AudioService", () => ({
   },
 }));
 
-jest.mock("@/hooks/useAppointmentsWebSocket", () => ({
-  useAppointmentsWebSocket: (cb: (apt: any) => void) => {
-    storedCallback = cb;
-    return mockHookState;
-  },
+jest.mock("@/hooks/useQueueAsAppointments", () => ({
+  useQueueAsAppointments: jest.fn(() => mockHookReturn),
 }));
 
 describe("CompletedHistoryDashboard coverage", () => {
   beforeEach(() => {
     mockAudio = createMockAudio();
-    mockHookState = {
+    mockHookReturn = {
       appointments: [],
-      error: undefined,
-      _connected: false,
+      error: null,
+      connected: false,
       isConnecting: false,
       connectionStatus: "connecting",
     };
     mockAudio.play.mockClear();
     mockAudio.isEnabled.mockReturnValue(false);
-    storedCallback = null;
   });
-
-  afterEach(() => {});
 
   it("renders empty states when no appointments", () => {
     render(<CompletedHistoryDashboard />);
@@ -60,14 +53,14 @@ describe("CompletedHistoryDashboard coverage", () => {
   });
 
   it("renders called, waiting, and completed lists", () => {
-    mockHookState = {
+    mockHookReturn = {
       appointments: [
-        { id: "1", status: "called", priority: "High", timestamp: 2 },
-        { id: "2", status: "waiting", priority: "Low", timestamp: 3 },
-        { id: "3", status: "completed", priority: "Medium", timestamp: 4 },
+        { id: "1", fullName: "Called Patient", status: "called", office: "2", priority: "High", timestamp: 2 },
+        { id: "2", fullName: "Waiting Patient", status: "waiting", office: null, priority: "Low", timestamp: 3 },
+        { id: "3", fullName: "Completed Patient", status: "completed", office: "1", priority: "Medium", timestamp: 4 },
       ],
-      error: undefined,
-      _connected: true,
+      error: null,
+      connected: true,
       isConnecting: false,
       connectionStatus: "connected",
     };
@@ -80,10 +73,10 @@ describe("CompletedHistoryDashboard coverage", () => {
   });
 
   it("shows skeletons when connecting", () => {
-    mockHookState = {
+    mockHookReturn = {
       appointments: [],
-      error: undefined,
-      _connected: false,
+      error: null,
+      connected: false,
       isConnecting: true,
       connectionStatus: "connecting",
     };
@@ -95,10 +88,10 @@ describe("CompletedHistoryDashboard coverage", () => {
   });
 
   it("shows error state when hook fails", () => {
-    mockHookState = {
+    mockHookReturn = {
       appointments: [],
       error: "network-error",
-      _connected: false,
+      connected: false,
       isConnecting: false,
       connectionStatus: "disconnected",
     };
@@ -120,57 +113,36 @@ describe("CompletedHistoryDashboard coverage", () => {
     useStateSpy.mockRestore();
   });
 
-  it("shows toast and plays on completed update", async () => {
-    mockAudio.isEnabled.mockReturnValue(true);
-    mockHookState = {
-      appointments: [],
-      error: undefined,
-      _connected: true,
+  it("shows toast when appointments include a called status", () => {
+    mockHookReturn = {
+      appointments: [
+        { id: "99", fullName: "Called Patient", status: "called", office: "1", priority: "Medium", timestamp: 1 },
+      ],
+      error: null,
+      connected: true,
       isConnecting: false,
       connectionStatus: "connected",
     };
 
     render(<CompletedHistoryDashboard />);
 
-    expect(storedCallback).toBeTruthy();
-
-    act(() => {
-      storedCallback?.({
-        id: "99",
-        status: "completed",
-        priority: "Medium",
-        timestamp: 1,
-      });
-    });
-
-    expect(screen.getByText(/Turno completado/)).toBeInTheDocument();
+    expect(screen.getByText(/Nuevo turno llamado/)).toBeInTheDocument();
   });
 
-  it("shows toast without playing audio when disabled", () => {
-    jest.useFakeTimers();
+  it("does not play audio when audio is disabled", () => {
     mockAudio.isEnabled.mockReturnValue(false);
-    mockHookState = {
-      appointments: [],
-      error: undefined,
-      _connected: true,
+    mockHookReturn = {
+      appointments: [
+        { id: "77", fullName: "Called Patient", status: "called", office: "1", priority: "Low", timestamp: 1 },
+      ],
+      error: null,
+      connected: true,
       isConnecting: false,
       connectionStatus: "connected",
     };
 
     render(<CompletedHistoryDashboard />);
 
-    act(() => {
-      storedCallback?.({
-        id: "77",
-        status: "completed",
-        priority: "Low",
-        timestamp: 1,
-      });
-    });
-
     expect(mockAudio.play).not.toHaveBeenCalled();
-    expect(screen.getByText(/Turno completado/)).toBeInTheDocument();
-
-    jest.useRealTimers();
   });
 });

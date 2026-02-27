@@ -194,7 +194,7 @@ describe("AppointmentRegistrationForm", () => {
 
       await user.type(fullNameInput, "John Doe");
       await user.type(idCardInput, "123456");
-      await user.selectOptions(prioritySelect, "high");
+      await user.selectOptions(prioritySelect, "High");
       await user.click(submitButton);
 
       await waitFor(() => {
@@ -219,7 +219,7 @@ describe("AppointmentRegistrationForm", () => {
 
       await user.type(fullNameInput, "Alice Johnson");
       await user.type(idCardInput, "654321");
-      await user.selectOptions(prioritySelect, "low");
+      await user.selectOptions(prioritySelect, "Low");
       await user.click(submitButton);
 
       await waitFor(() => {
@@ -238,7 +238,7 @@ describe("AppointmentRegistrationForm", () => {
 
       const selects = screen.getAllByRole("combobox");
       const prioritySelect = selects[0] as HTMLSelectElement;
-      expect(prioritySelect.value).toBe("medium");
+      expect(prioritySelect.value).toBe("Medium");
     });
   });
 

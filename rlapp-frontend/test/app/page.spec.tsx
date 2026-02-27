@@ -2,16 +2,16 @@
 /**
  * @jest-environment jsdom
  *
- * 🧪 Tests for Appointments Screen (Home Page)
+ * Tests for Appointments Screen (Home Page)
  */
 
 import { render, screen, waitFor } from "@testing-library/react";
 
 import AppointmentsScreen from "@/app/page";
 
-// Mock del hook personalizado
-jest.mock("@/hooks/useAppointmentsWebSocket", () => ({
-  useAppointmentsWebSocket: jest.fn(() => ({
+// Mock del hook que usa RealtimeAppointments (el componente real)
+jest.mock("@/hooks/useQueueAsAppointments", () => ({
+  useQueueAsAppointments: jest.fn(() => ({
     appointments: [
       {
         id: "apt-wait-001",
@@ -33,7 +33,7 @@ jest.mock("@/hooks/useAppointmentsWebSocket", () => ({
         id: "apt-called-001",
         fullName: "Active Patient",
         status: "called",
-        office: 1,
+        office: "1",
         priority: "High",
         timestamp: Date.now() - 100000,
       },
@@ -191,24 +191,24 @@ describe("AppointmentsScreen (Home Page)", () => {
   describe("Real-time Updates", () => {
     it("should use WebSocket hook for real-time appointments", () => {
       const {
-        useAppointmentsWebSocket,
-      } = require("@/hooks/useAppointmentsWebSocket");
+        useQueueAsAppointments,
+      } = require("@/hooks/useQueueAsAppointments");
 
       render(<AppointmentsScreen />);
 
-      expect(useAppointmentsWebSocket).toHaveBeenCalled();
+      expect(useQueueAsAppointments).toHaveBeenCalled();
     });
 
     it("should handle update callbacks", () => {
       const {
-        useAppointmentsWebSocket,
-      } = require("@/hooks/useAppointmentsWebSocket");
+        useQueueAsAppointments,
+      } = require("@/hooks/useQueueAsAppointments");
 
       render(<AppointmentsScreen />);
 
-      // The hook is called with a callback function for updates
-      expect(useAppointmentsWebSocket).toHaveBeenCalledWith(
-        expect.any(Function),
+      // The hook is called with a queueId string
+      expect(useQueueAsAppointments).toHaveBeenCalledWith(
+        expect.any(String),
       );
     });
   });
@@ -216,8 +216,8 @@ describe("AppointmentsScreen (Home Page)", () => {
   describe("Error Handling", () => {
     it("should handle WebSocket connection errors gracefully", async () => {
       jest.resetModules();
-      jest.mock("@/hooks/useAppointmentsWebSocket", () => ({
-        useAppointmentsWebSocket: jest.fn(() => ({
+      jest.mock("@/hooks/useQueueAsAppointments", () => ({
+        useQueueAsAppointments: jest.fn(() => ({
           appointments: [],
           error: "Connection error",
           connected: false,
@@ -227,9 +227,9 @@ describe("AppointmentsScreen (Home Page)", () => {
       }));
 
       const {
-        useAppointmentsWebSocket,
-      } = require("@/hooks/useAppointmentsWebSocket");
-      useAppointmentsWebSocket.mockReturnValue({
+        useQueueAsAppointments,
+      } = require("@/hooks/useQueueAsAppointments");
+      useQueueAsAppointments.mockReturnValue({
         appointments: [],
         error: "Connection error",
         connected: false,
@@ -248,8 +248,8 @@ describe("AppointmentsScreen (Home Page)", () => {
 
     it("should display connecting state during initialization", async () => {
       jest.resetModules();
-      jest.mock("@/hooks/useAppointmentsWebSocket", () => ({
-        useAppointmentsWebSocket: jest.fn(() => ({
+      jest.mock("@/hooks/useQueueAsAppointments", () => ({
+        useQueueAsAppointments: jest.fn(() => ({
           appointments: [],
           error: null,
           connected: false,
@@ -259,9 +259,9 @@ describe("AppointmentsScreen (Home Page)", () => {
       }));
 
       const {
-        useAppointmentsWebSocket,
-      } = require("@/hooks/useAppointmentsWebSocket");
-      useAppointmentsWebSocket.mockReturnValue({
+        useQueueAsAppointments,
+      } = require("@/hooks/useQueueAsAppointments");
+      useQueueAsAppointments.mockReturnValue({
         appointments: [],
         error: null,
         connected: false,

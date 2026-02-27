@@ -5,9 +5,9 @@ import { render, screen } from "@testing-library/react";
 
 import Home from "@/app/page";
 
-// Mock del hook personalizado
-jest.mock("@/hooks/useAppointmentsWebSocket", () => ({
-  useAppointmentsWebSocket: () => ({
+// Mock del hook que usa RealtimeAppointments
+jest.mock("@/hooks/useQueueAsAppointments", () => ({
+  useQueueAsAppointments: () => ({
     appointments: [
       {
         id: "1",

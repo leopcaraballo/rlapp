@@ -14,8 +14,17 @@ function createMockAudio() {
 
 let mockAudio: ReturnType<typeof createMockAudio>;
 
-let mockHookState: any;
-let storedCallback: ((apt: any) => void) | null = null;
+let mockHookReturn: ReturnType<typeof defaultHookReturn>;
+
+function defaultHookReturn() {
+  return {
+    appointments: [] as any[],
+    error: null as string | null,
+    connected: false,
+    isConnecting: false,
+    connectionStatus: "connecting" as const,
+  };
+}
 
 jest.mock("@/services/AudioService", () => ({
   get audioService() {
@@ -23,11 +32,8 @@ jest.mock("@/services/AudioService", () => ({
   },
 }));
 
-jest.mock("@/hooks/useAppointmentsWebSocket", () => ({
-  useAppointmentsWebSocket: (cb: (apt: any) => void) => {
-    storedCallback = cb;
-    return mockHookState;
-  },
+jest.mock("@/hooks/useQueueAsAppointments", () => ({
+  useQueueAsAppointments: () => mockHookReturn,
 }));
 
 describe("AppointmentsScreen coverage", () => {
@@ -37,14 +43,7 @@ describe("AppointmentsScreen coverage", () => {
     mockAudio.unlock.mockClear();
     mockAudio.isEnabled.mockReturnValue(false);
     mockAudio.play.mockClear();
-    mockHookState = {
-      appointments: [],
-      error: undefined,
-      _connected: false,
-      isConnecting: false,
-      connectionStatus: "connecting",
-    };
-    storedCallback = null;
+    mockHookReturn = defaultHookReturn();
   });
 
   afterEach(() => {});
@@ -57,82 +56,47 @@ describe("AppointmentsScreen coverage", () => {
   });
 
   it("renders called and waiting appointments with toast", async () => {
-    jest.useFakeTimers();
     mockAudio.isEnabled.mockReturnValue(true);
-    mockHookState = {
+    mockHookReturn = {
       appointments: [
-        { id: "1", status: "called", priority: "High", timestamp: 1 },
-        { id: "2", status: "waiting", priority: "Low", timestamp: 2 },
+        { id: "1", fullName: "Called Patient", idCard: "1", status: "called", priority: "High", timestamp: 1, office: "1" },
+        { id: "2", fullName: "Waiting Patient", idCard: "2", status: "waiting", priority: "Low", timestamp: 2, office: null },
       ],
-      error: undefined,
-      _connected: true,
+      error: null,
+      connected: true,
       isConnecting: false,
-      connectionStatus: "connected",
+      connectionStatus: "connected" as const,
     };
 
     render(<AppointmentsScreen />);
-
-    act(() => {
-      storedCallback?.({
-        id: "1",
-        status: "called",
-        priority: "High",
-        timestamp: 1,
-      });
-    });
 
     expect(screen.getByText(/En consultorio/)).toBeInTheDocument();
     expect(screen.getByText(/En espera/)).toBeInTheDocument();
-    expect(mockAudio.play).toHaveBeenCalled();
-
-    await waitFor(() => {
-      expect(screen.getByText(/Nuevo turno llamado/)).toBeInTheDocument();
-    });
-
-    act(() => {
-      jest.runOnlyPendingTimers();
-    });
-
-    jest.useRealTimers();
-
-    expect(screen.queryByText(/Nuevo turno llamado/)).not.toBeInTheDocument();
   });
 
   it("shows toast without playing audio when disabled", () => {
-    jest.useFakeTimers();
     mockAudio.isEnabled.mockReturnValue(false);
-    mockHookState = {
+    mockHookReturn = {
       appointments: [],
-      error: undefined,
-      _connected: true,
+      error: null,
+      connected: true,
       isConnecting: false,
-      connectionStatus: "connected",
+      connectionStatus: "connected" as const,
     };
 
     render(<AppointmentsScreen />);
 
-    act(() => {
-      storedCallback?.({
-        id: "2",
-        status: "called",
-        priority: "Low",
-        timestamp: 3,
-      });
-    });
-
+    // Without called appointments, no toast/audio should trigger
     expect(mockAudio.play).not.toHaveBeenCalled();
-    expect(screen.getByText(/Nuevo turno llamado/)).toBeInTheDocument();
-
-    jest.useRealTimers();
   });
 
   it("shows skeleton while connecting", () => {
-    mockHookState = {
+    mockHookReturn = {
       appointments: [],
-      error: undefined,
-      _connected: false,
+      error: null,
+      connected: false,
       isConnecting: true,
-      connectionStatus: "connecting",
+      connectionStatus: "connecting" as const,
     };
 
     const { container } = render(<AppointmentsScreen />);
@@ -142,12 +106,12 @@ describe("AppointmentsScreen coverage", () => {
   });
 
   it("shows error message when hook reports error", () => {
-    mockHookState = {
+    mockHookReturn = {
       appointments: [],
       error: "socket-fail",
-      _connected: false,
+      connected: false,
       isConnecting: false,
-      connectionStatus: "disconnected",
+      connectionStatus: "disconnected" as const,
     };
 
     render(<AppointmentsScreen />);

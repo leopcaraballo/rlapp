@@ -18,11 +18,13 @@ export interface CalledAppointmentCardProps {
 
 function getPriorityBadge(priority: string): string {
   switch (priority) {
-    case "high":
+    case "Urgent":
+      return "🔴 Urgente";
+    case "High":
       return "🔴 Alta";
-    case "medium":
+    case "Medium":
       return "🟡 Media";
-    case "low":
+    case "Low":
     default:
       return "🟢 Baja";
   }
