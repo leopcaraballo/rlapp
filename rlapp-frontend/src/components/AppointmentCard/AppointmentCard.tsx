@@ -25,7 +25,7 @@ interface AppointmentCardProps {
 }
 
 const getPriorityBadge = (priority: string): string => {
-  switch (priority) {
+  switch (priority.trim().toLowerCase()) {
     case "high":
       return "🔴 Alta";
     case "medium":
@@ -55,6 +55,8 @@ export default function AppointmentCard({
     ? String(appointment.office)
     : "Pendiente",
 }: AppointmentCardProps) {
+  const normalizedPriority = appointment.priority.trim().toLowerCase();
+
   return (
     <li className={`${styles.appointmentCard} ${styles[status]}`}>
       <div className={styles.cardHeader}>
@@ -67,10 +69,7 @@ export default function AppointmentCard({
         </div>
         <div className={styles.infoRow}>
           <span className={styles.label}>Prioridad:</span>
-          <span
-            className={styles.statusBadge}
-            data-status={appointment.priority}
-          >
+          <span className={styles.statusBadge} data-status={normalizedPriority}>
             {getPriorityBadge(appointment.priority)}
           </span>
         </div>
