@@ -18,6 +18,7 @@ jest.mock("socket.io-client", () => {
 const setEnv = () => {
   process.env.NEXT_PUBLIC_API_BASE_URL = "http://api.test";
   process.env.NEXT_PUBLIC_WS_URL = "ws://ws.test";
+  process.env.NODE_ENV = "test";
 };
 
 describe("HttpAppointmentAdapter", () => {

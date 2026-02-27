@@ -16,7 +16,7 @@ export interface CompletedAppointmentCardProps {
 }
 
 function getPriorityBadge(priority: string): string {
-  switch (priority) {
+  switch (priority.trim().toLowerCase()) {
     case "high":
       return "🔴 Alta";
     case "medium":
@@ -40,6 +40,8 @@ export function CompletedAppointmentCard({
   appointment,
   timeIcon = "⏰",
 }: CompletedAppointmentCardProps) {
+  const normalizedPriority = appointment.priority.trim().toLowerCase();
+
   return (
     <li className={`${styles.appointmentCard} ${styles.completed}`}>
       <div className={styles.cardHeader}>
@@ -60,10 +62,7 @@ export function CompletedAppointmentCard({
         </div>
         <div className={styles.infoRow}>
           <span className={styles.label}>Prioridad:</span>
-          <span
-            className={styles.statusBadge}
-            data-status={appointment.priority}
-          >
+          <span className={styles.statusBadge} data-status={normalizedPriority}>
             {getPriorityBadge(appointment.priority)}
           </span>
         </div>

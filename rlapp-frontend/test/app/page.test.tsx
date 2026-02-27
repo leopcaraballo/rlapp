@@ -5,9 +5,9 @@ import { render, screen } from "@testing-library/react";
 
 import Home from "@/app/page";
 
-// Mock del hook personalizado
-jest.mock("@/hooks/useAppointmentsWebSocket", () => ({
-  useAppointmentsWebSocket: () => ({
+// Mock del hook actual
+jest.mock("@/hooks/useQueueAsAppointments", () => ({
+  useQueueAsAppointments: () => ({
     appointments: [
       {
         id: "1",
@@ -32,6 +32,10 @@ jest.mock("@/hooks/useAppointmentsWebSocket", () => ({
     connectionStatus: "connected" as const,
   }),
 }));
+
+jest.mock("@/components/WaitingRoomDemo", () => () => (
+  <div data-testid="waiting-room-demo" />
+));
 
 describe("Home Page", () => {
   it("renders the title in Spanish", () => {
