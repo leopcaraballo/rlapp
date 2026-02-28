@@ -48,4 +48,16 @@ CREATE UNIQUE INDEX IF NOT EXISTS ux_waiting_room_outbox_event
 CREATE INDEX IF NOT EXISTS ix_waiting_room_outbox_pending
     ON waiting_room_outbox (status, next_attempt_at);
 ";
+
+    public const string CreatePatientsTableSql = @"
+CREATE TABLE IF NOT EXISTS waiting_room_patients (
+    patient_id TEXT PRIMARY KEY,
+    patient_name TEXT NOT NULL,
+    created_at TIMESTAMPTZ NOT NULL,
+    created_by TEXT NOT NULL
+);
+
+CREATE UNIQUE INDEX IF NOT EXISTS ux_waiting_room_patients_patient_id
+    ON waiting_room_patients (patient_id);
+";
 }

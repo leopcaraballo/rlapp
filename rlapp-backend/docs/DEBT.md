@@ -6,6 +6,7 @@
 2. Implementar authorization por rol/capacidad.
 3. Implementar rate limiting backend.
 4. Persistir read models para eliminar dependencia de proyección in-memory.
+5. Reemplazar filtro de encabezado `X-User-Role` por autorización robusta basada en identidad autenticada (JWT/claims/policies) para operación clínica en producción.
 
 ## Media prioridad
 

@@ -21,6 +21,7 @@
   </ItemGroup>
 
   <ItemGroup>
+    <ProjectReference Include="..\..\Services\WaitingRoom\WaitingRoom.API\WaitingRoom.API.csproj" />
     <ProjectReference Include="..\..\Services\WaitingRoom\WaitingRoom.Worker\WaitingRoom.Worker.csproj" />
     <ProjectReference Include="..\..\Services\WaitingRoom\WaitingRoom.Infrastructure\WaitingRoom.Infrastructure.csproj" />
     <ProjectReference Include="..\..\Services\WaitingRoom\WaitingRoom.Projections\WaitingRoom.Projections.csproj" />

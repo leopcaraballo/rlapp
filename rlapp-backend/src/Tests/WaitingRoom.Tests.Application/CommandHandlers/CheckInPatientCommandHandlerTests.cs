@@ -25,6 +25,94 @@ using WaitingRoom.Tests.Application.Fakes;
 /// </summary>
 public class CheckInPatientCommandHandlerTests
 {
+    [Fact]
+    public async Task GivenPatientIdentityConflict_WhenHandlingCheckIn_ThenThrowsPatientIdentityConflictException()
+    {
+        // Arrange
+        var command = new CheckInPatientCommand
+        {
+            QueueId = "QUEUE-01",
+            PatientId = "PAT-001",
+            PatientName = "Incoming Name",
+            Priority = Priority.High,
+            ConsultationType = "General",
+            Actor = "reception-1"
+        };
+
+        var eventStoreMock = new Mock<IEventStore>();
+        var publisherMock = new Mock<IEventPublisher>();
+        var identityRegistryMock = new Mock<IPatientIdentityRegistry>();
+
+        identityRegistryMock
+            .Setup(r => r.EnsureRegisteredAsync(
+                command.PatientId,
+                command.PatientName,
+                command.Actor,
+                It.IsAny<CancellationToken>()))
+            .ThrowsAsync(new PatientIdentityConflictException(
+                command.PatientId,
+                "Existing Name",
+                command.PatientName));
+
+        var handler = new CheckInPatientCommandHandler(
+            eventStoreMock.Object,
+            publisherMock.Object,
+            new FakeClock(),
+            queueIdGenerator: null,
+            patientIdentityRegistry: identityRegistryMock.Object);
+
+        // Act
+        var exception = await Assert.ThrowsAsync<PatientIdentityConflictException>(() => handler.HandleAsync(command));
+
+        // Assert
+        exception.PatientId.Should().Be(command.PatientId);
+        eventStoreMock.Verify(es => es.SaveAsync(It.IsAny<WaitingQueue>(), It.IsAny<CancellationToken>()), Times.Never);
+    }
+
+    [Fact]
+    public async Task GivenMissingQueueId_WhenHandlingCheckIn_ThenGeneratesQueueIdInBackend()
+    {
+        // Arrange
+        var generatedQueueId = "generated-queue-001";
+        var command = new CheckInPatientCommand
+        {
+            QueueId = null,
+            PatientId = "PAT-001",
+            PatientName = "John Doe",
+            Priority = Priority.High,
+            ConsultationType = "General",
+            Actor = "reception-1"
+        };
+
+        var eventStoreMock = new Mock<IEventStore>();
+        var publisherMock = new Mock<IEventPublisher>();
+        var identityRegistryMock = new Mock<IPatientIdentityRegistry>();
+        var queueIdGeneratorMock = new Mock<IQueueIdGenerator>();
+
+        queueIdGeneratorMock
+            .Setup(g => g.Generate())
+            .Returns(generatedQueueId);
+
+        eventStoreMock
+            .Setup(es => es.LoadAsync(generatedQueueId, It.IsAny<CancellationToken>()))
+            .ReturnsAsync((WaitingQueue?)null);
+
+        var handler = new CheckInPatientCommandHandler(
+            eventStoreMock.Object,
+            publisherMock.Object,
+            new FakeClock(),
+            queueIdGeneratorMock.Object,
+            identityRegistryMock.Object);
+
+        // Act
+        var result = await handler.HandleAsync(command);
+
+        // Assert
+        result.Should().BeGreaterThan(0);
+        handler.LastGeneratedQueueId.Should().Be(generatedQueueId);
+        eventStoreMock.Verify(es => es.LoadAsync(generatedQueueId, It.IsAny<CancellationToken>()), Times.Once);
+    }
+
     /// <summary>
     /// Happy path test:
     /// Valid command → aggregate loads → patient checks in →
