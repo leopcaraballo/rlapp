@@ -1,5 +1,7 @@
 namespace WaitingRoom.Infrastructure.Persistence.EventStore;
 
+using Idempotency;
+
 internal static class EventStoreSchema
 {
     public const string EventsTable = "waiting_room_events";

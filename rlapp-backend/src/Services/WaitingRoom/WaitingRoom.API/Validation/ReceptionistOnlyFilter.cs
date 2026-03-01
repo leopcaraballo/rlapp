@@ -14,13 +14,13 @@ public sealed class ReceptionistOnlyFilter : IEndpointFilter
 
         if (!httpContext.Request.Headers.TryGetValue("X-User-Role", out var roleHeader))
         {
-            return Results.Forbid();
+            return Results.StatusCode(StatusCodes.Status403Forbidden);
         }
 
         var role = roleHeader.ToString();
         if (!string.Equals(role, "Receptionist", StringComparison.OrdinalIgnoreCase))
         {
-            return Results.Forbid();
+            return Results.StatusCode(StatusCodes.Status403Forbidden);
         }
 
         return await next(invocationContext);

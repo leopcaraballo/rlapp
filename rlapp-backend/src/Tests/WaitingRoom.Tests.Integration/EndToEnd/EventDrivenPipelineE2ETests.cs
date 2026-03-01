@@ -185,7 +185,7 @@ public sealed class EventDrivenPipelineE2ETests : IAsyncLifetime
         var eventList = eventsFromStore.ToList();
         var patientCheckedInEvent = eventList.OfType<PatientCheckedIn>().Single();
         Assert.Equal(TestQueueId, patientCheckedInEvent.QueueId);
-        Assert.Equal(TestPatientId, patientCheckedInEvent.PatientId);
+        Assert.Equal(TestPatientId.ToUpperInvariant(), patientCheckedInEvent.PatientId);
         Assert.Equal(TestPatientName, patientCheckedInEvent.PatientName);
 
         // Assert: Step 3 - Verify event in outbox (before dispatch)

@@ -23,6 +23,11 @@ public sealed class PostgresPatientIdentityRegistry : IPatientIdentityRegistry
         string actor,
         CancellationToken cancellationToken = default)
     {
+        if (string.IsNullOrWhiteSpace(patientId))
+            throw new ArgumentException("PatientId is required", nameof(patientId));
+
+        var canonicalPatientId = patientId.Trim().ToUpperInvariant();
+
         const string insertSql = @"
 INSERT INTO waiting_room_patients (patient_id, patient_name, created_at, created_by)
 VALUES (@PatientId, @PatientName, @CreatedAt, @CreatedBy)
@@ -39,7 +44,7 @@ LIMIT 1;";
             insertSql,
             new
             {
-                PatientId = patientId,
+                PatientId = canonicalPatientId,
                 PatientName = patientName,
                 CreatedAt = DateTime.UtcNow,
                 CreatedBy = actor
@@ -50,15 +55,15 @@ LIMIT 1;";
 
         var persistedName = await connection.QuerySingleOrDefaultAsync<string>(new CommandDefinition(
             selectSql,
-            new { PatientId = patientId },
+            new { PatientId = canonicalPatientId },
             cancellationToken: cancellationToken));
 
         if (string.IsNullOrWhiteSpace(persistedName))
-            throw new ApplicationException($"Unable to confirm patient identity registration for '{patientId}'.");
+            throw new ApplicationException($"Unable to confirm patient identity registration for '{canonicalPatientId}'.");
 
         if (!string.Equals(persistedName.Trim(), patientName.Trim(), StringComparison.OrdinalIgnoreCase))
         {
-            throw new PatientIdentityConflictException(patientId, persistedName, patientName);
+            throw new PatientIdentityConflictException(canonicalPatientId, persistedName, patientName);
         }
     }
 }

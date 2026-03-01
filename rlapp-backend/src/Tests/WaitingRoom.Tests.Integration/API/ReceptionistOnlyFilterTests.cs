@@ -8,7 +8,7 @@ using Xunit;
 public class ReceptionistOnlyFilterTests
 {
     [Fact]
-    public async Task GivenMissingRoleHeader_WhenInvokingFilter_ThenReturnsForbid()
+    public async Task GivenMissingRoleHeader_WhenInvokingFilter_ThenReturnsStatusCodeResult()
     {
         // Arrange
         var filter = new ReceptionistOnlyFilter();
@@ -19,7 +19,7 @@ public class ReceptionistOnlyFilterTests
 
         // Assert
         result.Should().BeAssignableTo<IResult>();
-        result!.GetType().Name.Should().Contain("Forbid", because: "missing role header must be denied");
+        result!.GetType().Name.Should().Contain("StatusCode", because: "missing role header must be denied");
     }
 
     [Fact]
@@ -46,7 +46,7 @@ public class ReceptionistOnlyFilterTests
     }
 
     [Fact]
-    public async Task GivenNonReceptionistRole_WhenInvokingFilter_ThenReturnsForbid()
+    public async Task GivenNonReceptionistRole_WhenInvokingFilter_ThenReturnsStatusCodeResult()
     {
         // Arrange
         var filter = new ReceptionistOnlyFilter();
@@ -60,7 +60,7 @@ public class ReceptionistOnlyFilterTests
 
         // Assert
         result.Should().BeAssignableTo<IResult>();
-        result!.GetType().Name.Should().Contain("Forbid", because: "only Receptionist role can pass");
+        result!.GetType().Name.Should().Contain("StatusCode", because: "only Receptionist role can pass");
     }
 
     private sealed class TestEndpointFilterInvocationContext(HttpContext httpContext) : EndpointFilterInvocationContext
