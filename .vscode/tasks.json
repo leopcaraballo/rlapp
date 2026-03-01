@@ -1,0 +1,287 @@
+{
+	"version": "2.0.0",
+	"tasks": [
+		{
+			"label": "docker-compose-down",
+			"type": "shell",
+			"command": "docker compose down --remove-orphans --volumes",
+			"isBackground": false
+		},
+		{
+			"label": "docker-prune-dangling",
+			"type": "shell",
+			"command": "docker image prune -f",
+			"isBackground": false
+		},
+		{
+			"label": "docker-network-prune",
+			"type": "shell",
+			"command": "docker network prune -f",
+			"isBackground": false
+		},
+		{
+			"label": "docker-verify-clean",
+			"type": "shell",
+			"command": "docker ps -a --format 'table {{.Names}}\\t{{.Status}}\\t{{.Ports}}'",
+			"isBackground": false
+		},
+		{
+			"label": "ports-check",
+			"type": "shell",
+			"command": "ss -ltn | grep -E ':(3001|3002|5000|5050|5432|5672|9090|9187|15672|15692|5341|8081)\\b' || true",
+			"isBackground": false
+		},
+		{
+			"label": "docker-build-nocache",
+			"type": "shell",
+			"command": "docker compose build --no-cache api worker frontend",
+			"isBackground": false
+		},
+		{
+			"label": "docker-up-db-broker",
+			"type": "shell",
+			"command": "docker compose up -d postgres rabbitmq",
+			"isBackground": false
+		},
+		{
+			"label": "wait-db-broker-health",
+			"type": "shell",
+			"command": "timeout 180 bash -lc 'until [ \"$(docker inspect -f {{.State.Health.Status}} rlapp-postgres 2>/dev/null)\" = \"healthy\" ]; do sleep 2; done; until [ \"$(docker inspect -f {{.State.Health.Status}} rlapp-rabbitmq 2>/dev/null)\" = \"healthy\" ]; do sleep 2; done; echo \"postgres and rabbitmq healthy\"'",
+			"isBackground": false
+		},
+		{
+			"label": "docker-up-api",
+			"type": "shell",
+			"command": "docker compose up -d api",
+			"isBackground": false
+		},
+		{
+			"label": "docker-up-worker-frontend",
+			"type": "shell",
+			"command": "docker compose up -d worker frontend prometheus grafana seq postgres_exporter pgadmin",
+			"isBackground": false
+		},
+		{
+			"label": "docker-health-status",
+			"type": "shell",
+			"command": "docker compose ps",
+			"isBackground": false
+		},
+		{
+			"label": "docker-ps-all",
+			"type": "shell",
+			"command": "docker ps -a --format 'table {{.Names}}\\t{{.Status}}\\t{{.Image}}'",
+			"isBackground": false
+		},
+		{
+			"label": "compose-up-remaining",
+			"type": "shell",
+			"command": "docker compose up -d worker frontend prometheus grafana seq postgres_exporter pgadmin",
+			"isBackground": false
+		},
+		{
+			"label": "compose-ps-all",
+			"type": "shell",
+			"command": "docker compose ps --all",
+			"isBackground": false
+		},
+		{
+			"label": "logs-worker-tail",
+			"type": "shell",
+			"command": "docker logs rlapp-worker --tail 120 || true",
+			"isBackground": false
+		},
+		{
+			"label": "logs-api-tail",
+			"type": "shell",
+			"command": "docker logs rlapp-api --tail 120 || true",
+			"isBackground": false
+		},
+		{
+			"label": "db-list-tables",
+			"type": "shell",
+			"command": "docker compose exec -T postgres psql -U rlapp -d rlapp_waitingroom -c \"\\dt\"",
+			"isBackground": false
+		},
+		{
+			"label": "db-check-constraints",
+			"type": "shell",
+			"command": "docker compose exec -T postgres psql -U rlapp -d rlapp_waitingroom -c \"SELECT conname, conrelid::regclass AS table_name, contype FROM pg_constraint WHERE conrelid::regclass::text LIKE 'waiting_room_%' ORDER BY conrelid::regclass::text, conname;\"",
+			"isBackground": false
+		},
+		{
+			"label": "db-check-indexes",
+			"type": "shell",
+			"command": "docker compose exec -T postgres psql -U rlapp -d rlapp_waitingroom -c \"SELECT indexname, indexdef FROM pg_indexes WHERE schemaname='public' AND tablename LIKE 'waiting_room_%' ORDER BY tablename, indexname;\"",
+			"isBackground": false
+		},
+		{
+			"label": "apply-migration-001",
+			"type": "shell",
+			"command": "docker compose exec -T postgres psql -v ON_ERROR_STOP=1 -U rlapp -d rlapp_waitingroom < rlapp-backend/src/Services/WaitingRoom/migrations/20260228_001_CreateIdempotencyRecordsTable.sql",
+			"isBackground": false
+		},
+		{
+			"label": "apply-migration-002",
+			"type": "shell",
+			"command": "docker compose exec -T postgres psql -v ON_ERROR_STOP=1 -U rlapp -d rlapp_waitingroom < rlapp-backend/src/Services/WaitingRoom/migrations/20260228_002_NormalizePatientIdStorage.sql",
+			"isBackground": false
+		},
+		{
+			"label": "db-describe-patients",
+			"type": "shell",
+			"command": "docker compose exec -T postgres psql -U rlapp -d rlapp_waitingroom -c \"\\d+ waiting_room_patients\"",
+			"isBackground": false
+		},
+		{
+			"label": "db-describe-idempotency",
+			"type": "shell",
+			"command": "docker compose exec -T postgres psql -U rlapp -d rlapp_waitingroom -c \"\\d+ waiting_room_idempotency_records\"",
+			"isBackground": false
+		},
+		{
+			"label": "reapply-migration-001",
+			"type": "shell",
+			"command": "docker compose exec -T postgres psql -v ON_ERROR_STOP=1 -U rlapp -d rlapp_waitingroom < rlapp-backend/src/Services/WaitingRoom/migrations/20260228_001_CreateIdempotencyRecordsTable.sql",
+			"isBackground": false
+		},
+		{
+			"label": "verify-idempotency-table",
+			"type": "shell",
+			"command": "docker compose exec -T postgres psql -U rlapp -d rlapp_waitingroom -c \"\\d+ waiting_room_idempotency_records\"",
+			"isBackground": false
+		},
+		{
+			"label": "db-integrity-queries",
+			"type": "shell",
+			"command": "docker compose exec -T postgres psql -U rlapp -d rlapp_waitingroom -c \"SELECT 'dup_patient_canonical' AS check_name, COUNT(*) AS issues FROM (SELECT UPPER(TRIM(patient_id)) k FROM waiting_room_patients GROUP BY k HAVING COUNT(*)>1) t UNION ALL SELECT 'dup_event_aggregate_version', COUNT(*) FROM (SELECT aggregate_id, version FROM waiting_room_events GROUP BY aggregate_id, version HAVING COUNT(*)>1) t UNION ALL SELECT 'dup_event_idempotency_key', COUNT(*) FROM (SELECT idempotency_key FROM waiting_room_events WHERE idempotency_key IS NOT NULL GROUP BY idempotency_key HAVING COUNT(*)>1) t UNION ALL SELECT 'outbox_orphans', COUNT(*) FROM waiting_room_outbox o LEFT JOIN waiting_room_events e ON e.event_id = o.event_id WHERE e.event_id IS NULL UNION ALL SELECT 'idempotency_duplicates', COUNT(*) FROM (SELECT idempotency_key FROM waiting_room_idempotency_records GROUP BY idempotency_key HAVING COUNT(*)>1) t;\"",
+			"isBackground": false
+		},
+		{
+			"label": "db-check-functional-index",
+			"type": "shell",
+			"command": "docker compose exec -T postgres psql -U rlapp -d rlapp_waitingroom -c \"SELECT indexname, indexdef FROM pg_indexes WHERE tablename='waiting_room_patients' AND indexdef ILIKE '%upper(trim%';\"",
+			"isBackground": false
+		},
+		{
+			"label": "rebuild-api-worker-nocache",
+			"type": "shell",
+			"command": "docker compose build --no-cache api worker && docker compose up -d api worker",
+			"isBackground": false
+		},
+		{
+			"label": "backend-full-tests",
+			"type": "shell",
+			"command": "cd rlapp-backend && chmod +x run-complete-test.sh && ./run-complete-test.sh --clean",
+			"isBackground": false,
+			"problemMatcher": [
+				"$msCompile"
+			]
+		},
+		{
+			"label": "frontend-tests",
+			"type": "shell",
+			"command": "cd rlapp-frontend && npm test -- --runInBand",
+			"isBackground": false
+		},
+		{
+			"label": "backend-tests-tail",
+			"type": "shell",
+			"command": "tail -n 80 /tmp/rlapp-test/tests.log",
+			"isBackground": false
+		},
+		{
+			"label": "frontend-tests",
+			"type": "shell",
+			"command": "cd rlapp-frontend && npm test -- --runInBand",
+			"isBackground": false
+		},
+		{
+			"label": "backend-dotnet-test",
+			"type": "shell",
+			"command": "cd rlapp-backend && dotnet test RLAPP.slnx --configuration Release --verbosity normal",
+			"isBackground": false,
+			"problemMatcher": [
+				"$msCompile"
+			]
+		},
+		{
+			"label": "frontend-npm-ci",
+			"type": "shell",
+			"command": "cd rlapp-frontend && npm ci",
+			"isBackground": false
+		},
+		{
+			"label": "frontend-tests-rerun",
+			"type": "shell",
+			"command": "cd rlapp-frontend && npm test -- --runInBand",
+			"isBackground": false
+		},
+		{
+			"label": "full-automated-tests",
+			"type": "shell",
+			"command": "set -e; cd rlapp-backend && dotnet test RLAPP.slnx --configuration Release --verbosity minimal; cd ../rlapp-frontend && npm ci && npm test -- --runInBand",
+			"isBackground": false
+		},
+		{
+			"label": "backend-dotnet-test-rerun",
+			"type": "shell",
+			"command": "cd rlapp-backend && dotnet test RLAPP.slnx --configuration Release --verbosity minimal",
+			"isBackground": false,
+			"problemMatcher": [
+				"$msCompile"
+			]
+		},
+		{
+			"label": "frontend-npm-ci-and-test",
+			"type": "shell",
+			"command": "cd rlapp-frontend && npm ci && npm test -- --runInBand",
+			"isBackground": false
+		},
+		{
+			"label": "backend-dotnet-test-final",
+			"type": "shell",
+			"command": "cd rlapp-backend && dotnet test RLAPP.slnx --configuration Release --verbosity minimal",
+			"isBackground": false,
+			"problemMatcher": [
+				"$msCompile"
+			]
+		},
+		{
+			"label": "frontend-install-and-test",
+			"type": "shell",
+			"command": "cd rlapp-frontend && npm install && npm test -- --runInBand",
+			"isBackground": false
+		},
+		{
+			"label": "backend-dotnet-test-clean-run",
+			"type": "shell",
+			"command": "cd rlapp-backend && dotnet test RLAPP.slnx --configuration Release --verbosity minimal",
+			"isBackground": false
+		},
+		{
+			"label": "backend-dotnet-test-after-integration-fix",
+			"type": "shell",
+			"command": "cd rlapp-backend && dotnet test RLAPP.slnx --configuration Release --verbosity minimal",
+			"isBackground": false
+		},
+		{
+			"label": "backend-dotnet-test-post-fixes",
+			"type": "shell",
+			"command": "cd rlapp-backend && dotnet test RLAPP.slnx --configuration Release --verbosity minimal",
+			"isBackground": false
+		},
+		{
+			"label": "backend-dotnet-test-final-pass",
+			"type": "shell",
+			"command": "cd rlapp-backend && dotnet test RLAPP.slnx --configuration Release --verbosity minimal",
+			"isBackground": false
+		},
+		{
+			"label": "integration-tests-only",
+			"type": "shell",
+			"command": "cd rlapp-backend && dotnet test src/Tests/WaitingRoom.Tests.Integration/WaitingRoom.Tests.Integration.csproj --configuration Release --verbosity normal",
+			"isBackground": false
+		}
+	]
+}

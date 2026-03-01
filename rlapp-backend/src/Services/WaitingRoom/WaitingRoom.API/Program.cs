@@ -14,7 +14,9 @@ using WaitingRoom.Application.Services;
 using WaitingRoom.Domain.Events;
 using WaitingRoom.Infrastructure.Messaging;
 using WaitingRoom.Infrastructure.Persistence.EventStore;
+using WaitingRoom.Infrastructure.Persistence;
 using WaitingRoom.Infrastructure.Persistence.Outbox;
+using WaitingRoom.Infrastructure.Persistence.Idempotency;
 using WaitingRoom.Infrastructure.Observability;
 using WaitingRoom.Infrastructure.Projections;
 using WaitingRoom.Infrastructure.Serialization;
@@ -73,6 +75,9 @@ var services = builder.Services;
 
 // Infrastructure — Outbox Store
 services.AddSingleton<IOutboxStore>(sp => new PostgresOutboxStore(connectionString));
+
+// Infrastructure — Idempotency Store (CRITICAL for Check-In idempotence)
+services.AddSingleton<IIdempotencyStore>(sp => new PostgresIdempotencyStore(connectionString));
 
 // Infrastructure — Lag Tracker
 services.AddSingleton<IEventLagTracker>(sp => new PostgresEventLagTracker(connectionString));
@@ -192,8 +197,18 @@ services.AddHealthChecks()
 
 var app = builder.Build();
 
+// Initialize database schemas (idempotent, safe to call multiple times)
+using (var scope = app.Services.CreateScope())
+{
+    var loggerFactory = scope.ServiceProvider.GetRequiredService<ILoggerFactory>();
+    var logger = loggerFactory.CreateLogger<DatabaseInitializer>();
+    var initializer = new DatabaseInitializer(connectionString, logger);
+    await initializer.InitializeAsync();
+}
+
 // Middleware Pipeline (order matters)
 app.UseCorrelationId();
+app.UseIdempotencyKey();  // CRITICAL: Check and cache responses by idempotency key
 app.UseMiddleware<ExceptionHandlerMiddleware>();
 app.UseCors("FrontendDev");
 

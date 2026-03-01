@@ -36,8 +36,8 @@ services:
     image: rabbitmq:3.12-management-alpine
     container_name: rlapp-rabbitmq
     environment:
-      RABBITMQ_DEFAULT_USER: guest
-      RABBITMQ_DEFAULT_PASS: guest
+      RABBITMQ_DEFAULT_USER: rlapp
+      RABBITMQ_DEFAULT_PASS: rlapp_rabbit_password
       RABBITMQ_DEFAULT_VHOST: "/"
       RABBITMQ_ENABLED_PLUGINS_FILE: /etc/rabbitmq/enabled_plugins
     ports:
@@ -76,8 +76,8 @@ services:
       ConnectionStrings__EventStore: Host=postgres;Port=5432;Database=rlapp_waitingroom;Username=rlapp;Password=rlapp_secure_password;Timeout=60;CommandTimeout=600
       RabbitMq__HostName: rabbitmq
       RabbitMq__Port: 5672
-      RabbitMq__UserName: guest
-      RabbitMq__Password: guest
+      RabbitMq__UserName: rlapp
+      RabbitMq__Password: rlapp_rabbit_password
       RabbitMq__VirtualHost: /
       RabbitMq__ExchangeName: rlapp.events
       RabbitMq__ExchangeType: topic
@@ -112,6 +112,9 @@ services:
       ConnectionStrings__EventStore: Host=postgres;Port=5432;Database=rlapp_waitingroom;Username=rlapp;Password=rlapp_secure_password;Timeout=60;CommandTimeout=600
       RabbitMq__HostName: rabbitmq
       RabbitMq__Port: 5672
+      RabbitMq__UserName: rlapp
+      RabbitMq__Password: rlapp_rabbit_password
+      RabbitMq__VirtualHost: /
     depends_on:
       postgres:
         condition: service_healthy
