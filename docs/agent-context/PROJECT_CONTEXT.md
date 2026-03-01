@@ -1,39 +1,49 @@
 # Context: Project and architecture
 
-## 1. Project Overview
+## 1. Project overview
 
-Real-time medical appointment management system. Patients register appointments via REST API, they are processed asynchronously through message queues, and displayed on a dashboard with real-time WebSocket updates.
+Sistema de gestión de sala de espera médica con flujo operacional por recepción, caja y consulta médica.
+
+La arquitectura real observada se implementa en C#/.NET con Event Sourcing + CQRS + Outbox Pattern, con frontend Next.js.
 
 ### Architecture
 
-- **Pattern:** Event-Driven Microservices (Producer → RabbitMQ → Consumer)
-- **Flow:** REST API → Publish → Queue → Consume → MongoDB → WebSocket → Dashboard
+- **Pattern:** Hexagonal Architecture + Event Sourcing + CQRS
+- **Flow:** Next.js UI → ASP.NET Minimal API → Domain Aggregate → PostgreSQL Event Store + Outbox → Worker → RabbitMQ
 
-### Key Folder Structure
+### Key folder structure
 
+```text
+├── docs/
+│   ├── agent-context/
+│   └── architecture/
+├── skills/
+├── docker-compose.yml
+├── rlapp-backend/
+│   ├── src/BuildingBlocks/
+│   ├── src/Services/WaitingRoom/
+│   │   ├── WaitingRoom.API/
+│   │   ├── WaitingRoom.Application/
+│   │   ├── WaitingRoom.Domain/
+│   │   ├── WaitingRoom.Infrastructure/
+│   │   ├── WaitingRoom.Projections/
+│   │   └── WaitingRoom.Worker/
+│   └── src/Tests/
+└── rlapp-frontend/
+    ├── src/app/
+    ├── src/hooks/
+    ├── src/services/
+    └── test/
 ```
-├── .github/copilot-instructions.md  ← Orchestrator (Copilot Adapter)
-├── GEMINI.md                        ← Orchestrator (Gemini Kernel)
-├── docs/agent-context/              ← Context Modules (Project, Rules, Workflow)
-├── DEBT_REPORT.md                   ← Consolidated status of feedback and technical debt
-├── AI_WORKFLOW.md                   ← Methodology documentation for humans
-├── skills/                  ← Skills for sub-agents
-├── backend/
-│   ├── producer/src/        ← REST API, DTOs, WebSocket Gateway
-│   └── consumer/src/        ← Scheduler, assignment logic
-├── frontend/src/            ← Next.js pages, components
-└── docker-compose.yml
-```
 
-## 2. Tech Stack
+## 2. Tech stack
 
-| Layer          | Technology      | Version        | Notes                          |
-| -------------- | --------------- | -------------- | ------------------------------ |
-| Backend        | NestJS          | ^10.x          | TypeScript, two microservices  |
-| Frontend       | Next.js         | ^15.x          | App Router, CSS Modules        |
-| Database       | MongoDB         | 7.x            | Mongoose ODM                   |
-| Messaging      | RabbitMQ        | 3.x-management | amqplib, durable queues        |
-| Real-time      | Socket.IO       | ^4.x           | WebSocket Gateway in Producer  |
-| Infrastructure | Docker Compose  | v2             | Multi-container orchestration  |
-| Testing        | Jest            | ^29.x          | NestJS Testing Module          |
-| Validation     | class-validator | ^0.14.x        | DTOs with decorators           |
+| Layer          | Technology          | Version | Notes                      |
+| -------------- | ------------------- | ------- | -------------------------- |
+| Backend        | .NET / ASP.NET Core | 10.0    | Minimal API + Worker       |
+| Frontend       | Next.js + React     | 16 / 19 | App Router                 |
+| Database       | PostgreSQL          | 16      | Event Store + Outbox       |
+| Messaging      | RabbitMQ            | 3.x     | Topic exchange             |
+| Real-time      | SignalR             | ASP.NET | Hub + polling fallback     |
+| Infrastructure | Docker Compose      | v2      | Full stack orchestration   |
+| Testing        | xUnit / Jest        | N/A     | Backend + frontend suites  |

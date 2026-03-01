@@ -44,10 +44,12 @@ Then 3 visible appointment cards are rendered on screen
 Structure **every** test by organizing the environment, executing the action, and asserting the results:
 
 ```typescript
-describe('AppointmentService', () => {
-  it('should return the appointment when idCard exists', async () => {
+describe("AppointmentService", () => {
+  it("should return the appointment when idCard exists", async () => {
     // Arrange — Set up environment and preconditions
-    const mockRepo = { findByIdCard: jest.fn().mockResolvedValue(mockAppointment) };
+    const mockRepo = {
+      findByIdCard: jest.fn().mockResolvedValue(mockAppointment),
+    };
     const service = new AppointmentService(mockRepo);
 
     // Act — Execute the action under test
@@ -64,12 +66,11 @@ describe('AppointmentService', () => {
 
 ## Context
 
-The project uses **Jest** with **NestJS Testing Module** for backend unit tests and **React Testing Library (RTL)** for frontend tests.
+The project uses **xUnit** for backend tests and **Jest + React Testing Library (RTL)** for frontend tests.
 
 ### Backend
 
-- Producer tests: `rlapp-backend/src/Tests/`
-- Consumer tests: `rlapp-backend/src/Tests/` and `rlapp-backend/src/**/*.spec.ts`
+- Backend tests: `rlapp-backend/src/Tests/`
 
 ### Frontend (Next.js)
 
@@ -80,8 +81,8 @@ The project uses **Jest** with **NestJS Testing Module** for backend unit tests 
 
 ## Rules
 
-1. Every spec file must use `Test.createTestingModule()` with properly typed mocks (backend).
-2. Mock external dependencies (MongoDB models, RabbitMQ clients) — never hit real services.
+1. Every backend test suite must use explicit fixtures and strongly typed mocks/fakes.
+2. Mock external dependencies (PostgreSQL/RabbitMQ clients) when running unit tests — never hit real services.
 3. Use `jest.fn()` for method mocks and type them correctly.
 4. Test both success and error paths (especially ack/nack in Consumer).
 5. File naming: `<service-name>.spec.ts` co-located with the source, or in `test/`.
@@ -93,11 +94,11 @@ The project uses **Jest** with **NestJS Testing Module** for backend unit tests 
 
 ### Tools by Test Level
 
-| Level | Tool | Purpose | Location |
-|---|---|---|---|
-| **Unit** | Jest + React Testing Library (RTL) | Isolated components, hooks, Zustand stores | `rlapp-frontend/test/` |
-| **Integration** | Jest + RTL + MSW | Flows with network-level mocked API calls | `rlapp-frontend/test/` |
-| **E2E** | Playwright | Complete user flows against production build | `rlapp-frontend/test/e2e/` |
+| Level           | Tool                               | Purpose                                      | Location                   |
+| --------------- | ---------------------------------- | -------------------------------------------- | -------------------------- |
+| **Unit**        | Jest + React Testing Library (RTL) | Isolated components, hooks, Zustand stores   | `rlapp-frontend/test/`     |
+| **Integration** | Jest + RTL + MSW                   | Flows with network-level mocked API calls    | `rlapp-frontend/test/`     |
+| **E2E**         | Playwright                         | Complete user flows against production build | `rlapp-frontend/test/e2e/` |
 
 ### Mock Service Worker (MSW)
 
@@ -105,17 +106,17 @@ Intercept API calls at the network level for isolated and realistic tests withou
 
 ```typescript
 // test/mocks/handlers.ts
-import { http, HttpResponse } from 'msw';
+import { http, HttpResponse } from "msw";
 
 export const handlers = [
-  http.get('/api/appointments', () => {
+  http.get("/api/appointments", () => {
     return HttpResponse.json([
-      { id: '1', fullName: 'Juan Perez', status: 'PENDING' },
+      { id: "1", fullName: "Juan Perez", status: "PENDING" },
     ]);
   }),
-  http.post('/api/appointments', async ({ request }) => {
+  http.post("/api/appointments", async ({ request }) => {
     const body = await request.json();
-    return HttpResponse.json({ id: '2', ...body }, { status: 201 });
+    return HttpResponse.json({ id: "2", ...body }, { status: 201 });
   }),
 ];
 ```
@@ -126,14 +127,14 @@ Mock Next.js modules to validate redirects, parameters, and navigation:
 
 ```typescript
 // test/mocks/next-navigation.ts
-jest.mock('next/navigation', () => ({
+jest.mock("next/navigation", () => ({
   useRouter: () => ({
     push: jest.fn(),
     replace: jest.fn(),
     back: jest.fn(),
   }),
   useParams: () => ({}),
-  usePathname: () => '/',
+  usePathname: () => "/",
   useSearchParams: () => new URLSearchParams(),
 }));
 ```
@@ -146,18 +147,18 @@ Patterns for testing stores and selectors in isolation:
 
 ```typescript
 // test/stores/appointment.store.test.ts
-import { useAppointmentStore } from '@/application/stores/appointment.store';
-import { buildAppointment } from '../factories/appointment.factory';
+import { useAppointmentStore } from "@/application/stores/appointment.store";
+import { buildAppointment } from "../factories/appointment.factory";
 
-describe('useAppointmentStore', () => {
+describe("useAppointmentStore", () => {
   beforeEach(() => {
     // Reset the store before each test
     useAppointmentStore.setState({ appointments: [], isLoading: false });
   });
 
-  it('should add an appointment to the store', () => {
+  it("should add an appointment to the store", () => {
     // Arrange
-    const appointment = buildAppointment({ fullName: 'Maria Lopez' });
+    const appointment = buildAppointment({ fullName: "Maria Lopez" });
 
     // Act
     useAppointmentStore.getState().addAppointment(appointment);
@@ -165,7 +166,7 @@ describe('useAppointmentStore', () => {
     // Assert
     const { appointments } = useAppointmentStore.getState();
     expect(appointments).toHaveLength(1);
-    expect(appointments[0].fullName).toBe('Maria Lopez');
+    expect(appointments[0].fullName).toBe("Maria Lopez");
   });
 });
 ```
@@ -176,11 +177,11 @@ Always run against the production build to avoid dev server false positives:
 
 ```typescript
 // test/e2e/dashboard.spec.ts
-import { test, expect } from '@playwright/test';
+import { test, expect } from "@playwright/test";
 
-test('dashboard displays pending appointments', async ({ page }) => {
-  await page.goto('/dashboard');
-  await expect(page.getByRole('heading', { name: /dashboard/i })).toBeVisible();
+test("dashboard displays pending appointments", async ({ page }) => {
+  await page.goto("/dashboard");
+  await expect(page.getByRole("heading", { name: /dashboard/i })).toBeVisible();
   await expect(page.locator('[data-testid="appointment-card"]')).toHaveCount(3);
 });
 ```
@@ -189,14 +190,14 @@ test('dashboard displays pending appointments', async ({ page }) => {
 
 After each implementation or refactoring, verify that tests meet these criteria:
 
-| Criterion | Description | Failure Indicator |
-|---|---|---|
-| **Maintainable** | Easy to update when requirements change | Test requires changes in 3+ places for a simple adjustment |
-| **Consistent** | Deterministic results; do not depend on execution order | Test passes/fails intermittently |
-| **Fast** | Quick execution; do not block the development flow | Suite takes more than 30s to execute |
-| **Isolated** | Each test is independent; does not share mutable state | Test fails when run alone but passes in full suite |
-| **Readable** | Purpose is clear without additional context | Reading production code is required to understand the test |
-| **Expressive** | Names describe the expected behavior | Generic name like "test1" or "should work" |
+| Criterion        | Description                                             | Failure Indicator                                          |
+| ---------------- | ------------------------------------------------------- | ---------------------------------------------------------- |
+| **Maintainable** | Easy to update when requirements change                 | Test requires changes in 3+ places for a simple adjustment |
+| **Consistent**   | Deterministic results; do not depend on execution order | Test passes/fails intermittently                           |
+| **Fast**         | Quick execution; do not block the development flow      | Suite takes more than 30s to execute                       |
+| **Isolated**     | Each test is independent; does not share mutable state  | Test fails when run alone but passes in full suite         |
+| **Readable**     | Purpose is clear without additional context             | Reading production code is required to understand the test |
+| **Expressive**   | Names describe the expected behavior                    | Generic name like "test1" or "should work"                 |
 
 > **Rule:** If a test does not meet 4/6 MC-FIRE criteria, it must be refactored before approving the merge.
 
@@ -261,5 +262,5 @@ After each implementation or refactoring, verify that tests meet these criteria:
 
 ## Assets
 
-- `assets/templates/spec-pattern.ts` — Reference NestJS spec with Mongoose mocking
+- `assets/templates/spec-pattern.ts` — Reference backend spec with repository mocking
 - `assets/docs/mocking-guide.md` — Mock factory patterns for common providers

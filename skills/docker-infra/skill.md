@@ -8,13 +8,12 @@ license: "MIT"
 
 ## Context
 
-The project runs 5 services via Docker Compose:
+The project runs backend/frontend/infrastructure services via Docker Compose:
 
-- `producer` (NestJS, port 3000)
-- `consumer` (NestJS, no external port)
-- `frontend` (Next.js, port 3001)
+- `rlapp-backend` (.NET API)
+- `rlapp-frontend` (Next.js)
 - `rabbitmq` (Management UI on 15672)
-- `mongodb` (port 27017)
+- `postgres` (port 5432)
 
 ## Rules
 
@@ -22,7 +21,7 @@ The project runs 5 services via Docker Compose:
 2. Every service MUST have a `healthcheck` definition.
 3. Use `depends_on` with `condition: service_healthy` (not just `service_started`).
 4. Development-only configs (volumes, `start:dev`) must have `// HUMAN CHECK` noting removal for production.
-5. Management ports (RabbitMQ 15672, MongoDB 27017) must note they should NOT be exposed in production.
+5. Management ports (RabbitMQ 15672, PostgreSQL 5432) must note they should NOT be exposed in production when not required.
 6. Use named networks (`app-network`) and named volumes.
 
 ## Tools Permitted

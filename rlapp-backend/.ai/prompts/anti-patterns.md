@@ -249,7 +249,7 @@ Separación estricta Write vs Read.
 El sistema falla ante:
 
 * Eventos duplicados
-* Reintentos
+* Retries
 * Reprocesamiento
 
 ## Consecuencia
@@ -435,4 +435,3 @@ La arquitectura no se protege sola.
 
 **Este documento es obligatorio para revisiones técnicas y PR.**
 Si un cambio introduce un anti-patrón, el PR debe rechazarse.
-

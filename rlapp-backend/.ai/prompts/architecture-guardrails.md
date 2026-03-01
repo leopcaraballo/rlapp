@@ -178,7 +178,7 @@ No debe:
 
 Todo comando, handler y proyección debe soportar:
 
-* Reintentos
+* Retries
 * Duplicados
 * Reprocesamiento
 
@@ -287,7 +287,7 @@ El sistema debe permitir:
 
 ---
 
-# 10. Definition of Architecture Done
+# 10. Definición de completitud de arquitectura
 
 La arquitectura está sana si:
 
@@ -312,4 +312,3 @@ Si algo tarda más pero protege el dominio → **Está bien**
 
 La arquitectura es un activo permanente.
 El código es temporal.
-

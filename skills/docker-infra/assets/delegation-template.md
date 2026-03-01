@@ -61,24 +61,24 @@ ${testingSkill}
 
 ## Real Use Case Example
 
-**User requests:** "Add healthcheck to MongoDB and improve credential security"
+**User requests:** "Add healthcheck to PostgreSQL and improve credential security"
 
 **AO executes:**
 
 ```javascript
 await runSubagent({
-  description: "[Docker] Add MongoDB healthcheck and harden credentials",
+  description: "[Docker] Add PostgreSQL healthcheck and harden credentials",
   prompt: `
 # Project Context: [PROJECT_CONTEXT loaded]
 # Architectural Rules: [RULES loaded]
 # Skills: docker-infra, backend-api, testing-qa
 
 # Task:
-1. Add healthcheck to MongoDB service in docker-compose.yml
-2. Move MongoDB credentials to environment variables
+1. Add healthcheck to PostgreSQL service in docker-compose.yml
+2. Move PostgreSQL credentials to environment variables
 3. Update .env.example with the new variables
 4. Add condition: service_healthy in depends_on for producer and consumer
-5. Mark port 27017 with // HUMAN CHECK: do not expose in production
+5. Mark database management ports with // HUMAN CHECK: do not expose in production
 
 # Deliverables:
 1. docker-compose.yml with healthcheck and variables

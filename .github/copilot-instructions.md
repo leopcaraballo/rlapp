@@ -73,7 +73,7 @@ const SKILL_REGISTRY = await read_file("docs/agent-context/SKILL_REGISTRY.md");
 
 **Single Source of Truth:**
 
-- **Architecture/Stack:** `PROJECT_CONTEXT.md` (NestJS, Next.js, MongoDB, RabbitMQ)
+- **Architecture/Stack:** `PROJECT_CONTEXT.md` (.NET, Next.js, PostgreSQL, RabbitMQ)
 - **Rules/Anti-patterns:** `RULES.md` (SOLID, DRY, KISS, naming conventions, // HUMAN CHECK)
 - **11-step Workflow:** `WORKFLOW.md` (Read > Choose > Match > Plan > Approve > Execute...)
 - **Skill Catalog:** `SKILL_REGISTRY.md` (8 skills with triggers, paths, scopes)
@@ -85,17 +85,17 @@ const SKILL_REGISTRY = await read_file("docs/agent-context/SKILL_REGISTRY.md");
 
 **Full reference:** `SKILL_REGISTRY.md` (8 available skills)
 
-| Task Type              | Required Skills (minimum 2-3)                      |
-| ---------------------- | -------------------------------------------------- |
+| Task Type              | Required Skills (minimum 2-3)                                |
+| ---------------------- | ------------------------------------------------------------ |
 | Frontend (UI/UX)       | `vercel-react-best-practices`, `refactor-arch`, `testing-qa` |
-| Backend (API/Logic)    | `backend-api`, `refactor-arch`, `testing-qa`       |
-| Architectural Refactor | `refactor-arch`, `testing-qa`                      |
-| Microservices          | `backend-api`, `refactor-arch`, `testing-qa`       |
-| Security/Audit         | `security-audit`, `refactor-arch`, `testing-qa`    |
-| Testing/QA             | `testing-qa`, `refactor-arch`                      |
-| Docker/Infra           | `docker-infra`, `backend-api`, `testing-qa`        |
-| Commits/Docs           | `conventional-commits`, `skill-creator` (optional) |
-| Skill Creation         | `skill-creator`, `refactor-arch`, `testing-qa`     |
+| Backend (API/Logic)    | `backend-api`, `refactor-arch`, `testing-qa`                 |
+| Architectural Refactor | `refactor-arch`, `testing-qa`                                |
+| Microservices          | `backend-api`, `refactor-arch`, `testing-qa`                 |
+| Security/Audit         | `security-audit`, `refactor-arch`, `testing-qa`              |
+| Testing/QA             | `testing-qa`, `refactor-arch`                                |
+| Docker/Infra           | `docker-infra`, `backend-api`, `testing-qa`                  |
+| Commits/Docs           | `conventional-commits`, `skill-creator` (optional)           |
+| Skill Creation         | `skill-creator`, `refactor-arch`, `testing-qa`               |
 
 ### 1.2 — Skill dependency graph
 
@@ -153,7 +153,7 @@ async function delegateTask(userRequest, retryCount = 0) {
   const techProfile = await detectTechStack(allowedScope);
   // techProfile = {
   //   language:       "TypeScript" | "Python" | "Java" | ...,
-  //   framework:      "NestJS" | "Next.js" | "FastAPI" | "Spring" | ...,
+  //   framework:      "ASP.NET Core" | "Next.js" | "FastAPI" | "Spring" | ...,
   //   packageManager: "npm" | "yarn" | "pnpm" | "pip" | "maven" | ...,
   //   testRunner:     "jest" | "vitest" | "pytest" | "junit" | ...,
   //   linter:         "eslint" | "prettier" | "pylint" | "checkstyle" | ...,
@@ -190,7 +190,7 @@ ${skills[name]}
      \`build.gradle\`, \`pyproject.toml\`, \`Cargo.toml\`, or equivalent.
 2. **Identify the tech profile:**
    - Language: Determine from file extensions (\`.ts\`, \`.js\`, \`.py\`, \`.java\`, etc.)
-   - Framework: Determine from imports, decorators, and config (NestJS, Next.js, FastAPI, Spring, etc.)
+  - Framework: Determine from imports, annotations/decorators, and config (ASP.NET Core, Next.js, FastAPI, Spring, etc.)
    - Package manager: \`npm\`, \`yarn\`, \`pnpm\`, \`pip\`, \`maven\`, etc.
    - Test runner: \`jest\`, \`vitest\`, \`pytest\`, \`junit\`, etc.
    - Linter/formatter: \`eslint\`, \`prettier\`, \`pylint\`, \`checkstyle\`, etc.

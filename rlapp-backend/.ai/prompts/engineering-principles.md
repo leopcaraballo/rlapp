@@ -142,7 +142,7 @@ El sistema es:
 
 Debe soportar:
 
-* Reintentos
+* Retries
 * Reprocesamiento
 * Eventos duplicados
 * Recuperación tras fallos
@@ -300,4 +300,3 @@ Nunca al revés.
 
 **Estos principios gobiernan todas las decisiones técnicas en RLAPP.**
 Si un cambio los viola, debe rechazarse o rediseñarse.
-
