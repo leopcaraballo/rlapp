@@ -22,6 +22,19 @@ El backend implementa un modelo de sala de espera médica en .NET 10 con arquite
 5. Worker publica outbox a RabbitMQ.
 6. Query endpoints atienden desde read models/projections.
 
+## Decisiones de integridad clínica (Check-In)
+
+- `patientId` se trata como identidad clínica global y se registra en `waiting_room_patients`.
+- Unicidad de identidad: `waiting_room_patients.patient_id` es único a nivel base de datos.
+- Conflicto clínico: si llega el mismo `patientId` con nombre distinto, se lanza `PatientIdentityConflictException` y la API responde `409`.
+- `queueId` se considera backend-driven en check-in y se genera en capa de aplicación/infrastructura.
+- El backend permanece como única fuente de verdad para identidad y asignación de cola.
+
+## Seguridad operativa actual para check-in
+
+- Se aplica filtro de rol en endpoints de check-in con `X-User-Role: Receptionist`.
+- Esta protección es de transición; para producción debe migrarse a autorización robusta basada en identidad autenticada y políticas de claims.
+
 ## Patrones confirmados
 
 - Hexagonal Architecture

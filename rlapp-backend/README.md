@@ -77,6 +77,15 @@ Implementado:
 - Validación por DTO + filtro de solicitud
 - Middleware de correlación
 - Middleware global de excepciones
+- Filtro de rol en endpoints de check-in (`X-User-Role: Receptionist`)
+- Conflicto clínico controlado para identidad de paciente (`PatientIdentityConflict`)
+
+## Cambios relevantes (2026-02-27)
+
+- `queueId` se define como backend-driven para check-in; no se consume desde payload cliente.
+- Se adiciona registro de identidad clínica en PostgreSQL (`waiting_room_patients`) con unicidad por `patient_id`.
+- Se valida conflicto de identidad cuando el mismo `patient_id` llega con nombre divergente.
+- Se añadieron pruebas BDD + AAA en Application e Integration para seguridad y lógica clínica de negocio.
 
 Pendiente:
 

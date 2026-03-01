@@ -106,3 +106,55 @@ Este documento registra la colaboración humano-IA para el backend. Es evidencia
 - Archivos: rlapp-backend/src/Services/WaitingRoom/WaitingRoom.API/appsettings.json, rlapp-backend/src/Services/WaitingRoom/WaitingRoom.API/appsettings.Development.json, rlapp-backend/src/Services/WaitingRoom/WaitingRoom.Worker/appsettings.json, rlapp-backend/src/Services/WaitingRoom/WaitingRoom.API/Endpoints/WaitingRoomQueryEndpoints.cs
 - Commits: N/A
 - Estado: Completado
+
+### 2026-02-27
+
+- Tipo: Calidad de pruebas (TDD + BDD + AAA)
+- Actor: IA
+- Solicitud: Aplicar TDD/BDD para asegurar calidad alineada a la lógica de negocio clínica, con patrón AAA, y verificar funcionamiento integral.
+- Resultado: Se ejecutó ciclo Red-Green-Refactor sobre pruebas de Check-In/seguridad/identidad con estructuración explícita Given-When-Then + AAA, se añadieron escenarios faltantes y se verificó regresión cero.
+- Archivos:
+  - rlapp-backend/src/Tests/WaitingRoom.Tests.Application/CommandHandlers/CheckInPatientCommandHandlerTests.cs
+  - rlapp-backend/src/Tests/WaitingRoom.Tests.Integration/API/ReceptionistOnlyFilterTests.cs
+  - rlapp-backend/src/Tests/WaitingRoom.Tests.Integration/API/ExceptionHandlerMiddlewareTests.cs
+  - rlapp-backend/src/Tests/WaitingRoom.Tests.Integration/Infrastructure/PostgresPatientIdentityRegistryTests.cs
+- Escenarios BDD validados:
+  - Given paciente existente con nombre distinto, When se registra, Then lanza conflicto de identidad controlado.
+  - Given request sin rol Receptionist o rol incorrecto, When pasa por filtro, Then devuelve Forbid.
+  - Given check-in sin QueueId, When se procesa comando, Then backend genera QueueId.
+  - Given mismo patientId y mismo nombre, When se registra dos veces, Then el registro de identidad es idempotente.
+- Evidencia de ejecución:
+  - WaitingRoom.Tests.Application: 10/10 exitosas.
+  - WaitingRoom.Tests.Integration: 12/12 exitosas.
+  - Cobertura focal PostgresPatientIdentityRegistry: 96.55% (28/29).
+- Hallazgos:
+  - Se cerró brecha de calidad por falta de formalización AAA en pruebas críticas.
+  - Se cerró brecha de rama de negocio en filtro de rol no Receptionist.
+  - Se cerró brecha de validación de constructor para connection string inválido en registro de identidad.
+- Commits: N/A
+- Estado: Completado
+
+### 2026-02-27
+
+- Tipo: Documentación integral backend
+- Actor: IA
+- Solicitud: Actualizar documentación completa del backend, dejar trazabilidad total y crear documento de impacto sobre pruebas, TDD y BDD.
+- Resultado: Se actualizaron documentos canónicos y se creó reporte dedicado de impacto real de cambio.
+- Archivos:
+  - rlapp-backend/README.md
+  - rlapp-backend/docs/ARCHITECTURE.md
+  - rlapp-backend/docs/API.md
+  - rlapp-backend/docs/TESTING.md
+  - rlapp-backend/docs/DEBT.md
+  - rlapp-backend/docs/TDD_BDD_IMPACT_REPORT_2026-02-27.md
+- Evidencia de validación:
+  - WaitingRoom.Tests.Application: 12/12 exitosas.
+  - WaitingRoom.Tests.Integration: 19/19 exitosas.
+  - Corrida combinada Application + Integration: 31/31 exitosas.
+    - Cobertura focal de PostgresPatientIdentityRegistry: 96.55%.
+- Hallazgos documentados:
+  - Formalización de conflicto clínico de identidad y trazabilidad de respuesta `409`.
+  - Formalización BDD + AAA en pruebas de seguridad y negocio.
+  - Riesgo residual de autorización por encabezado pendiente de migración a auth robusta.
+- Commits: N/A
+- Estado: Completado

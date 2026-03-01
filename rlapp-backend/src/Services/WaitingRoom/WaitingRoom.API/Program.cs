@@ -80,6 +80,10 @@ services.AddSingleton<IEventLagTracker>(sp => new PostgresEventLagTracker(connec
 // Infrastructure — Event Type Registry
 services.AddSingleton<EventTypeRegistry>(sp => EventTypeRegistry.CreateDefault());
 
+// Infrastructure — Clinical identity + queue id generation
+services.AddSingleton<IPatientIdentityRegistry>(sp => new PostgresPatientIdentityRegistry(connectionString));
+services.AddSingleton<IQueueIdGenerator, GuidQueueIdGenerator>();
+
 // Infrastructure — Event Serializer
 services.AddSingleton<EventSerializer>();
 
@@ -280,15 +284,13 @@ commandGroup.MapPost("/api/waiting-room/check-in", async (
     var correlationId = httpContext.Items["CorrelationId"]?.ToString() ?? Guid.NewGuid().ToString();
 
     logger.LogInformation(
-        "CheckIn request received. CorrelationId: {CorrelationId}, QueueId: {QueueId}, PatientId: {PatientId}",
+        "CheckIn request received. CorrelationId: {CorrelationId}, PatientId: {PatientId}",
         correlationId,
-        dto.QueueId,
         dto.PatientId);
 
     // Map DTO → Command
     var command = new CheckInPatientCommand
     {
-        QueueId = dto.QueueId,
         PatientId = dto.PatientId,
         PatientName = dto.PatientName,
         Priority = dto.Priority,
@@ -302,7 +304,11 @@ commandGroup.MapPost("/api/waiting-room/check-in", async (
 
     // Execute command via handler
     var eventCount = await handler.HandleAsync(command, cancellationToken);
-    await ProjectQueueAsync(projection, eventStore, dto.QueueId, cancellationToken);
+    var queueId = handler.LastGeneratedQueueId;
+    if (!string.IsNullOrWhiteSpace(queueId))
+    {
+        await ProjectQueueAsync(projection, eventStore, queueId, cancellationToken);
+    }
 
     logger.LogInformation(
         "CheckIn completed. CorrelationId: {CorrelationId}, EventCount: {EventCount}",
@@ -314,13 +320,15 @@ commandGroup.MapPost("/api/waiting-room/check-in", async (
         Success = true,
         Message = "Patient checked in successfully",
         CorrelationId = correlationId,
-        EventCount = eventCount
+        EventCount = eventCount,
+        QueueId = queueId
     });
 })
 .WithName("CheckInPatient")
 .WithTags("WaitingRoom")
 .WithSummary("Registrar paciente en cola de espera")
 .WithDescription("Registra un nuevo paciente en la cola de espera indicada. Genera evento PatientCheckedIn en el Event Store.")
+.AddEndpointFilter<ReceptionistOnlyFilter>()
 .Accepts<CheckInPatientDto>("application/json")
 .Produces(200)
 .Produces(400)
@@ -340,7 +348,6 @@ commandGroup.MapPost("/api/reception/register", async (
 
     var command = new CheckInPatientCommand
     {
-        QueueId = dto.QueueId,
         PatientId = dto.PatientId,
         PatientName = dto.PatientName,
         Priority = dto.Priority,
@@ -353,20 +360,26 @@ commandGroup.MapPost("/api/reception/register", async (
     };
 
     var eventCount = await handler.HandleAsync(command, cancellationToken);
-    await ProjectQueueAsync(projection, eventStore, dto.QueueId, cancellationToken);
+    var queueId = handler.LastGeneratedQueueId;
+    if (!string.IsNullOrWhiteSpace(queueId))
+    {
+        await ProjectQueueAsync(projection, eventStore, queueId, cancellationToken);
+    }
 
     return Results.Ok(new
     {
         Success = true,
         Message = "Patient registered successfully",
         CorrelationId = correlationId,
-        EventCount = eventCount
+        EventCount = eventCount,
+        QueueId = queueId
     });
 })
 .WithName("RegisterPatientReception")
 .WithTags("Reception")
 .WithSummary("Registrar paciente desde recepcion")
 .WithDescription("Punto de entrada para recepcionistas. Registra paciente con los mismos datos que check-in pero desde el modulo de recepcion.")
+.AddEndpointFilter<ReceptionistOnlyFilter>()
 .Accepts<CheckInPatientDto>("application/json")
 .Produces(200)
 .Produces(400)
@@ -965,15 +978,12 @@ commandGroup.MapPost("/api/waiting-room/complete-attention", async (
 // STARTUP
 // ==============================================================================
 
-// Ensure database schema exists (for development)
-if (app.Environment.IsDevelopment())
+// Ensure database schema exists (idempotent, required for all environments)
+var eventStore = app.Services.GetRequiredService<IEventStore>();
+if (eventStore is PostgresEventStore postgresEventStore)
 {
-    var eventStore = app.Services.GetRequiredService<IEventStore>();
-    if (eventStore is PostgresEventStore postgresEventStore)
-    {
-        await postgresEventStore.EnsureSchemaAsync();
-        Log.Information("Database schema initialized");
-    }
+    await postgresEventStore.EnsureSchemaAsync();
+    Log.Information("Database schema initialized");
 }
 
 Log.Information("Starting WaitingRoom.API...");
