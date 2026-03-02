@@ -1,120 +1,79 @@
 namespace WaitingRoom.Tests.Integration.API;
 
-using FluentAssertions;
 using System.Net;
 using System.Net.Http.Json;
 using System.Text.Json;
-using Xunit;
+using FluentAssertions;
 using WaitingRoom.Application.Commands;
 using WaitingRoom.Application.DTOs;
+using WaitingRoom.Tests.Integration.Infrastructure;
+using Xunit;
 
 /// <summary>
-/// Integration tests for true idempotency in Check-In endpoint.
+/// Integration tests for idempotency in the Check-In endpoint.
+/// Uses WebApplicationFactory with in-memory fakes — no real PostgreSQL required.
 ///
 /// Tests validate that:
 /// 1. Identical requests with same Idempotency-Key get cached response
-/// 2. Missing Idempotency-Key is rejected
+/// 2. Missing Idempotency-Key is rejected with 400
 /// 3. Different keys are processed independently
-/// 4. Retry scenario: network failure + retry with same key succeeds
-/// 5. Concurrent requests with same key only process once
+/// 4. Retry scenario: same key returns identical response
 /// </summary>
-public class CheckInIdempotencyTests : IAsyncLifetime
+public sealed class CheckInIdempotencyTests : IClassFixture<WaitingRoomApiFactory>
 {
-    private readonly HttpClient _httpClient;
-    private readonly string _checkInUrl;
+    private readonly HttpClient _client;
 
-    public CheckInIdempotencyTests()
+    public CheckInIdempotencyTests(WaitingRoomApiFactory factory)
     {
-        _httpClient = new HttpClient();
-        var apiBaseUrl = Environment.GetEnvironmentVariable("WAITINGROOM_API_BASE_URL")
-            ?? "http://localhost:5000";
-        _checkInUrl = $"{apiBaseUrl.TrimEnd('/')}/api/waiting-room/check-in";
+        _client = factory.CreateClient();
     }
-
-    public Task InitializeAsync() => Task.CompletedTask;
-    public Task DisposeAsync() => Task.CompletedTask;
 
     [Fact]
     public async Task GivenValidCheckInRequest_WithIdempotencyKey_WhenCalledTwice_ThenReturnsCachedResponse()
     {
         // Arrange
         var idempotencyKey = Guid.NewGuid().ToString("D");
-        var dto = new CheckInPatientDto
-        {
-            PatientId = "PAT-IDEM-001",
-            PatientName = "John Idempotent",
-            Priority = "High",
-            ConsultationType = "General",
-            Actor = "nurse-001"
-        };
+        var dto = BuildCheckInDto("PAT-IDEM-001", "John Idempotent", "High");
 
-        var request1 = new HttpRequestMessage(HttpMethod.Post, _checkInUrl)
-        {
-            Content = JsonContent.Create(dto),
-            Headers =
-            {
-                { "X-User-Role", "Receptionist" },
-                { "Idempotency-Key", idempotencyKey }
-            }
-        };
-
-        // Act 1: First request
-        var response1 = await _httpClient.SendAsync(request1);
+        // Act 1: Primera petición — debe crear la entrada en idempotency store
+        var response1 = await SendCheckInAsync(dto, idempotencyKey);
         response1.StatusCode.Should().Be(HttpStatusCode.OK);
 
         var body1 = await response1.Content.ReadAsStringAsync();
         var result1 = JsonSerializer.Deserialize<JsonElement>(body1);
         var queueId1 = result1.GetProperty("queueId").GetString();
+        queueId1.Should().NotBeNullOrEmpty();
 
-        // Act 2: Identical retry with same idempotency key
-        var request2 = new HttpRequestMessage(HttpMethod.Post, _checkInUrl)
-        {
-            Content = JsonContent.Create(dto),
-            Headers =
-            {
-                { "X-User-Role", "Receptionist" },
-                { "Idempotency-Key", idempotencyKey }
-            }
-        };
-
-        var response2 = await _httpClient.SendAsync(request2);
+        // Act 2: Petición idéntica con la misma clave — debe devolver respuesta cacheada
+        var response2 = await SendCheckInAsync(dto, idempotencyKey);
         response2.StatusCode.Should().Be(HttpStatusCode.OK);
 
         var body2 = await response2.Content.ReadAsStringAsync();
         var result2 = JsonSerializer.Deserialize<JsonElement>(body2);
         var queueId2 = result2.GetProperty("queueId").GetString();
 
-        // Assert: Both responses identical (middleware returned cached version)
-        queueId1.Should().Be(queueId2, "Same idempotency key should return identical queue ID");
-        body1.Should().Be(body2, "Middleware should return exact same cached response");
-        response2.Headers.Contains("Idempotency-Replayed").Should().BeTrue("Should mark response as replayed from cache");
+        // Assert: Las dos respuestas deben ser idénticas
+        queueId1.Should().Be(queueId2, "La misma clave de idempotencia debe devolver el mismo queueId");
+        body1.Should().Be(body2, "El middleware debe devolver exactamente la respuesta cacheada");
+        response2.Headers.Contains("Idempotency-Replayed")
+            .Should().BeTrue("La segunda respuesta debe marcarse como reproducida desde caché");
     }
 
     [Fact]
     public async Task GivenCheckInRequest_WithoutIdempotencyKey_ThenReturnsBadRequest()
     {
         // Arrange
-        var dto = new CheckInPatientDto
-        {
-            PatientId = "PAT-NOIDEM-001",
-            PatientName = "No Idempotency",
-            Priority = "High",
-            ConsultationType = "General",
-            Actor = "nurse-001"
-        };
+        var dto = BuildCheckInDto("PAT-NOIDEM-001", "No Idempotency", "High");
 
-        var request = new HttpRequestMessage(HttpMethod.Post, _checkInUrl)
+        var request = new HttpRequestMessage(HttpMethod.Post, "/api/waiting-room/check-in")
         {
             Content = JsonContent.Create(dto),
-            Headers =
-            {
-                { "X-User-Role", "Receptionist" }
-                // MISSING: Idempotency-Key header
-            }
+            Headers = { { "X-User-Role", "Receptionist" } }
+            // MISSING: Idempotency-Key header — must be rejected
         };
 
         // Act
-        var response = await _httpClient.SendAsync(request);
+        var response = await _client.SendAsync(request);
 
         // Assert
         response.StatusCode.Should().Be(HttpStatusCode.BadRequest);
@@ -126,41 +85,14 @@ public class CheckInIdempotencyTests : IAsyncLifetime
     public async Task GivenMultipleRequests_WithDifferentIdempotencyKeys_ThenCreatesDifferentQueues()
     {
         // Arrange
-        var dto = new CheckInPatientDto
-        {
-            PatientId = "PAT-MULTI-001",
-            PatientName = "Multi Key Patient",
-            Priority = "Medium",
-            ConsultationType = "General",
-            Actor = "nurse-001"
-        };
+        var dto = BuildCheckInDto("PAT-MULTI-001", "Multi Key Patient", "Medium");
 
         var key1 = Guid.NewGuid().ToString("D");
         var key2 = Guid.NewGuid().ToString("D");
 
-        var request1 = new HttpRequestMessage(HttpMethod.Post, _checkInUrl)
-        {
-            Content = JsonContent.Create(dto),
-            Headers =
-            {
-                { "X-User-Role", "Receptionist" },
-                { "Idempotency-Key", key1 }
-            }
-        };
-
-        var request2 = new HttpRequestMessage(HttpMethod.Post, _checkInUrl)
-        {
-            Content = JsonContent.Create(dto),
-            Headers =
-            {
-                { "X-User-Role", "Receptionist" },
-                { "Idempotency-Key", key2 }
-            }
-        };
-
         // Act
-        var response1 = await _httpClient.SendAsync(request1);
-        var response2 = await _httpClient.SendAsync(request2);
+        var response1 = await SendCheckInAsync(dto, key1);
+        var response2 = await SendCheckInAsync(dto, key2);
 
         // Assert
         response1.StatusCode.Should().Be(HttpStatusCode.OK);
@@ -169,48 +101,58 @@ public class CheckInIdempotencyTests : IAsyncLifetime
         var body1 = await response1.Content.ReadAsStringAsync();
         var body2 = await response2.Content.ReadAsStringAsync();
 
-        var result1 = JsonSerializer.Deserialize<JsonElement>(body1);
-        var result2 = JsonSerializer.Deserialize<JsonElement>(body2);
+        var queueId1 = JsonSerializer.Deserialize<JsonElement>(body1).GetProperty("queueId").GetString();
+        var queueId2 = JsonSerializer.Deserialize<JsonElement>(body2).GetProperty("queueId").GetString();
 
-        var queueId1 = result1.GetProperty("queueId").GetString();
-        var queueId2 = result2.GetProperty("queueId").GetString();
-
-        // Different keys should get different queue IDs
-        queueId1.Should().NotBe(queueId2);
+        queueId1.Should().NotBe(queueId2, "Claves distintas deben generar colas distintas");
     }
 
     [Fact]
-    public async Task GivenIdempotencyKey_WhenNetworkFails_ThenRetryWithSameKeyReturnsIdenticalResponse()
+    public async Task GivenIdempotencyKey_WhenRetryOccurs_ThenReturnsIdenticalResponse()
     {
-        // Arrange: Simulate network failure scenario
+        // Arrange
         var idempotencyKey = Guid.NewGuid().ToString("D");
-        var dto = new CheckInPatientDto
-        {
-            PatientId = "PAT-RETRY-001",
-            PatientName = "Retry Patient",
-            Priority = "Low",
-            ConsultationType = "Dental",
-            Actor = "nurse-001"
-        };
+        var dto = BuildCheckInDto("PAT-RETRY-001", "Retry Patient", "Low", "Dental");
 
-        var request = new HttpRequestMessage(HttpMethod.Post, _checkInUrl)
-        {
-            Content = JsonContent.Create(dto),
-            Headers =
-            {
-                { "X-User-Role", "Receptionist" },
-                { "Idempotency-Key", idempotencyKey }
-            }
-        };
-
-        // Act 1: Original request succeeds
-        var response1 = await _httpClient.SendAsync(request);
+        // Act 1: Petición original
+        var response1 = await SendCheckInAsync(dto, idempotencyKey);
         response1.StatusCode.Should().Be(HttpStatusCode.OK);
         var body1 = await response1.Content.ReadAsStringAsync();
 
-        // Act 2: Client retries (same idempotency key)
-        // In real scenario, this would be after network timeout detected
-        var retryRequest = new HttpRequestMessage(HttpMethod.Post, _checkInUrl)
+        // Act 2: Reintento con la misma clave (simula fallo de red + reintento del cliente)
+        var response2 = await SendCheckInAsync(dto, idempotencyKey);
+
+        // Assert
+        response2.StatusCode.Should().Be(HttpStatusCode.OK);
+        var body2 = await response2.Content.ReadAsStringAsync();
+
+        body1.Should().Be(body2, "El reintento debe devolver exactamente la misma respuesta");
+    }
+
+    // ====================
+    // Helpers privados
+    // ====================
+
+    private static CheckInPatientDto BuildCheckInDto(
+        string patientId,
+        string patientName,
+        string priority,
+        string consultationType = "General",
+        string actor = "nurse-001")
+        => new()
+        {
+            PatientId = patientId,
+            PatientName = patientName,
+            Priority = priority,
+            ConsultationType = consultationType,
+            Actor = actor
+        };
+
+    private Task<HttpResponseMessage> SendCheckInAsync(
+        CheckInPatientDto dto,
+        string idempotencyKey)
+    {
+        var request = new HttpRequestMessage(HttpMethod.Post, "/api/waiting-room/check-in")
         {
             Content = JsonContent.Create(dto),
             Headers =
@@ -220,12 +162,6 @@ public class CheckInIdempotencyTests : IAsyncLifetime
             }
         };
 
-        var response2 = await _httpClient.SendAsync(retryRequest);
-
-        // Assert: Retry returns exact same response
-        response2.StatusCode.Should().Be(HttpStatusCode.OK);
-        var body2 = await response2.Content.ReadAsStringAsync();
-
-        body1.Should().Be(body2);
+        return _client.SendAsync(request);
     }
 }

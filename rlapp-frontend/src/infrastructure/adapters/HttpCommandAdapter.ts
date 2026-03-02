@@ -7,6 +7,9 @@
  *   Medical:          POST /api/medical/{call-next|start-consultation|finish-consultation|mark-absent}
  *   Consulting rooms: POST /api/medical/consulting-room/{activate|deactivate}
  */
+import { getAuthHeaders } from "@/security/auth";
+import { dispatchAuthInvalid } from "@/security/authEvents";
+
 import type {
   ActivateConsultingRoomCommand,
   CallNextAtCashierCommand,
@@ -54,7 +57,8 @@ async function post<T>(path: string, body: unknown): Promise<T> {
     method: "POST",
     headers: {
       ...baseHeaders(),
-      "X-Idempotency-Key": idempotencyKey(),
+      ...getAuthHeaders(),
+      "Idempotency-Key": idempotencyKey(),
     },
     body: JSON.stringify(body),
   });
@@ -63,7 +67,19 @@ async function post<T>(path: string, body: unknown): Promise<T> {
   const json = text ? (JSON.parse(text) as unknown) : null;
 
   if (!res.ok) {
-    const apiErr = (json as ApiError) ?? { error: res.statusText };
+    const apiErr = {
+      ...(json as ApiError),
+      error: (json as ApiError)?.error ?? res.statusText,
+      status: res.status,
+    } as ApiError;
+
+    if (res.status === 401) {
+      dispatchAuthInvalid({ reason: "unauthorized", status: res.status, path });
+    }
+    if (res.status === 403) {
+      dispatchAuthInvalid({ reason: "forbidden", status: res.status, path });
+    }
+
     const userMessage = translateApiError(apiErr);
     throw Object.assign(new Error(userMessage), {
       status: res.status,
@@ -73,7 +89,9 @@ async function post<T>(path: string, body: unknown): Promise<T> {
 
   // Notificar a los hooks de React que un comando tuvo éxito (refresco inmediato)
   try {
-    const queueId = (body as Record<string, unknown>)?.queueId as string | undefined;
+    const queueId = (body as Record<string, unknown>)?.queueId as
+      | string
+      | undefined;
     window.dispatchEvent(
       new CustomEvent("rlapp:command-success", { detail: { queueId, path } }),
     );
@@ -89,7 +107,9 @@ export class HttpCommandAdapter implements ICommandGateway {
     return post<CommandResult>("/api/reception/register", cmd);
   }
 
-  async callNextAtCashier(cmd: CallNextAtCashierCommand): Promise<CommandResult> {
+  async callNextAtCashier(
+    cmd: CallNextAtCashierCommand,
+  ): Promise<CommandResult> {
     return post<CommandResult>("/api/cashier/call-next", cmd);
   }
 
@@ -97,11 +117,15 @@ export class HttpCommandAdapter implements ICommandGateway {
     return post<CommandResult>("/api/cashier/validate-payment", cmd);
   }
 
-  async markPaymentPending(cmd: MarkPaymentPendingCommand): Promise<CommandResult> {
+  async markPaymentPending(
+    cmd: MarkPaymentPendingCommand,
+  ): Promise<CommandResult> {
     return post<CommandResult>("/api/cashier/mark-payment-pending", cmd);
   }
 
-  async markAbsentAtCashier(cmd: MarkAbsentAtCashierCommand): Promise<CommandResult> {
+  async markAbsentAtCashier(
+    cmd: MarkAbsentAtCashierCommand,
+  ): Promise<CommandResult> {
     return post<CommandResult>("/api/cashier/mark-absent", cmd);
   }
 
@@ -117,15 +141,21 @@ export class HttpCommandAdapter implements ICommandGateway {
     return post<CommandResult>("/api/medical/start-consultation", cmd);
   }
 
-  async completeAttention(cmd: CompleteAttentionCommand): Promise<CommandResult> {
+  async completeAttention(
+    cmd: CompleteAttentionCommand,
+  ): Promise<CommandResult> {
     return post<CommandResult>("/api/medical/finish-consultation", cmd);
   }
 
-  async markAbsentAtMedical(cmd: MarkAbsentAtMedicalCommand): Promise<CommandResult> {
+  async markAbsentAtMedical(
+    cmd: MarkAbsentAtMedicalCommand,
+  ): Promise<CommandResult> {
     return post<CommandResult>("/api/medical/mark-absent", cmd);
   }
 
-  async activateConsultingRoom(cmd: ActivateConsultingRoomCommand): Promise<CommandResult> {
+  async activateConsultingRoom(
+    cmd: ActivateConsultingRoomCommand,
+  ): Promise<CommandResult> {
     // El backend espera `consultingRoomId`; el dominio front usa `stationId` como nombre genérico
     const { stationId, ...rest } = cmd;
     return post<CommandResult>("/api/medical/consulting-room/activate", {
@@ -134,7 +164,9 @@ export class HttpCommandAdapter implements ICommandGateway {
     });
   }
 
-  async deactivateConsultingRoom(cmd: DeactivateConsultingRoomCommand): Promise<CommandResult> {
+  async deactivateConsultingRoom(
+    cmd: DeactivateConsultingRoomCommand,
+  ): Promise<CommandResult> {
     const { stationId, ...rest } = cmd;
     return post<CommandResult>("/api/medical/consulting-room/deactivate", {
       ...rest,

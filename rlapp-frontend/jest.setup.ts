@@ -4,65 +4,95 @@ import { TextDecoder, TextEncoder } from "util";
 import { ReadableStream, TransformStream, WritableStream } from "stream/web";
 import { EventEmitter } from "events";
 
+// Setup environment variables for tests
+process.env.NEXT_PUBLIC_API_BASE_URL ??= "http://localhost:3000/api";
+process.env.NEXT_PUBLIC_DEFAULT_QUEUE_ID ??= "QUEUE-01";
+
 if (!globalThis.TextEncoder) {
-	(globalThis as typeof globalThis & { TextEncoder: typeof TextEncoder }).TextEncoder = TextEncoder;
+  (
+    globalThis as typeof globalThis & { TextEncoder: typeof TextEncoder }
+  ).TextEncoder = TextEncoder;
 }
 
 if (!globalThis.TextDecoder) {
-	(globalThis as typeof globalThis & { TextDecoder: typeof TextDecoder }).TextDecoder = TextDecoder;
+  (
+    globalThis as typeof globalThis & { TextDecoder: typeof TextDecoder }
+  ).TextDecoder = TextDecoder;
 }
 
 if (!globalThis.TransformStream) {
-	(globalThis as typeof globalThis & { TransformStream: typeof TransformStream }).TransformStream = TransformStream;
+  (
+    globalThis as typeof globalThis & {
+      TransformStream: typeof TransformStream;
+    }
+  ).TransformStream = TransformStream;
 }
 
 if (!globalThis.WritableStream) {
-	(globalThis as typeof globalThis & { WritableStream: typeof WritableStream }).WritableStream = WritableStream;
+  (
+    globalThis as typeof globalThis & { WritableStream: typeof WritableStream }
+  ).WritableStream = WritableStream;
 }
 
 if (!globalThis.ReadableStream) {
-	(globalThis as typeof globalThis & { ReadableStream: typeof ReadableStream }).ReadableStream = ReadableStream;
+  (
+    globalThis as typeof globalThis & { ReadableStream: typeof ReadableStream }
+  ).ReadableStream = ReadableStream;
 }
 
 if (!globalThis.BroadcastChannel) {
-	const channelBus = new Map<string, EventEmitter>();
+  const channelBus = new Map<string, EventEmitter>();
 
-	class NodeBroadcastChannel {
-		name: string;
-		private emitter: EventEmitter;
+  class NodeBroadcastChannel {
+    name: string;
+    private emitter: EventEmitter;
 
-		constructor(name: string) {
-			this.name = name;
-			const existing = channelBus.get(name);
-			if (existing) {
-				this.emitter = existing;
-			} else {
-				this.emitter = new EventEmitter();
-				channelBus.set(name, this.emitter);
-			}
-		}
+    constructor(name: string) {
+      this.name = name;
+      const existing = channelBus.get(name);
+      if (existing) {
+        this.emitter = existing;
+      } else {
+        this.emitter = new EventEmitter();
+        channelBus.set(name, this.emitter);
+      }
+    }
 
-		postMessage(message: unknown) {
-			this.emitter.emit("message", { data: message });
-		}
+    postMessage(message: unknown) {
+      this.emitter.emit("message", { data: message });
+    }
 
-		addEventListener(event: "message", listener: (event: { data: unknown }) => void) {
-			this.emitter.addListener(event, listener);
-		}
+    addEventListener(
+      event: "message",
+      listener: (event: { data: unknown }) => void,
+    ) {
+      this.emitter.addListener(event, listener);
+    }
 
-		removeEventListener(event: "message", listener: (event: { data: unknown }) => void) {
-			this.emitter.removeListener(event, listener);
-		}
+    removeEventListener(
+      event: "message",
+      listener: (event: { data: unknown }) => void,
+    ) {
+      this.emitter.removeListener(event, listener);
+    }
 
-		close() {
-			this.emitter.removeAllListeners();
-		}
-	}
+    close() {
+      this.emitter.removeAllListeners();
+    }
+  }
 
-	(globalThis as typeof globalThis & { BroadcastChannel: typeof NodeBroadcastChannel }).BroadcastChannel = NodeBroadcastChannel;
+  (
+    globalThis as typeof globalThis & {
+      BroadcastChannel: typeof NodeBroadcastChannel;
+    }
+  ).BroadcastChannel = NodeBroadcastChannel;
 }
 
-const { server }: { server: import("msw/node").SetupServerApi } = require("@test/mocks/server");
+const {
+  server,
+}: {
+  server: import("msw/node").SetupServerApi;
+} = require("@test/mocks/server");
 
 beforeAll(() => server.listen({ onUnhandledRequest: "error" }));
 afterEach(() => server.resetHandlers());

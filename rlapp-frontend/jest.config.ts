@@ -17,11 +17,17 @@ const config: Config = {
     "^@test/(.*)$": "<rootDir>/test/$1",
     "^until-async$": "<rootDir>/test/__mocks__/until-async.ts",
   },
-  transformIgnorePatterns: ["node_modules/(?!msw|@mswjs/interceptors|until-async)/"],
+  transformIgnorePatterns: [
+    "node_modules/(?!msw|@mswjs/interceptors|until-async)/",
+  ],
   testEnvironmentOptions: {
     customExportConditions: ["node"],
   },
   testMatch: [
+    "<rootDir>/test/security/**/*.spec.ts",
+    "<rootDir>/test/security/**/*.test.ts",
+    "<rootDir>/test/security/**/*.spec.tsx",
+    "<rootDir>/test/security/**/*.test.tsx",
     "<rootDir>/test/hooks/**/*.spec.ts",
     "<rootDir>/test/hooks/**/*.test.ts",
     "<rootDir>/test/hooks/**/*.spec.tsx",

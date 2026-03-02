@@ -131,9 +131,16 @@ public sealed class IdempotencyKeyMiddleware
         if (!new[] { "POST", "PATCH", "PUT" }.Contains(method.ToUpperInvariant()))
             return false;
 
-        // Exclude health checks and diagnostics
+        // Exclude paths that are NOT domain commands
         var pathStr = path.ToString().ToLowerInvariant();
+
+        // Health checks and diagnostics
         if (pathStr.Contains("/health") || pathStr.Contains("/metrics"))
+            return false;
+
+        // SignalR negotiate/connect — these are infrastructure POSTs, not domain commands.
+        // The SignalR client issues POST /ws/.../negotiate to establish connections.
+        if (pathStr.StartsWith("/ws/"))
             return false;
 
         return true;
