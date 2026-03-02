@@ -1,4 +1,4 @@
-clasicousing Scalar.AspNetCore;
+using Scalar.AspNetCore;
 using Microsoft.AspNetCore.OpenApi;
 using Microsoft.OpenApi;
 using Serilog;

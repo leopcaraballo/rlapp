@@ -5,6 +5,7 @@ using WaitingRoom.Application.Commands;
 using WaitingRoom.Application.Exceptions;
 using WaitingRoom.Application.Ports;
 using WaitingRoom.Domain.Commands;
+using WaitingRoom.Domain.Exceptions;
 
 public sealed class ClaimNextPatientCommandHandler
 {
