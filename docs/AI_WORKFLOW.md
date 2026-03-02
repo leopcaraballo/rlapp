@@ -242,3 +242,43 @@
 
   - Notes / Human checks:
     - Ninguna.
+
+  ### 2026-03-02 — Cobertura de tests: superar objetivos del TDD_PLAN
+
+  - Actor: AI assistant (Copilot) — modelo Claude Sonnet 4.6
+  - Task: Agregar tests de cobertura para alcanzar los umbrales definidos en `docs/TDD_PLAN.md` (>80% líneas, >70% branches).
+  - Branch: `refac/frontend-viewes` — commit `2205784`
+  - Files changed (13 archivos nuevos, 1622 inserciones):
+    - `jest.config.ts`: agregar `testMatch` para directorios `application/`, `infrastructure/`, `context/` y `repositories/`
+    - `test/application/application-layer.coverage.spec.ts`
+    - `test/infrastructure/httpCommandAdapter.coverage.spec.ts`
+    - `test/hooks/hooks-core.coverage.spec.tsx`
+    - `test/hooks/useQueueAsAppointments.coverage.spec.tsx`
+    - `test/hooks/useCashierStation.coverage.spec.tsx`
+    - `test/services/errorTranslations.coverage.spec.tsx`
+    - `test/context/alertContext.coverage.spec.tsx`
+    - `test/repositories/httpAppointmentRepository.coverage.spec.ts`
+    - `test/app/test/page.coverage.spec.tsx`
+    - `test/components/Navbar.coverage.spec.tsx`
+    - `test/components/AppointmentCard.branches.coverage.spec.tsx`
+    - `test/lib/httpClient.branches.coverage.spec.ts`
+
+  - Actions performed:
+    1. Identificados 15+ archivos con 0% de cobertura mediante análisis de `coverage-final.json`.
+    2. Creados tests unitarios para la capa de aplicación (CashierUseCases, MedicalUseCases, ConsultingRoomUseCases, CheckInPatientUseCase, PatientState) — todos los delegates al gateway con happy path y error.
+    3. Tests para `HttpCommandAdapter`: todos los endpoints POST, mapeo `stationId→consultingRoomId`, errores traducidos, cuerpo vacío (204) y fallback por `statusText`.
+    4. Tests para hooks de comandos (`useCheckIn`, `useMedicalStation`, `useConsultingRooms`, `useCashierStation`): estado inicial, happy path, error con `instanceof Error` y `String(e)`, `clearError`, actores por defecto y valores explícitos.
+    5. Tests para `useQueueAsAppointments`: todos los `connectionState`, mapeo de priorities (7 casos `it.each`), `nextTurn`, `patientsInQueue`, `history`, deduplication y fallback `Date.now()`.
+    6. Tests para `AlertContext` + `Alert`: provider, no-op fallback sin provider, `showError/showSuccess/showInfo`, auto-dismiss con `jest.useFakeTimers`, múltiples alertas simultáneas.
+    7. Tests para `errorTranslations`: 14 casos incluyendo traducciones exactas, parciales, fallback por código de error, último recurso y string vacío.
+    8. Tests para `Navbar`: null en HIDDEN_ROUTES (`/`), renderizado fuera, clase activa/inactiva, brand link.
+    9. Tests para `AppointmentCard`: 4 priorities (it.each), branch `office null/definido`, `showTime`, `completedAt || timestamp`.
+    10. Tests para `httpClient` CircuitBreaker: `HALF_OPEN` recovery, `HTTP_ERROR` retry, timeout intermedio.
+    11. Corregido `testMatch` en `jest.config.ts` para incluir los nuevos directorios de test.
+
+  - Resultado de cobertura:
+    - Antes: statements 63.23%, branches 52.48%, functions 50.73%, lines 64.81%
+    - Después: statements 81.61% ✅, branches 70.56% ✅, functions 76.53%, lines 83.96% ✅
+
+  - Notes / Human checks:
+    - Los 3 `any` preexistentes en `src/` (líneas 106, 111 de `httpClient.ts` y línea 76 de `useAppointmentRegistration.ts`) son anteriores a este plan y no fueron introducidos por estos tests.
