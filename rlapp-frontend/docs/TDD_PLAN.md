@@ -8,14 +8,14 @@
 
 ### 0.1 Cobertura global (última ejecución registrada)
 
-| Métrica | Actual | Objetivo |
-|---|---|---|
-| Líneas | 83.96% | >80% |
-| Sentencias | 81.61% | >80% |
-| Funciones | 76.53% | >80% |
-| Ramas | 70.56% | >70% |
+| Métrica | Anterior | Actual | Objetivo |
+|---|---|---|---|
+| Líneas | 83.96% | **93.17%** | >80% |
+| Sentencias | 81.61% | **91.00%** | >80% |
+| Funciones | 76.53% | **87.97%** | >80% |
+| Ramas | 70.56% | **79.04%** | >70% |
 
-Líneas y sentencias superan el objetivo. Funciones y ramas están en el límite mínimo.
+Todos los objetivos superados tras ejecutar los Bloques A, B y C.
 
 ### 0.2 Progreso por pantalla
 
@@ -65,7 +65,7 @@ Archivos con brechas de ramas secundarias (no bloquean umbral global, pero degra
 
 **Pasos:**
 
-1. Ejecutar `npx jest --testPathPattern="registration/page.red"` y confirmar que todos fallan (estado RED real).
+1. Ejecutar `npx jest --testPathPatterns="registration/page.red"` y confirmar que todos fallan (estado RED real).
 2. **feat(registration): green** — implementar en `src/app/registration/page.tsx`:
    - Surface explícito de errores Zod campo a campo (mensajes bajo cada input).
    - Manejo de `circuit open` y `timeout` desde `httpClient`: capturar `CircuitOpenError` y `TimeoutError`, mostrar alerta con `showError`.
@@ -91,7 +91,7 @@ Archivos con brechas de ramas secundarias (no bloquean umbral global, pero degra
 
 **Paso B.1 — GREEN de la página**
 
-1. Ejecutar `npx jest --testPathPattern="waiting-room/page.red"` y confirmar estado RED.
+1. Ejecutar `npx jest --testPathPatterns="waiting-room/page.red"` y confirmar estado RED.
 2. **feat(waiting-room): green** — en `src/app/waiting-room/[queueId]/page.tsx`:
    - Orquestar fetches paralelos con `Promise.all` para `monitor`, `queue`, `nextTurn`, `history`.
    - Suscribirse al evento `rlapp:command-success` para disparar refresh.
@@ -278,7 +278,7 @@ git status                # sin archivos fuera de scope
 ## 6. Cobertura y comandos
 
 - Objetivo: >80% líneas, >70% branches; sin tests frágiles.
-- Comandos: `npm test`, `npm run test:cov`, `npx jest --testPathPattern="reception|cashier|medical|display"`.
+- Comandos: `npm test`, `npm run test:cov`, `npx jest --testPathPatterns="reception|cashier|medical|display"`.
 
 ## 7. Riesgos y mitigaciones
 
@@ -303,9 +303,9 @@ git status                # sin archivos fuera de scope
 5) ~~Display~~ (R/G/R ✓ — commit `bd67c85`)
 6) ~~Dashboard~~ (R/G/R ✓ — commit `c97119b`)
 7) ~~Ruta base~~ (R/G/R ✓ — incluido en reception)
-8) **Registration** — GREEN + REFACTOR pendientes (ver §11.1)
-9) **Waiting room** — GREEN + REFACTOR + cobertura de capas pendientes (ver §11.2)
-10) **Branch coverage** — brechas secundarias (ver §11.3)
+8) ~~Registration~~ — GREEN `c90db2f` + REFACTOR `d460c38` ✓
+9) ~~Waiting room~~ — GREEN `549bbb8` + tests de capas `92f4682`, `18feeab` ✓
+10) ~~Branch coverage~~ — brechas secundarias cubiertas en sesión Bloques B2-B5 ✓
 
 ## 10. Checklist previa a merge
 
@@ -320,17 +320,17 @@ git status                # sin archivos fuera de scope
 | `/consulting-rooms` | ✓ | ✓ | ✓ |
 | `/display/[queueId]` | ✓ | ✓ | ✓ |
 | `/dashboard` | ✓ | ✓ | ✓ |
-| `/registration` | ✓ | [ ] | [ ] |
-| `/waiting-room/[queueId]` | ✓ | [ ] | [ ] |
+| `/registration` | ✓ | ✓ | ✓ |
+| `/waiting-room/[queueId]` | ✓ | ✓ | ✓ |
 
 ### Global
 
-- [ ] R/G/R completado en `/registration` con commits separados.
-- [ ] R/G/R completado en `/waiting-room` con commits separados.
-- [ ] Tests de capas (`useWaitingRoom`, `SignalRAdapter`, `waitingRoomSignalR`, `services/api/waitingRoom`) agregados.
-- [ ] Branch coverage de `NetworkStatus`, `proxi`, `env`, `useConsultingRooms` y WaitingRoom cards.
-- [ ] `npm run test:cov`: líneas >80%, funciones >80%, ramas >70%.
-- [ ] `npx tsc --noEmit`: sin errores de tipos.
-- [ ] `npx eslint src/ --max-warnings 0`: sin warnings nuevos.
-- [ ] Sin `any` ni tipados laxos nuevos.
-- [ ] `AI_WORKFLOW.md` actualizado con cada bloque; `DEBT_REPORT.md` si aplica.
+- [x] R/G/R completado en `/registration` con commits separados.
+- [x] R/G/R completado en `/waiting-room` con commits separados.
+- [x] Tests de capas (`useWaitingRoom`, `SignalRAdapter`, `waitingRoomSignalR`, `services/api/waitingRoom`) agregados.
+- [x] Branch coverage de `NetworkStatus`, `proxi`, `env`, `useConsultingRooms` y WaitingRoom cards.
+- [x] `npm run test:cov`: líneas >80% (**93.17%**), funciones >80% (**87.97%**), ramas >70% (**79.04%**).
+- [ ] `npx tsc --noEmit`: pendiente verificación final.
+- [ ] `npx eslint src/ --max-warnings 0`: pendiente verificación final.
+- [x] Sin `any` ni tipados laxos nuevos.
+- [x] `AI_WORKFLOW.md` actualizado con cada bloque; `DEBT_REPORT.md` si aplica.
