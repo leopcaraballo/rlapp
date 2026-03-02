@@ -18,7 +18,7 @@ const mockUseWaitingRoom = useWaitingRoom as jest.MockedFunction<typeof useWaiti
 // ---------------------------------------------------------------------------
 // Factories
 // ---------------------------------------------------------------------------
-function makeQueueState(patients = []) {
+function makeQueueState(patients: object[] = []) {
   return {
     queueId: "q1",
     currentCount: patients.length,
@@ -86,7 +86,7 @@ describe("useQueueAsAppointments — estado de conexión", () => {
         nextTurn: null,
         history: [],
         connectionState: state,
-      } as ReturnType<typeof useWaitingRoom>);
+      } as unknown as ReturnType<typeof useWaitingRoom>);
 
       const { result } = renderHook(() => useQueueAsAppointments("q1"));
       expect(result.current.connected).toBe(expectedConnected);
@@ -96,13 +96,13 @@ describe("useQueueAsAppointments — estado de conexión", () => {
   );
 
   it("error es null cuando connectionState=online", () => {
-    mockUseWaitingRoom.mockReturnValue({ queueState: null, nextTurn: null, history: [], connectionState: "online" } as ReturnType<typeof useWaitingRoom>);
+    mockUseWaitingRoom.mockReturnValue({ queueState: null, nextTurn: null, history: [], connectionState: "online" } as unknown as ReturnType<typeof useWaitingRoom>);
     const { result } = renderHook(() => useQueueAsAppointments("q1"));
     expect(result.current.error).toBeNull();
   });
 
   it("error contiene mensaje cuando connectionState=degraded", () => {
-    mockUseWaitingRoom.mockReturnValue({ queueState: null, nextTurn: null, history: [], connectionState: "degraded" } as ReturnType<typeof useWaitingRoom>);
+    mockUseWaitingRoom.mockReturnValue({ queueState: null, nextTurn: null, history: [], connectionState: "degraded" } as unknown as ReturnType<typeof useWaitingRoom>);
     const { result } = renderHook(() => useQueueAsAppointments("q1"));
     expect(result.current.error).toMatch(/sin conexión/i);
   });
@@ -110,7 +110,7 @@ describe("useQueueAsAppointments — estado de conexión", () => {
 
 describe("useQueueAsAppointments — mapeo de appointments", () => {
   it("retorna lista vacía cuando no hay datos", () => {
-    mockUseWaitingRoom.mockReturnValue({ queueState: null, nextTurn: null, history: [], connectionState: "online" } as ReturnType<typeof useWaitingRoom>);
+    mockUseWaitingRoom.mockReturnValue({ queueState: null, nextTurn: null, history: [], connectionState: "online" } as unknown as ReturnType<typeof useWaitingRoom>);
     const { result } = renderHook(() => useQueueAsAppointments("q1"));
     expect(result.current.appointments).toHaveLength(0);
   });
@@ -121,7 +121,7 @@ describe("useQueueAsAppointments — mapeo de appointments", () => {
       nextTurn: makeNextTurn(),
       history: [],
       connectionState: "online",
-    } as ReturnType<typeof useWaitingRoom>);
+    } as unknown as ReturnType<typeof useWaitingRoom>);
     const { result } = renderHook(() => useQueueAsAppointments("q1"));
     const [appt] = result.current.appointments;
     expect(appt.status).toBe("called");
@@ -136,7 +136,7 @@ describe("useQueueAsAppointments — mapeo de appointments", () => {
       nextTurn: makeNextTurn({ calledAt: null }),
       history: [],
       connectionState: "online",
-    } as ReturnType<typeof useWaitingRoom>);
+    } as unknown as ReturnType<typeof useWaitingRoom>);
     const before = Date.now();
     const { result } = renderHook(() => useQueueAsAppointments("q1"));
     const after = Date.now();
@@ -152,7 +152,7 @@ describe("useQueueAsAppointments — mapeo de appointments", () => {
       nextTurn: makeNextTurn({ patientId: "p1" }),
       history: [],
       connectionState: "online",
-    } as ReturnType<typeof useWaitingRoom>);
+    } as unknown as ReturnType<typeof useWaitingRoom>);
     const { result } = renderHook(() => useQueueAsAppointments("q1"));
     // Solo 1 appointment (el nextTurn, no duplicado)
     expect(result.current.appointments).toHaveLength(1);
@@ -165,7 +165,7 @@ describe("useQueueAsAppointments — mapeo de appointments", () => {
       nextTurn: null,
       history: [],
       connectionState: "online",
-    } as ReturnType<typeof useWaitingRoom>);
+    } as unknown as ReturnType<typeof useWaitingRoom>);
     const { result } = renderHook(() => useQueueAsAppointments("q1"));
     expect(result.current.appointments[0].status).toBe("waiting");
     expect(result.current.appointments[0].fullName).toBe("María");
@@ -178,7 +178,7 @@ describe("useQueueAsAppointments — mapeo de appointments", () => {
       nextTurn: null,
       history: [],
       connectionState: "online",
-    } as ReturnType<typeof useWaitingRoom>);
+    } as unknown as ReturnType<typeof useWaitingRoom>);
     const { result } = renderHook(() => useQueueAsAppointments("q1"));
     expect(result.current.appointments[0].timestamp).toBeLessThan(Date.now());
   });
@@ -189,7 +189,7 @@ describe("useQueueAsAppointments — mapeo de appointments", () => {
       nextTurn: null,
       history: [makeHistory()],
       connectionState: "online",
-    } as ReturnType<typeof useWaitingRoom>);
+    } as unknown as ReturnType<typeof useWaitingRoom>);
     const { result } = renderHook(() => useQueueAsAppointments("q1"));
     expect(result.current.appointments[0].status).toBe("completed");
     expect(result.current.appointments[0].fullName).toBe("Ana López");
@@ -202,7 +202,7 @@ describe("useQueueAsAppointments — mapeo de appointments", () => {
       nextTurn: null,
       history: [makeHistory({ priority: null as unknown as string })],
       connectionState: "online",
-    } as ReturnType<typeof useWaitingRoom>);
+    } as unknown as ReturnType<typeof useWaitingRoom>);
     const { result } = renderHook(() => useQueueAsAppointments("q1"));
     expect(result.current.appointments[0].priority).toBe("Medium");
   });
@@ -218,7 +218,7 @@ describe("useQueueAsAppointments — mapeo de appointments", () => {
       nextTurn: null,
       history: [h, h],
       connectionState: "online",
-    } as ReturnType<typeof useWaitingRoom>);
+    } as unknown as ReturnType<typeof useWaitingRoom>);
     const { result } = renderHook(() => useQueueAsAppointments("q1"));
     // Ambos tienen el mismo compositeId, el 2do debe ser ignorado
     expect(result.current.appointments).toHaveLength(1);
@@ -241,7 +241,7 @@ describe("useQueueAsAppointments — mapeo de prioridades", () => {
       nextTurn: null,
       history: [],
       connectionState: "online",
-    } as ReturnType<typeof useWaitingRoom>);
+    } as unknown as ReturnType<typeof useWaitingRoom>);
     const { result } = renderHook(() => useQueueAsAppointments("q1"));
     expect(result.current.appointments[0].priority).toBe(expected);
   });

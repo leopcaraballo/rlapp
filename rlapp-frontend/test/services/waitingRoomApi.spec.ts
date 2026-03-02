@@ -7,7 +7,7 @@
  * Usa global.fetch mock (mismo patrón que adapters.coverage.spec.ts).
  */
 
-const setEnv = () => {
+const setApiTestEnv = () => {
   process.env.NEXT_PUBLIC_API_BASE_URL = "http://api.test";
 };
 
@@ -33,7 +33,7 @@ function mockFetchError(status: number, body: unknown) {
 describe("services/api/waitingRoom", () => {
   beforeEach(() => {
     jest.resetModules();
-    setEnv();
+    setApiTestEnv();
     (global as unknown as { fetch: FetchMock }).fetch = jest.fn();
   });
 
