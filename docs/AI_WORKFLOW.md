@@ -1,5 +1,26 @@
 ## AI_WORKFLOW Log
 
+### 2026-03-02 — TDD consultorios (RED→REFACTOR)
+
+- Actor: AI assistant (Copilot)
+- Task: Ciclo TDD para la pantalla `/consulting-rooms`; cobertura de toggle activate/deactivate, idempotencia de estado ante fallos de red, busy, propagación de error y queueId desde query param.
+- Files changed:
+  - rlapp-frontend/test/app/consulting-rooms/page.red.spec.tsx (nuevo — 12 pruebas)
+- Commits atómicos:
+  - `test(consulting-rooms): red - tests de toggle, idempotencia, fallo de red, busy y propagación de error (12/12)`
+  - `refactor(consulting-rooms): extraer helpers getCard/activateCard para eliminar patrón repetido`
+
+- Actions performed:
+  1. RED: se crearon 12 pruebas. La producción era correcta en todos los casos (12/12 desde el inicio). Casos cubiertos: renderizado de 4 salas, queueId desde query param, activate/deactivate con payload correcto, transición de etiqueta del botón, showSuccess/showInfo, no-flip de estado si el hook devuelve `false`, botones deshabilitados con `busy`, propagación de error + clearError.
+  2. REFACTOR: se extrajeron dos helpers — `getCard(stationId)` encapsula `.closest('div')`, y `activateCard(user, stationId)` encapsula el clic + waitFor del flujo previo de activación. Se eliminó código duplicado en 5 tests.
+
+- Patrones consolidados:
+  - `getCard` como alternativa tipada a `.closest('div') as HTMLElement`.
+  - `activateCard` como precondición reutilizable cuando un test necesita una tarjeta ya activa.
+
+- Notes / Human checks:
+  - No se detectó deuda técnica; sin cambios en producción.
+
 ### 2026-03-02 — TDD médico (RED→REFACTOR + corrección de producción)
 
 - Actor: AI assistant (Copilot)
