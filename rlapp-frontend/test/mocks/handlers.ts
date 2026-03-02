@@ -9,7 +9,7 @@ export const handlers = [
     ]);
   }),
   http.post('/api/appointments', async ({ request }) => {
-    const body = await request.json();
+    const body = await request.json() as Record<string, unknown>;
     return HttpResponse.json({ id: '3', ...body }, { status: 201 });
   }),
 ];

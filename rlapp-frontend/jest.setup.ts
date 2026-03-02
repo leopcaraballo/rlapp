@@ -13,15 +13,18 @@ if (!globalThis.TextDecoder) {
 }
 
 if (!globalThis.TransformStream) {
-	(globalThis as typeof globalThis & { TransformStream: typeof TransformStream }).TransformStream = TransformStream;
+	// eslint-disable-next-line @typescript-eslint/no-explicit-any
+	(globalThis as any).TransformStream = TransformStream;
 }
 
 if (!globalThis.WritableStream) {
-	(globalThis as typeof globalThis & { WritableStream: typeof WritableStream }).WritableStream = WritableStream;
+	// eslint-disable-next-line @typescript-eslint/no-explicit-any
+	(globalThis as any).WritableStream = WritableStream;
 }
 
 if (!globalThis.ReadableStream) {
-	(globalThis as typeof globalThis & { ReadableStream: typeof ReadableStream }).ReadableStream = ReadableStream;
+	// eslint-disable-next-line @typescript-eslint/no-explicit-any
+	(globalThis as any).ReadableStream = ReadableStream;
 }
 
 if (!globalThis.BroadcastChannel) {
@@ -59,7 +62,8 @@ if (!globalThis.BroadcastChannel) {
 		}
 	}
 
-	(globalThis as typeof globalThis & { BroadcastChannel: typeof NodeBroadcastChannel }).BroadcastChannel = NodeBroadcastChannel;
+	// eslint-disable-next-line @typescript-eslint/no-explicit-any
+	(globalThis as any).BroadcastChannel = NodeBroadcastChannel;
 }
 
 const { server }: { server: import("msw/node").SetupServerApi } = require("@test/mocks/server");

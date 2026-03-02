@@ -82,6 +82,9 @@ describe("WaitingRoomPage — RED", () => {
       queueId: "QUEUE-WR",
       totalPatientsWaiting: 7,
       highPriorityCount: 2,
+      normalPriorityCount: 4,
+      lowPriorityCount: 1,
+      lastPatientCheckedInAt: null,
       averageWaitTimeMinutes: 12,
       utilizationPercentage: 70,
       projectedAt: "2026-03-02T10:00:00Z",
@@ -107,6 +110,7 @@ describe("WaitingRoomPage — RED", () => {
       isAtCapacity: false,
       availableSpots: 15,
       patientsInQueue: [],
+      projectedAt: "2026-03-02T10:00:00Z",
     };
     renderWaitingRoom();
     expect(screen.getByText("5")).toBeInTheDocument();
