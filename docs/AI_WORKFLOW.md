@@ -1,5 +1,29 @@
 ## AI_WORKFLOW Log
 
+### 2026-03-02 — TDD médico (RED→REFACTOR + corrección de producción)
+
+- Actor: AI assistant (Copilot)
+- Task: Ciclo TDD para la pantalla `/medical`; cobertura de claim, call, complete, markAbsent, guards de patientId, busy, propagación de errores y query param. Descubrimiento y corrección de defecto en coerción de `outcome`.
+- Files changed:
+  - rlapp-frontend/test/app/medical/page.red.spec.tsx (nuevo — 12 pruebas)
+  - rlapp-frontend/src/app/medical/page.tsx (corrección `??` → `||` en `outcome`)
+- Commits atómicos:
+  - `test(medical): red - tests de claim, call, complete, absent, guards de patientId, busy y propagación de errores (12/12)`
+  - `refactor(medical): extraer ActionRow, simplificar fillStation y corregir outcome coercion vacío→null`
+
+- Actions performed:
+  1. RED: se crearon 12 pruebas cubrien todas las acciones de la pantalla. La producción ya era correcta en 11/12; el único fallo (regex `/Activar estación/i` sub-matching "Desactivar estación") fue corregido en autoría antes del commit.
+  2. REFACTOR: se extrajo el tipo `ActionRow`, se simplificó el helper `fillStation` para siempre limpiar los campos. Este cambio **reveló un defecto real**: `data.outcome ?? null` no coerciona `""` a `null`; se corrigió a `data.outcome || null` en `onFinishConsult`. Resultado final: 12/12.
+
+- Defecto corregido:
+  - Archivo: `src/app/medical/page.tsx`, función `onFinishConsult`
+  - Síntoma: cuando el campo "Resultado" se deja vacío y luego se borra, `react-hook-form` reporta `""` en vez de `null`; `?? null` deja pasar `""` tal cual.
+  - Corrección: `data.outcome || null` coerciona tanto `""` como `undefined` a `null`.
+
+- Notes / Human checks:
+  - Patrón `^Ancla$` en regex de botones con prefijo común (Activar/Desactivar) debe estandarizarse en otras suites.
+  - Considerar aplicar la misma corrección `|| null` en otros formularios con campos opcionales (`registration`, `cashier` si aplica).
+
 ### 2026-03-02 — TDD caja (RED→GREEN→REFACTOR)
 
 - Actor: AI assistant (Copilot)
