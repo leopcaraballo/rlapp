@@ -1,5 +1,27 @@
 ## AI_WORKFLOW Log
 
+### 2026-03-02 — TDD display (RED→REFACTOR)
+
+- Actor: AI assistant (Copilot)
+- Task: Ciclo TDD para la pantalla `/display/[queueId]`; cobertura de queueId en cabecera, turno activo/nulo, consultorio destino, lista de espera, límite de 8 slots, orden y footer de última actualización.
+- Files changed:
+  - rlapp-frontend/test/app/display/page.red.spec.tsx (nuevo — 12 pruebas)
+- Commits atómicos:
+  - `test(display): red - queueId en cabecera, turno activo, lista, límite 8 slots, orden y lastUpdated (12/12)`
+  - `refactor(display): it.each para tests de footer lastUpdated (10-11)`
+
+- Actions performed:
+  1. RED: se crearon 12 pruebas síncronas. Problema resuelto: `React.use(params)` en Next.js App Router recibe `params: Promise<{queueId}>` y llama a `React.use(promise)`, lo que suspende indefinidamente en Jest 30. **Solución definitiva**: `jest.spyOn(React, "use").mockImplementation((_: unknown) => mockParams as any)` con variable `let mockParams` mutable que se actualiza en `beforeEach` y en `renderDisplay()`. La producción era correcta en todos los casos (12/12 desde el inicio).
+  2. REFACTOR: se consolidaron los tests 10 y 11 (footer `lastUpdated`) en un `it.each` con parámetros `{ lastUpdated, containsDash, label }`. Sin cambios en producción.
+
+- Patrones consolidados:
+  - `jest.spyOn(React, "use").mockImplementation((_) => mockParams as any)` como solución canónica para páginas App Router con `params: Promise<T>` en Jest.
+  - Variable `let mockParams` mutable — actualizada tanto en `beforeEach` como en `renderDisplay(queueId)` para control por test.
+
+- Notes / Human checks:
+  - Aplicar el mismo patrón `mockParams` en cualquier otra página App Router que reciba `params` como Promise.
+  - No se detectó deuda técnica; sin cambios en producción.
+
 ### 2026-03-02 — TDD consultorios (RED→REFACTOR)
 
 - Actor: AI assistant (Copilot)
