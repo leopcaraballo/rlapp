@@ -50,15 +50,15 @@ describe("ReceptionPage — RED", () => {
   it("recorta el nombre antes de enviar el comando", async () => {
     mockRegisterReception.mockResolvedValue({ success: true });
 
+    const user = userEvent.setup();
+
     render(<ReceptionPage />);
 
-    await userEvent.type(
+    await user.type(
       screen.getByLabelText(/Nombre del paciente/i),
       "  Ana Perez  ",
     );
-    await userEvent.click(
-      screen.getByRole("button", { name: /Registrar check-in/i }),
-    );
+    await user.click(screen.getByRole("button", { name: /Registrar check-in/i }));
 
     await waitFor(() => {
       expect(mockRegisterReception).toHaveBeenCalled();
@@ -72,15 +72,15 @@ describe("ReceptionPage — RED", () => {
   it("envia los opcionales como null cuando no se completan", async () => {
     mockRegisterReception.mockResolvedValue({ success: true });
 
+    const user = userEvent.setup();
+
     render(<ReceptionPage />);
 
-    await userEvent.type(
+    await user.type(
       screen.getByLabelText(/Nombre del paciente/i),
       "Maria Lopez",
     );
-    await userEvent.click(
-      screen.getByRole("button", { name: /Registrar check-in/i }),
-    );
+    await user.click(screen.getByRole("button", { name: /Registrar check-in/i }));
 
     await waitFor(() => {
       expect(mockRegisterReception).toHaveBeenCalled();
@@ -98,16 +98,18 @@ describe("ReceptionPage — RED", () => {
     });
     mockRegisterReception.mockReturnValueOnce(pending);
 
+    const user = userEvent.setup();
+
     render(<ReceptionPage />);
 
-    await userEvent.type(
+    await user.type(
       screen.getByLabelText(/Nombre del paciente/i),
       "Carlos Ruiz",
     );
 
     const submitBtn = screen.getByRole("button", { name: /Registrar check-in/i });
-    await userEvent.click(submitBtn);
-    await userEvent.click(submitBtn);
+    await user.click(submitBtn);
+    await user.click(submitBtn);
 
     expect(mockRegisterReception).toHaveBeenCalledTimes(1);
 
