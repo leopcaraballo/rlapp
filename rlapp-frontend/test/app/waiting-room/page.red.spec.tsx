@@ -48,19 +48,21 @@ function renderWaitingRoom(queueId = "QUEUE-WR") {
 // ── suite ────────────────────────────────────────────────────────────────────
 describe("WaitingRoomPage — RED", () => {
   beforeEach(() => {
-    mockParams     = { queueId: "QUEUE-WR" };
-    mockMonitor    = null;
+    mockParams = { queueId: "QUEUE-WR" };
+    mockMonitor = null;
     mockQueueState = null;
-    mockNextTurn   = null;
-    mockHistory    = [];
+    mockNextTurn = null;
+    mockHistory = [];
     mockLastUpdated = null;
-    mockRefresh    = jest.fn();
+    mockRefresh = jest.fn();
   });
 
   // ── 1. queueId en cabecera ────────────────────────────────────────────────
   it("muestra el queueId en la cabecera principal", () => {
     renderWaitingRoom("QUEUE-WR");
-    expect(screen.getByRole("heading", { level: 1 })).toHaveTextContent("QUEUE-WR");
+    expect(screen.getByRole("heading", { level: 1 })).toHaveTextContent(
+      "QUEUE-WR",
+    );
   });
 
   // ── 2. useEffect llama a refresh al montar ────────────────────────────────
@@ -143,7 +145,9 @@ describe("WaitingRoomPage — RED", () => {
   it("RecentHistory muestra 'No hay atenciones recientes' cuando history está vacía", () => {
     mockHistory = [];
     renderWaitingRoom();
-    expect(screen.getByText("No hay atenciones recientes.")).toBeInTheDocument();
+    expect(
+      screen.getByText("No hay atenciones recientes."),
+    ).toBeInTheDocument();
   });
 
   // ── 10. RecentHistory: con datos ──────────────────────────────────────────
@@ -168,11 +172,16 @@ describe("WaitingRoomPage — RED", () => {
     renderWaitingRoom("SALA A");
     const encoded = encodeURIComponent("SALA A");
 
-    const linkReception = screen.getByRole("link", { name: /Registrar check-in/i });
-    const linkCashier   = screen.getByRole("link", { name: /Ir a caja/i });
-    const linkMedical   = screen.getByRole("link", { name: /Ir a área médica/i });
+    const linkReception = screen.getByRole("link", {
+      name: /Registrar check-in/i,
+    });
+    const linkCashier = screen.getByRole("link", { name: /Ir a caja/i });
+    const linkMedical = screen.getByRole("link", { name: /Ir a área médica/i });
 
-    expect(linkReception).toHaveAttribute("href", `/reception?queue=${encoded}`);
+    expect(linkReception).toHaveAttribute(
+      "href",
+      `/reception?queue=${encoded}`,
+    );
     expect(linkCashier).toHaveAttribute("href", `/cashier?queue=${encoded}`);
     expect(linkMedical).toHaveAttribute("href", `/medical?queue=${encoded}`);
   });
