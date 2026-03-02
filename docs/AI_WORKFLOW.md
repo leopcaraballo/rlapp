@@ -95,6 +95,7 @@
 ### Tests Saltados (3)
 
 Stress tests concurrentes en WaitingRoom.Tests.Integration.Domain.ConcurrencyStressTests:
+
 - GivenHighConcurrencyScenario_WhenQueueProcesses_ThenNeverDuplicateQueueIds
 - GivenConcurrentIdenticalPatientCheckIns_WhenProcessed_ThenOnlyFirstSucceeds
 - GivenThousandConcurrentCheckIns_WhenProcessed_ThenNoDuplicateQueues
@@ -106,7 +107,6 @@ Razón: Estos tests son intensivos y validan escenarios ya verificados mediante 
 **Sistema validado para producción clínica.** Todas las propiedades de confiabilidad, idempotencia, y consistencia de eventos funcionan según especificación. No requiere refactorización (Fase 6 se omite).
 
 **Próximo paso:** Fase 8 - Generación de reporte técnico final.
-
 
 ---
 
@@ -169,3 +169,18 @@ Razón: Estos tests son intensivos y validan escenarios ya verificados mediante 
 
 **Validación completada exitosamente. RLAPP listo para operaciones clínicas.**
 
+## 2026-03-02 — Documento de exposición de uso TDD
+
+- Actor: AI assistant (Copilot)
+- Task: Crear documento de exposición ejecutiva y técnica del uso de TDD en RLAPP, alineado con actualizaciones y evidencia auditada.
+- Files changed:
+  - docs/EXPOSICION_USO_TDD_RLAPP_2026-03-02.md
+
+- Actions performed:
+  1. Consolidación de evidencia desde reportes auditados (ejecución de pruebas, cobertura y trazabilidad disponible).
+  2. Redacción de narrativa para exposición: objetivo, aplicación Red-Green-Refactor, diferencia validar/verificar, evidencia y límites metodológicos.
+  3. Inclusión de guion breve (3 a 5 minutos) para presentación ante audiencias técnicas y mixtas.
+  4. Referenciación de la plantilla operativa para PR: `docs/TEMPLATE_EVIDENCIA_TDD_PR.md`.
+
+- Notes / Human checks:
+  - El documento declara explícitamente límites de evidencia para evitar sobreafirmaciones sobre TDD estricto al 100%.

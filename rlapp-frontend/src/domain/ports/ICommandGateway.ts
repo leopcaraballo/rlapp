@@ -96,6 +96,8 @@ export interface CommandResult {
   correlationId: string;
   eventCount: number;
   patientId?: string;
+  /** Consultorio auto-asignado por el backend al llamar siguiente paciente. */
+  stationId?: string;
 }
 
 /**
@@ -113,6 +115,10 @@ export interface ICommandGateway {
   callPatient(cmd: CallPatientCommand): Promise<CommandResult>;
   completeAttention(cmd: CompleteAttentionCommand): Promise<CommandResult>;
   markAbsentAtMedical(cmd: MarkAbsentAtMedicalCommand): Promise<CommandResult>;
-  activateConsultingRoom(cmd: ActivateConsultingRoomCommand): Promise<CommandResult>;
-  deactivateConsultingRoom(cmd: DeactivateConsultingRoomCommand): Promise<CommandResult>;
+  activateConsultingRoom(
+    cmd: ActivateConsultingRoomCommand,
+  ): Promise<CommandResult>;
+  deactivateConsultingRoom(
+    cmd: DeactivateConsultingRoomCommand,
+  ): Promise<CommandResult>;
 }

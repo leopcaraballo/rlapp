@@ -62,7 +62,9 @@ builder.Host.UseSerilog();
 // ==============================================================================
 
 var connectionString = builder.Configuration.GetConnectionString("EventStore")
-    ?? throw new InvalidOperationException("EventStore connection string is required");
+    ?? (builder.Environment.IsEnvironment("Testing")
+        ? "Host=localhost;Port=5432;Database=rlapp_testing;"  // Placeholder — services overridden by WebApplicationFactory
+        : throw new InvalidOperationException("EventStore connection string is required"));
 
 var rabbitMqOptions = new RabbitMqOptions();
 builder.Configuration.GetSection("RabbitMq").Bind(rabbitMqOptions);
@@ -187,9 +189,14 @@ services.AddCors(options =>
 });
 
 // Health Checks
-services.AddHealthChecks()
-    .AddCheck("self", () => Microsoft.Extensions.Diagnostics.HealthChecks.HealthCheckResult.Healthy())
-    .AddNpgSql(connectionString, name: "postgres", tags: new[] { "db", "postgres" });
+var healthChecks = services.AddHealthChecks()
+    .AddCheck("self", () => Microsoft.Extensions.Diagnostics.HealthChecks.HealthCheckResult.Healthy());
+
+// Skip Postgres health check in Testing environment (no real DB)
+if (!builder.Environment.IsEnvironment("Testing"))
+{
+    healthChecks.AddNpgSql(connectionString, name: "postgres", tags: new[] { "db", "postgres" });
+}
 
 // ==============================================================================
 // APPLICATION PIPELINE
@@ -198,8 +205,10 @@ services.AddHealthChecks()
 var app = builder.Build();
 
 // Initialize database schemas (idempotent, safe to call multiple times)
-using (var scope = app.Services.CreateScope())
+// Skip in Testing environment (WebApplicationFactory replaces all Postgres services)
+if (!app.Environment.IsEnvironment("Testing"))
 {
+    using var scope = app.Services.CreateScope();
     var loggerFactory = scope.ServiceProvider.GetRequiredService<ILoggerFactory>();
     var logger = loggerFactory.CreateLogger<DatabaseInitializer>();
     var initializer = new DatabaseInitializer(connectionString, logger);
@@ -306,6 +315,7 @@ commandGroup.MapPost("/api/waiting-room/check-in", async (
     // Map DTO → Command
     var command = new CheckInPatientCommand
     {
+        QueueId = dto.QueueId,
         PatientId = dto.PatientId,
         PatientName = dto.PatientName,
         Priority = dto.Priority,
@@ -363,6 +373,7 @@ commandGroup.MapPost("/api/reception/register", async (
 
     var command = new CheckInPatientCommand
     {
+        QueueId = dto.QueueId,
         PatientId = dto.PatientId,
         PatientName = dto.PatientName,
         Priority = dto.Priority,
@@ -637,7 +648,8 @@ commandGroup.MapPost("/api/medical/call-next", async (
         Message = "Next patient called for medical attention",
         CorrelationId = correlationId,
         EventCount = result.EventCount,
-        PatientId = result.PatientId
+        PatientId = result.PatientId,
+        StationId = result.StationId
     });
 })
 .WithName("MedicalCallNext")
@@ -891,7 +903,8 @@ commandGroup.MapPost("/api/waiting-room/claim-next", async (
         Message = "Patient claimed successfully",
         CorrelationId = correlationId,
         EventCount = result.EventCount,
-        PatientId = result.PatientId
+        PatientId = result.PatientId,
+        StationId = result.StationId
     });
 })
 .WithName("ClaimNextPatient")
@@ -994,11 +1007,15 @@ commandGroup.MapPost("/api/waiting-room/complete-attention", async (
 // ==============================================================================
 
 // Ensure database schema exists (idempotent, required for all environments)
-var eventStore = app.Services.GetRequiredService<IEventStore>();
-if (eventStore is PostgresEventStore postgresEventStore)
+// Skip in Testing environment (WebApplicationFactory replaces all Postgres services)
+if (!app.Environment.IsEnvironment("Testing"))
 {
-    await postgresEventStore.EnsureSchemaAsync();
-    Log.Information("Database schema initialized");
+    var eventStore = app.Services.GetRequiredService<IEventStore>();
+    if (eventStore is PostgresEventStore postgresEventStore)
+    {
+        await postgresEventStore.EnsureSchemaAsync();
+        Log.Information("Database schema initialized");
+    }
 }
 
 Log.Information("Starting WaitingRoom.API...");
@@ -1008,3 +1025,5 @@ app.Run();
 
 Log.Information("WaitingRoom.API stopped");
 Log.CloseAndFlush();
+// Expose Program class for WebApplicationFactory in integration tests
+public partial class Program { }

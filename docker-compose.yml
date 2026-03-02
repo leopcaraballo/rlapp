@@ -134,7 +134,9 @@ services:
       dockerfile: Dockerfile
     container_name: rlapp-frontend
     environment:
-      # Variables de entorno para la aplicación Next.js (usar nombres esperados por el código)
+      # Variables NEXT_PUBLIC_* se embeben en el JS del cliente y se ejecutan en el NAVEGADOR del host.
+      # El navegador NO puede resolver 'api:8080' (nombre interno Docker).
+      # Debe apuntar a localhost:5000 (puerto mapeado del host → contenedor api:8080).
       NEXT_PUBLIC_API_BASE_URL: http://localhost:5000
       NEXT_PUBLIC_WS_URL: http://localhost:5000
       # Habilita WebSockets/SignalR en el frontend (false = conectar)

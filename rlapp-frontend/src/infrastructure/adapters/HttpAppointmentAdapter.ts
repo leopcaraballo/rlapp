@@ -6,6 +6,17 @@ import {
 } from "@/domain/CreateAppointment";
 import { AppointmentRepository } from "@/domain/ports/AppointmentRepository";
 // 🛡️ HUMAN CHECK - Adapter uses raw HTTP Client (Infrastructure)
+
+/**
+ * Genera Idempotency-Key único para operaciones de cambio de estado.
+ * Requerido por el backend para garantizar procesamiento idempotente.
+ */
+function idempotencyKey(): string {
+  return typeof crypto !== "undefined" && crypto.randomUUID
+    ? crypto.randomUUID()
+    : `${Date.now()}-${Math.floor(Math.random() * 10000)}`;
+}
+
 const headers = { "Content-Type": "application/json" };
 
 export class HttpAppointmentAdapter implements AppointmentRepository {
@@ -20,7 +31,10 @@ export class HttpAppointmentAdapter implements AppointmentRepository {
   ): Promise<CreateAppointmentResponse> {
     const res = await fetch(`${env.API_BASE_URL}/appointments`, {
       method: "POST",
-      headers,
+      headers: {
+        ...headers,
+        "Idempotency-Key": idempotencyKey(),
+      },
       body: JSON.stringify(data),
     });
     if (!res.ok) {
