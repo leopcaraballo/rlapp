@@ -1,5 +1,27 @@
 ## AI_WORKFLOW Log
 
+### 2026-03-02 — TDD waiting-room (RED, sin refactor pendiente)
+
+- Actor: AI assistant (Copilot)
+- Task: Ciclo TDD para la pantalla `/waiting-room/[queueId]`; cobertura de queueId en cabecera, refresh al montar, cuatro cards en estado null y con datos, links de acciones rápidas con queueId codificado, y botón Reconstruir (POST + refresh).
+- Files changed:
+  - rlapp-frontend/test/app/waiting-room/page.red.spec.tsx (nuevo — 12 pruebas)
+- Commits atómicos:
+  - `test(waiting-room): red - queueId, refresh mount, cards null/datos, links queueId, rebuild POST (12/12)`
+
+- Actions performed:
+  1. RED: se crearon 12 pruebas sincrónicas. La producción era correcta en todos los casos (12/12 desde el inicio). Casos cubiertos: queueId en `<h1>`, `useEffect → refresh()` al montar, `MonitorCard`/`QueueStateCard`/`NextTurnCard`/`RecentHistory` en estado null y con datos, hrefs de links de acciones rápidas con `encodeURIComponent(queueId)`, y botón Reconstruir que hace `POST /api/v1/waiting-room/{queueId}/rebuild` y llama `refresh`.
+  2. REFACTOR: no aplicado — los tests son concisos y no presentan duplicación estructural explotable con `it.each` (cada card null state tiene texto y variable de mock diferente).
+
+- Patrones reutilizados:
+  - `jest.spyOn(React, "use").mockImplementation((_) => mockParams as any)` para `params: Promise<T>`.
+  - `server.use(http.post(...))` ad-hoc para handler MSW del endpoint de rebuild.
+  - `userEvent.setup()` + `waitFor` para el botón asíncrono.
+
+- Notes / Human checks:
+  - No se detectó deuda técnica; sin cambios en producción.
+  - El botón Reconstruir usa `void (async () => {...})()` — patrón aceptado; podría extraerse a un handler tipado si se escala.
+
 ### 2026-03-02 — TDD display (RED→REFACTOR)
 
 - Actor: AI assistant (Copilot)
