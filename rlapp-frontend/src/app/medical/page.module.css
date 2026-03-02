@@ -229,6 +229,26 @@
   margin-left: 4px;
 }
 
+.fieldHint {
+  font-size: 11px;
+  color: #64748b;
+  margin-top: 4px;
+  font-style: italic;
+}
+
+.assignedRoomBadge {
+  display: flex;
+  align-items: center;
+  gap: 6px;
+  background: #dcfce7;
+  border: 1px solid #86efac;
+  border-radius: 6px;
+  padding: 8px 12px;
+  font-size: 13px;
+  color: #166534;
+  margin-bottom: 12px;
+}
+
 /* ═══════════════════════════════════════════
    RESPONSIVE
    ═══════════════════════════════════════════ */

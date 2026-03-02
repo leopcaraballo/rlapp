@@ -1,7 +1,7 @@
 "use client";
 import { zodResolver } from "@hookform/resolvers/zod";
-import { useRouter, useSearchParams } from "next/navigation";
-import React, { useEffect, useState } from "react";
+import { useRouter } from "next/navigation";
+import React, { useState } from "react";
 import { useForm } from "react-hook-form";
 import * as z from "zod";
 
@@ -31,10 +31,17 @@ const CONSULTATION_TYPES = Object.keys(
 ) as ConsultationType[];
 
 const CheckInSchema = z.object({
+  patientId: z
+    .string()
+    .min(3, "La cédula es obligatoria (mínimo 3 caracteres)")
+    .max(20, "La cédula no puede superar 20 caracteres")
+    .regex(
+      /^[a-zA-Z0-9\-]+$/,
+      "La cédula solo puede contener letras, números y guiones",
+    ),
   patientName: z
     .string()
     .min(2, "El nombre es obligatorio (mínimo 2 caracteres)"),
-  queueId: z.string().min(1, "La cola es obligatoria"),
   priority: z.enum(VALID_PRIORITIES),
   consultationType: z.enum(["General", "Specialist", "Emergency"] as const),
   age: z.number().int().min(0).max(120).optional().nullable(),
@@ -45,7 +52,6 @@ const CheckInSchema = z.object({
 type CheckInForm = z.infer<typeof CheckInSchema>;
 
 export default function ReceptionPage() {
-  const search = useSearchParams();
   const router = useRouter();
   const [submitting, setSubmitting] = useState(false);
   const alert = useAlert();
@@ -53,14 +59,12 @@ export default function ReceptionPage() {
   const {
     register,
     handleSubmit,
-    setValue,
-    watch,
     formState: { errors },
   } = useForm<CheckInForm>({
     resolver: zodResolver(CheckInSchema),
     defaultValues: {
+      patientId: "",
       patientName: "",
-      queueId: env.DEFAULT_QUEUE_ID,
       priority: "Medium",
       consultationType: "General",
       age: null,
@@ -69,21 +73,17 @@ export default function ReceptionPage() {
     },
   });
 
-  useEffect(() => {
-    const q = search?.get("queue");
-    if (q) setValue("queueId", q);
-  }, [search, setValue]);
-
-  const watchedQueueId = watch("queueId");
-  const { queueState } = useWaitingRoom(watchedQueueId || env.DEFAULT_QUEUE_ID);
+  // La cola se auto-asigna siempre al valor por defecto configurado en el entorno
+  const queueId = env.DEFAULT_QUEUE_ID;
+  const { queueState } = useWaitingRoom(queueId);
 
   async function onSubmit(data: CheckInForm) {
     setSubmitting(true);
     // use global alert
     try {
       const result = await registerReception({
-        queueId: data.queueId || env.DEFAULT_QUEUE_ID,
-        patientId: `p-${Date.now()}`,
+        queueId,
+        patientId: data.patientId.trim().toUpperCase(),
         patientName: data.patientName,
         priority: data.priority,
         consultationType: data.consultationType,
@@ -114,7 +114,7 @@ export default function ReceptionPage() {
       <section className={styles.statusPanel}>
         <header className={styles.panelHeader}>
           <h2 className={styles.panelTitle}>Estado de la cola</h2>
-          <span className={styles.queueBadge}>{watchedQueueId}</span>
+          <span className={styles.queueBadge}>{queueId}</span>
         </header>
         <div className={styles.panelBody}>
           {queueState && (
@@ -175,6 +175,26 @@ export default function ReceptionPage() {
             noValidate
           >
             <div className={styles.formGroup}>
+              <label className={styles.label} htmlFor="patientId">
+                Cédula del paciente
+              </label>
+              <input
+                id="patientId"
+                className={styles.input}
+                aria-invalid={!!errors.patientId}
+                placeholder="Ej. 1234567890"
+                maxLength={20}
+                autoComplete="off"
+                {...register("patientId")}
+              />
+              {errors.patientId && (
+                <div className={styles.fieldError} role="alert">
+                  {errors.patientId.message}
+                </div>
+              )}
+            </div>
+
+            <div className={styles.formGroup}>
               <label className={styles.label} htmlFor="patientName">
                 Nombre del paciente
               </label>
@@ -194,22 +214,6 @@ export default function ReceptionPage() {
 
             <div className={styles.formRow}>
               <div className={styles.formGroup}>
-                <label className={styles.label} htmlFor="queueId">
-                  Cola
-                </label>
-                <input
-                  id="queueId"
-                  className={styles.input}
-                  placeholder="ej. QUEUE-01"
-                  {...register("queueId")}
-                />
-                {errors.queueId && (
-                  <div className={styles.fieldError} role="alert">
-                    {errors.queueId.message}
-                  </div>
-                )}
-              </div>
-              <div className={styles.formGroup}>
                 <label className={styles.label} htmlFor="priority">
                   Prioridad
                 </label>
@@ -225,9 +229,6 @@ export default function ReceptionPage() {
                   ))}
                 </select>
               </div>
-            </div>
-
-            <div className={styles.formRow}>
               <div className={styles.formGroup}>
                 <label className={styles.label} htmlFor="consultationType">
                   Tipo de consulta
@@ -244,6 +245,9 @@ export default function ReceptionPage() {
                   ))}
                 </select>
               </div>
+            </div>
+
+            <div className={styles.formRow}>
               <div className={styles.formGroup}>
                 <label className={styles.label} htmlFor="age">
                   Edad (opcional)

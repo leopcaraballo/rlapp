@@ -1,4 +1,4 @@
-using Scalar.AspNetCore;
+clasicousing Scalar.AspNetCore;
 using Microsoft.AspNetCore.OpenApi;
 using Microsoft.OpenApi;
 using Serilog;
@@ -648,7 +648,8 @@ commandGroup.MapPost("/api/medical/call-next", async (
         Message = "Next patient called for medical attention",
         CorrelationId = correlationId,
         EventCount = result.EventCount,
-        PatientId = result.PatientId
+        PatientId = result.PatientId,
+        StationId = result.StationId
     });
 })
 .WithName("MedicalCallNext")
@@ -902,7 +903,8 @@ commandGroup.MapPost("/api/waiting-room/claim-next", async (
         Message = "Patient claimed successfully",
         CorrelationId = correlationId,
         EventCount = result.EventCount,
-        PatientId = result.PatientId
+        PatientId = result.PatientId,
+        StationId = result.StationId
     });
 })
 .WithName("ClaimNextPatient")

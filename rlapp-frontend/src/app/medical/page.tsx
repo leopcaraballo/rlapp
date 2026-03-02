@@ -13,11 +13,11 @@ import { useWaitingRoom } from "@/hooks/useWaitingRoom";
 
 import styles from "./page.module.css";
 
-// stationId es requerido: el dominio exige ConsultingRoomId en ClaimNextPatient,
-// ActivateConsultingRoom y DeactivateConsultingRoom.
+// stationId es opcional en el claim: el backend auto-asigna el consultorio disponible.
+// Es requerido solo para activar/desactivar un consultorio específico.
 const MedicalSchema = z.object({
   queueId: z.string().min(1, "La cola es obligatoria"),
-  stationId: z.string().min(1, "El ID de estación es obligatorio"),
+  stationId: z.string().optional(),
   patientId: z.string().optional(),
   outcome: z.string().optional().nullable(),
 });
@@ -75,15 +75,24 @@ export default function MedicalPage() {
   }, [rooms.error, alert]);
 
   function onCallNext(data: MedicalForm) {
-    void medical.claim({ queueId: data.queueId, stationId: data.stationId });
+    // stationId no se pasa: el backend auto-asigna el primer consultorio activo disponible
+    void medical.claim({ queueId: data.queueId, stationId: null });
     setTimeout(() => refresh(), 500);
   }
 
   function onActivate(data: MedicalForm) {
+    if (!data.stationId) {
+      alert.showError("Seleccione un consultorio para activar");
+      return;
+    }
     rooms.activate(data.queueId, data.stationId);
   }
 
   function onDeactivate(data: MedicalForm) {
+    if (!data.stationId) {
+      alert.showError("Seleccione un consultorio para desactivar");
+      return;
+    }
     rooms.deactivate(data.queueId, data.stationId);
   }
 
@@ -160,9 +169,18 @@ export default function MedicalPage() {
             )}
           </div>
 
+          {/* Consultorio auto-asignado tras llamar siguiente — solo informativo */}
+          {medical.lastResult?.stationId && (
+            <div className={styles.assignedRoomBadge}>
+              Consultorio asignado:{" "}
+              <strong>{medical.lastResult.stationId}</strong>
+            </div>
+          )}
+
+          {/* Selector de consultorio para activar/desactivar únicamente */}
           <div className={styles.formGroup}>
             <label className={styles.label} htmlFor="stationId">
-              Consultorio
+              Consultorio (activar / desactivar)
             </label>
             <select
               id="stationId"
@@ -175,11 +193,9 @@ export default function MedicalPage() {
               <option value="CONS-03">CONS-03</option>
               <option value="CONS-04">CONS-04</option>
             </select>
-            {errors.stationId && (
-              <div className={styles.fieldError} role="alert">
-                {errors.stationId.message}
-              </div>
-            )}
+            <p className={styles.fieldHint}>
+              Al llamar siguiente, el consultorio se asigna automáticamente.
+            </p>
           </div>
 
           <div className={styles.stationActions}>
