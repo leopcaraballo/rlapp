@@ -106,69 +106,30 @@ describe("CashierPage — RED", () => {
     });
   });
 
-  // ── 2. Validar pago ────────────────────────────────────────────────────────
-  it("invoca validate con queueId y patientId al pulsar 'Validar pago'", async () => {
-    const user = await renderAndSelectPatient();
+  // ── 2-5. Acciones sobre el paciente seleccionado (parametrizado) ──────────
+  it.each([
+    [/Validar pago/i,    "validate"    as const],
+    [/Marcar pendiente/i, "markPending" as const],
+    [/Marcar ausente/i,  "markAbsent"  as const],
+    [/Anular pago/i,     "cancel"      as const],
+  ] as [RegExp, keyof typeof cashierMock][])(
+    "invoca el método del hook al pulsar %p",
+    async (btnRegex, method) => {
+      const hookMethod = cashierMock[method] as jest.Mock;
+      const user = await renderAndSelectPatient();
 
-    await user.click(screen.getByRole("button", { name: /Validar pago/i }));
+      await user.click(screen.getByRole("button", { name: btnRegex }));
 
-    await waitFor(() => {
-      expect(cashierMock.validate).toHaveBeenCalledWith(
-        expect.objectContaining({
-          queueId: "QUEUE-TEST",
-          patientId: "PAT-001",
-        }),
-      );
-    });
-  });
-
-  // ── 3. Marcar pendiente ────────────────────────────────────────────────────
-  it("invoca markPending con queueId y patientId al pulsar 'Marcar pendiente'", async () => {
-    const user = await renderAndSelectPatient();
-
-    await user.click(screen.getByRole("button", { name: /Marcar pendiente/i }));
-
-    await waitFor(() => {
-      expect(cashierMock.markPending).toHaveBeenCalledWith(
-        expect.objectContaining({
-          queueId: "QUEUE-TEST",
-          patientId: "PAT-001",
-        }),
-      );
-    });
-  });
-
-  // ── 4. Marcar ausente ──────────────────────────────────────────────────────
-  it("invoca markAbsent con queueId y patientId al pulsar 'Marcar ausente'", async () => {
-    const user = await renderAndSelectPatient();
-
-    await user.click(screen.getByRole("button", { name: /Marcar ausente/i }));
-
-    await waitFor(() => {
-      expect(cashierMock.markAbsent).toHaveBeenCalledWith(
-        expect.objectContaining({
-          queueId: "QUEUE-TEST",
-          patientId: "PAT-001",
-        }),
-      );
-    });
-  });
-
-  // ── 5. Anular pago ─────────────────────────────────────────────────────────
-  it("invoca cancel con queueId y patientId al pulsar 'Anular pago'", async () => {
-    const user = await renderAndSelectPatient();
-
-    await user.click(screen.getByRole("button", { name: /Anular pago/i }));
-
-    await waitFor(() => {
-      expect(cashierMock.cancel).toHaveBeenCalledWith(
-        expect.objectContaining({
-          queueId: "QUEUE-TEST",
-          patientId: "PAT-001",
-        }),
-      );
-    });
-  });
+      await waitFor(() => {
+        expect(hookMethod).toHaveBeenCalledWith(
+          expect.objectContaining({
+            queueId: "QUEUE-TEST",
+            patientId: "PAT-001",
+          }),
+        );
+      });
+    },
+  );
 
   // ── 6. Refresco y limpieza de selección ───────────────────────────────────
   it("llama a refresh y limpia la selección tras ejecutar una acción", async () => {
