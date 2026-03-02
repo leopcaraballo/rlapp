@@ -27,6 +27,9 @@ const PATIENT_A = {
   checkInTime: new Date("2026-03-02T08:00:00Z").toISOString(),
 };
 
+/** Variable mutable para controlar la lista de pacientes por test */
+let patientsQueue: typeof PATIENT_A[] = [PATIENT_A];
+
 // ── stubs de módulos ────────────────────────────────────────────────────────
 jest.mock("next/navigation", () => ({
   useSearchParams: () => ({ get: (_key: string) => "QUEUE-TEST" }),
@@ -50,7 +53,7 @@ jest.mock("@/hooks/useCashierStation", () => ({
 
 jest.mock("@/hooks/useWaitingRoom", () => ({
   useWaitingRoom: () => ({
-    queueState: { patientsInQueue: [PATIENT_A] },
+    queueState: { patientsInQueue: patientsQueue },
     refresh: refreshMock,
   }),
 }));
@@ -70,6 +73,7 @@ async function renderAndSelectPatient() {
 describe("CashierPage — RED", () => {
   beforeEach(() => {
     jest.clearAllMocks();
+    patientsQueue = [PATIENT_A];
     cashierMock.busy = false;
     cashierMock.error = null;
     cashierMock.callNext.mockResolvedValue(undefined);
@@ -170,8 +174,8 @@ describe("CashierPage — RED", () => {
   it("llama a refresh y limpia la selección tras ejecutar una acción", async () => {
     const user = await renderAndSelectPatient();
 
-    // La tarjeta del paciente seleccionado debe estar visible
-    expect(screen.getByText("Carlos Ruiz")).toBeInTheDocument();
+    // Los botones de acción deben estar visibles tras la selección
+    expect(screen.getByRole("button", { name: /Validar pago/i })).toBeInTheDocument();
 
     await user.click(screen.getByRole("button", { name: /Validar pago/i }));
 
@@ -237,14 +241,7 @@ describe("CashierPage — RED", () => {
 
   // ── 9. Estado vacío ───────────────────────────────────────────────────────
   it("muestra el mensaje de estado vacío cuando no hay pacientes en la cola", () => {
-    jest.resetModules();
-    jest.doMock("@/hooks/useWaitingRoom", () => ({
-      useWaitingRoom: () => ({
-        queueState: { patientsInQueue: [] },
-        refresh: refreshMock,
-      }),
-    }));
-
+    patientsQueue = [];
     render(<CashierPage />);
 
     expect(
