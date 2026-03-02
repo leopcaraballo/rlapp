@@ -12,6 +12,15 @@ const config: Config = {
   testEnvironment: "jest-environment-jsdom",
   collectCoverageFrom: ["<rootDir>/src/**/*.{ts,tsx}"],
   coveragePathIgnorePatterns: ["/node_modules/"],
+  /**
+   * Reporteros de salida — se activan con `npm run test:report`.
+   * El reporter "default" mantiene la salida de consola legible.
+   * El reporter nativo "json" vuelca resultados a test-results/jest-results.json.
+   * // HUMAN CHECK — El archivo JSON es el artefacto de pipeline; ajustar ruta
+   *   si el CI espera una ubicación diferente.
+   */
+  coverageDirectory: "<rootDir>/test-results/coverage",
+  coverageReporters: ["text", "lcov", "json-summary", "html"],
   moduleNameMapper: {
     "^@/(.*)$": "<rootDir>/src/$1",
     "^@test/(.*)$": "<rootDir>/test/$1",
