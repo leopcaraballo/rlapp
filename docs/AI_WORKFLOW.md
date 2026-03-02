@@ -1,5 +1,29 @@
 ## AI_WORKFLOW Log
 
+### 2026-03-02 — TDD registration (RED con it.each integrado)
+
+- Actor: AI assistant (Copilot)
+- Task: Ciclo TDD para la pantalla `/registration`; cobertura de renderizado, validaciones del formulario, submit válido con prioridad, estados loading/disabled, mensajes de éxito/error y opciones del select de prioridad.
+- Files changed:
+  - rlapp-frontend/test/app/registration/page.red.spec.tsx (nuevo — 14 pruebas)
+- Commits atómicos:
+  - `test(registration): red - título, validaciones, submit, loading, success, error y opciones de prioridad (14/14)`
+
+- Actions performed:
+  1. RED: se crearon 14 pruebas para `RegistrationPage` (que delega en `AppointmentRegistrationForm`). Hook `useAppointmentRegistration` mockeado con variables mutables `{ mockRegister, mockLoading, mockSuccess, mockError }`. El `it.each` para las 4 opciones de prioridad fue incorporado directamente en el RED (no separado en REFACTOR). Producción correcta en 14/14 desde el inicio.
+  2. REFACTOR: omitido — los tests ya incorporaron `it.each` en su diseño original y están concisos.
+
+- Pruebas destacadas:
+  - Validación `fullName` vacío → error sin llamar a `register`.
+  - Validación `idCard < 6 dígitos` → mensaje específico sin llamar a `register`.
+  - Submit válido con prioridad "Medium" (por defecto) → `register({ fullName, idCard: número, priority: "Medium" })`.
+  - Submit con prioridad "Urgent" explícita → confirmada con `objectContaining`.
+  - `it.each` para las 4 opciones del select (Low/Medium/High/Urgent).
+
+- Notes / Human checks:
+  - No se detectó deuda técnica; sin cambios en producción.
+  - El componente aplica `sanitizeText` — cobertura de inyección XSS queda para suite de seguridad.
+
 ### 2026-03-02 — TDD dashboard (RED+REFACTOR)
 
 - Actor: AI assistant (Copilot)
