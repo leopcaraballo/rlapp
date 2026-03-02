@@ -50,26 +50,29 @@ jest.mock("@/hooks/useConsultingRooms", () => ({
 
 import MedicalPage from "@/app/medical/page";
 
+// ── tipos de prueba ──────────────────────────────────────────────────────────
+/** Fila para el it.each de acciones con patientId */
+type ActionRow = [RegExp, keyof typeof medicalMock, { outcome?: string }];
+
 // ── helpers ─────────────────────────────────────────────────────────────────
-/** Rellena los campos de estación y consulta antes de pulsar una acción */
+/**
+ * Rellena los campos de estación y consulta antes de pulsar una acción.
+ * NOTA: usa `^Ancla$` en botones compartiendo prefijo (p. ej. "Activar" vs "Desactivar").
+ */
 async function fillStation(
   user: ReturnType<typeof userEvent.setup>,
-  { stationId = "CONS-01", patientId = "PAT-MED-01", outcome = "" } = {},
+  { stationId = "CONS-01", patientId = "", outcome = "" } = {},
 ) {
   // Seleccionar consultorio
   await user.selectOptions(screen.getByLabelText(/Consultorio/i), stationId);
 
-  // ID de paciente
-  if (patientId) {
-    await user.clear(screen.getByLabelText(/ID de paciente/i));
-    await user.type(screen.getByLabelText(/ID de paciente/i), patientId);
-  }
+  // ID de paciente (siempre limpiar; escribir solo si se provee)
+  await user.clear(screen.getByLabelText(/ID de paciente/i));
+  if (patientId) await user.type(screen.getByLabelText(/ID de paciente/i), patientId);
 
-  // Resultado (opcional)
-  if (outcome) {
-    await user.clear(screen.getByLabelText(/Resultado/i));
-    await user.type(screen.getByLabelText(/Resultado/i), outcome);
-  }
+  // Resultado (siempre limpiar; escribir solo si se provee)
+  await user.clear(screen.getByLabelText(/Resultado/i));
+  if (outcome) await user.type(screen.getByLabelText(/Resultado/i), outcome);
 }
 
 // ── suite ────────────────────────────────────────────────────────────────────
@@ -103,10 +106,10 @@ describe("MedicalPage — RED", () => {
 
   // ── 2-3-5. Acciones con patientId (parametrizado) ─────────────────────────
   it.each([
-    [/Iniciar consulta/i,   "call"     as const, { outcome: undefined }],
-    [/Finalizar consulta/i, "complete" as const, { outcome: "Alta médica" }],
+    [/Iniciar consulta/i,   "call"       as const, { outcome: undefined }],
+    [/Finalizar consulta/i, "complete"   as const, { outcome: "Alta médica" }],
     [/Marcar ausente/i,     "markAbsent" as const, { outcome: undefined }],
-  ] as [RegExp, keyof typeof medicalMock, { outcome?: string }][])(
+  ] as ActionRow[])(
     "invoca el método del hook al pulsar %p",
     async (btnRegex, method, extras) => {
       const hookMethod = medicalMock[method] as jest.Mock;
@@ -149,10 +152,8 @@ describe("MedicalPage — RED", () => {
     async (btnRegex) => {
       const user = userEvent.setup();
       render(<MedicalPage />);
-      // Seleccionar consultorio pero dejar patientId vacío
-      await user.selectOptions(screen.getByLabelText(/Consultorio/i), "CONS-01");
-      // Asegurarse de que el campo patientId esté realmente vacío
-      await user.clear(screen.getByLabelText(/ID de paciente/i));
+      // fillStation sin patientId → campo queda vacío (default "")
+      await fillStation(user);
 
       await user.click(screen.getByRole("button", { name: btnRegex }));
 

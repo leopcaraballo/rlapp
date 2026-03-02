@@ -73,7 +73,7 @@ export default function MedicalPage() {
 
   function onFinishConsult(data: MedicalForm) {
     if (!data.patientId) { alert.showError("El ID de paciente es obligatorio"); return; }
-    medical.complete({ queueId: data.queueId, patientId: data.patientId, outcome: data.outcome ?? null });
+    medical.complete({ queueId: data.queueId, patientId: data.patientId, outcome: data.outcome || null });
   }
 
   function onMarkAbsent(data: MedicalForm) {
