@@ -76,6 +76,8 @@ export interface RecentAttentionRecordView {
 
 // Command DTOs (subset)
 export interface CheckInPatientDto {
+  /** Identificador de la cola destino. Cuando se omite, el backend genera uno. */
+  queueId?: string | null;
   patientId: string;
   patientName: string;
   priority: AppointmentPriority;

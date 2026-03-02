@@ -315,6 +315,7 @@ commandGroup.MapPost("/api/waiting-room/check-in", async (
     // Map DTO → Command
     var command = new CheckInPatientCommand
     {
+        QueueId = dto.QueueId,
         PatientId = dto.PatientId,
         PatientName = dto.PatientName,
         Priority = dto.Priority,
@@ -372,6 +373,7 @@ commandGroup.MapPost("/api/reception/register", async (
 
     var command = new CheckInPatientCommand
     {
+        QueueId = dto.QueueId,
         PatientId = dto.PatientId,
         PatientName = dto.PatientName,
         Priority = dto.Priority,

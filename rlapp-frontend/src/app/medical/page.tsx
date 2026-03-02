@@ -9,6 +9,7 @@ import { env } from "@/config/env";
 import { useAlert } from "@/context/AlertContext";
 import { useConsultingRooms } from "@/hooks/useConsultingRooms";
 import { useMedicalStation } from "@/hooks/useMedicalStation";
+import { useWaitingRoom } from "@/hooks/useWaitingRoom";
 
 import styles from "./page.module.css";
 
@@ -34,16 +35,35 @@ export default function MedicalPage() {
     register,
     handleSubmit,
     setValue,
+    watch,
     formState: { errors },
   } = useForm<MedicalForm>({
     resolver: zodResolver(MedicalSchema),
-    defaultValues: { queueId: env.DEFAULT_QUEUE_ID, stationId: "", patientId: "", outcome: null },
+    defaultValues: {
+      queueId: env.DEFAULT_QUEUE_ID,
+      stationId: "",
+      patientId: "",
+      outcome: null,
+    },
   });
 
   useEffect(() => {
     const q = search?.get("queue");
     if (q) setValue("queueId", q);
   }, [search, setValue]);
+
+  const watchedQueueId = watch("queueId");
+  const { nextTurn, refresh } = useWaitingRoom(
+    watchedQueueId || env.DEFAULT_QUEUE_ID,
+  );
+
+  // // HUMAN CHECK: Auto-rellena patientId tras claim exitoso para evitar
+  // copia manual del ID por el médico. Comportamiento esperado del dominio:
+  // solo un paciente puede estar en estado "claimed" por estación a la vez.
+  useEffect(() => {
+    const claimedId = medical.lastResult?.patientId;
+    if (claimedId) setValue("patientId", claimedId);
+  }, [medical.lastResult, setValue]);
 
   // Propagar errores de los hooks al sistema de alertas
   useEffect(() => {
@@ -55,7 +75,8 @@ export default function MedicalPage() {
   }, [rooms.error, alert]);
 
   function onCallNext(data: MedicalForm) {
-    medical.claim({ queueId: data.queueId, stationId: data.stationId });
+    void medical.claim({ queueId: data.queueId, stationId: data.stationId });
+    setTimeout(() => refresh(), 500);
   }
 
   function onActivate(data: MedicalForm) {
@@ -67,22 +88,54 @@ export default function MedicalPage() {
   }
 
   function onStartConsult(data: MedicalForm) {
-    if (!data.patientId) { alert.showError("El ID de paciente es obligatorio"); return; }
-    medical.call({ queueId: data.queueId, patientId: data.patientId });
+    if (!data.patientId) {
+      alert.showError("El ID de paciente es obligatorio");
+      return;
+    }
+    void medical.call({ queueId: data.queueId, patientId: data.patientId });
+    setTimeout(() => refresh(), 500);
   }
 
   function onFinishConsult(data: MedicalForm) {
-    if (!data.patientId) { alert.showError("El ID de paciente es obligatorio"); return; }
-    medical.complete({ queueId: data.queueId, patientId: data.patientId, outcome: data.outcome ?? null });
+    if (!data.patientId) {
+      alert.showError("El ID de paciente es obligatorio");
+      return;
+    }
+    void medical.complete({
+      queueId: data.queueId,
+      patientId: data.patientId,
+      outcome: data.outcome ?? null,
+    });
+    setTimeout(() => refresh(), 500);
   }
 
   function onMarkAbsent(data: MedicalForm) {
-    if (!data.patientId) { alert.showError("El ID de paciente es obligatorio"); return; }
-    medical.markAbsent({ queueId: data.queueId, patientId: data.patientId });
+    if (!data.patientId) {
+      alert.showError("El ID de paciente es obligatorio");
+      return;
+    }
+    void medical.markAbsent({
+      queueId: data.queueId,
+      patientId: data.patientId,
+    });
+    setTimeout(() => refresh(), 500);
   }
 
+  // Paciente actualmente en turno de consulta (proyección nextTurn del backend)
+  const activePatient =
+    nextTurn &&
+    (nextTurn.status === "claimed" ||
+      nextTurn.status === "called" ||
+      nextTurn.status === "cashier-paid")
+      ? nextTurn
+      : null;
+
   return (
-    <form className={styles.splitLayout} onSubmit={handleSubmit(onStartConsult)} noValidate>
+    <form
+      className={styles.splitLayout}
+      onSubmit={handleSubmit(onStartConsult)}
+      noValidate
+    >
       {/* Panel izquierdo: Estación */}
       <section className={styles.stationPanel}>
         <header className={styles.panelHeader}>
@@ -91,31 +144,67 @@ export default function MedicalPage() {
 
         <div className={styles.panelBody}>
           <div className={styles.formGroup}>
-            <label className={styles.label} htmlFor="queueId">Cola</label>
-            <input id="queueId" className={styles.input} placeholder="ej. QUEUE-01" {...register("queueId")} />
-            {errors.queueId && <div className={styles.fieldError} role="alert">{errors.queueId.message}</div>}
+            <label className={styles.label} htmlFor="queueId">
+              Cola
+            </label>
+            <input
+              id="queueId"
+              className={styles.input}
+              placeholder="ej. QUEUE-01"
+              {...register("queueId")}
+            />
+            {errors.queueId && (
+              <div className={styles.fieldError} role="alert">
+                {errors.queueId.message}
+              </div>
+            )}
           </div>
 
           <div className={styles.formGroup}>
-            <label className={styles.label} htmlFor="stationId">Consultorio</label>
-            <select id="stationId" className={styles.input} {...register("stationId")}>
+            <label className={styles.label} htmlFor="stationId">
+              Consultorio
+            </label>
+            <select
+              id="stationId"
+              className={styles.input}
+              {...register("stationId")}
+            >
               <option value="">-- Seleccionar --</option>
               <option value="CONS-01">CONS-01</option>
               <option value="CONS-02">CONS-02</option>
               <option value="CONS-03">CONS-03</option>
               <option value="CONS-04">CONS-04</option>
             </select>
-            {errors.stationId && <div className={styles.fieldError} role="alert">{errors.stationId.message}</div>}
+            {errors.stationId && (
+              <div className={styles.fieldError} role="alert">
+                {errors.stationId.message}
+              </div>
+            )}
           </div>
 
           <div className={styles.stationActions}>
-            <button type="button" onClick={handleSubmit(onCallNext)} disabled={busy} className={styles.btnCallNext}>
+            <button
+              type="button"
+              onClick={handleSubmit(onCallNext)}
+              disabled={busy}
+              className={styles.btnCallNext}
+            >
               Llamar siguiente
             </button>
-            <button type="button" onClick={handleSubmit(onActivate)} disabled={busy} className={styles.btnActivate}>
+            <button
+              type="button"
+              onClick={handleSubmit(onActivate)}
+              disabled={busy}
+              className={styles.btnActivate}
+            >
               Activar estación
             </button>
-            <button type="button" onClick={handleSubmit(onDeactivate)} disabled={busy} className={styles.btnDeactivate}>
+            <button
+              type="button"
+              onClick={handleSubmit(onDeactivate)}
+              disabled={busy}
+              className={styles.btnDeactivate}
+            >
               Desactivar estación
             </button>
           </div>
@@ -129,24 +218,72 @@ export default function MedicalPage() {
         </header>
 
         <div className={styles.panelBody}>
+          {/* Paciente activo — auto-relleno desde proyección backend */}
+          {activePatient && (
+            <div className={styles.activePatientCard}>
+              <span className={styles.activePatientLabel}>
+                Paciente en turno
+              </span>
+              <span className={styles.activePatientName}>
+                {activePatient.patientName}
+              </span>
+              <span className={styles.activePatientId}>
+                {activePatient.patientId}
+              </span>
+              <span className={styles.activePatientMeta}>
+                {activePatient.consultationType} — {activePatient.priority}
+              </span>
+            </div>
+          )}
+
           <div className={styles.formGroup}>
-            <label className={styles.label} htmlFor="patientId">ID de paciente</label>
-            <input id="patientId" className={styles.input} placeholder="Ej. p-1700000000000" {...register("patientId")} />
+            <label className={styles.label} htmlFor="patientId">
+              ID de paciente
+              {medical.lastResult?.patientId && (
+                <span className={styles.autoFilledBadge}>
+                  {" "}
+                  (auto-rellenado)
+                </span>
+              )}
+            </label>
+            <input
+              id="patientId"
+              className={styles.input}
+              placeholder="Se rellena automáticamente al llamar siguiente"
+              {...register("patientId")}
+            />
           </div>
 
           <div className={styles.formGroup}>
-            <label className={styles.label} htmlFor="outcome">Resultado (opcional)</label>
-            <input id="outcome" className={styles.input} placeholder="Ej. Diagnóstico, tratamiento..." {...register("outcome")} />
+            <label className={styles.label} htmlFor="outcome">
+              Resultado (opcional)
+            </label>
+            <input
+              id="outcome"
+              className={styles.input}
+              placeholder="Ej. Diagnóstico, tratamiento..."
+              {...register("outcome")}
+            />
           </div>
 
           <div className={styles.consultActions}>
             <button type="submit" disabled={busy} className={styles.btnStart}>
               Iniciar consulta
             </button>
-            <button type="button" onClick={handleSubmit(onFinishConsult)} disabled={busy} className={styles.btnFinish}>
+            <button
+              type="button"
+              onClick={handleSubmit(onFinishConsult)}
+              disabled={busy}
+              className={styles.btnFinish}
+            >
               Finalizar consulta
             </button>
-            <button type="button" onClick={handleSubmit(onMarkAbsent)} disabled={busy} className={styles.btnAbsent}>
+            <button
+              type="button"
+              onClick={handleSubmit(onMarkAbsent)}
+              disabled={busy}
+              className={styles.btnAbsent}
+            >
               Marcar ausente
             </button>
           </div>

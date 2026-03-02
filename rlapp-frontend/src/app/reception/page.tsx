@@ -82,6 +82,7 @@ export default function ReceptionPage() {
     // use global alert
     try {
       const result = await registerReception({
+        queueId: data.queueId || env.DEFAULT_QUEUE_ID,
         patientId: `p-${Date.now()}`,
         patientName: data.patientName,
         priority: data.priority,
