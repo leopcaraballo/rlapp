@@ -1,5 +1,25 @@
 ## AI_WORKFLOW Log
 
+### 2026-03-02 — TDD caja (RED→GREEN→REFACTOR)
+
+- Actor: AI assistant (Copilot)
+- Task: Ciclo TDD completo para la pantalla `/cashier`; cobertura de acciones, doble submit, propagación de errores y estado vacío.
+- Files changed:
+  - rlapp-frontend/test/app/cashier/page.red.spec.tsx (nuevo — 12 pruebas)
+- Commits atómicos:
+  - `test(cashier): red - tests de acciones, payload, doble submit y errores del hook`
+  - `feat(cashier): green - mock configurable por variable y assertions corregidas (12/12)`
+  - `refactor(cashier): parametrizar tests de acciones con it.each para eliminar duplicidad`
+
+- Actions performed:
+  1. RED (2 fallos / 10 pasan): se crearon 12 pruebas que cubren `callNext`, `validate`, `markPending`, `markAbsent`, `cancel`, refresco y limpieza de selección, bloqueo por `busy`, propagación de errores del hook y estado vacío. Los 2 fallos detectados (`getByText` ambiguo y `jest.resetModules` inefectivo al usar módulos ya importados) son de autoría, no de producción.
+  2. GREEN: se sustituyó la aserción de texto ambiguo por una basada en rol de botón; se reemplazó `jest.resetModules()` por una variable mutable `patientsQueue` a nivel de módulo que el mock de `useWaitingRoom` consume dinámicamente. Resultado: 12/12.
+  3. REFACTOR: los 4 tests individuales de acciones (`validate`, `markPending`, `markAbsent`, `cancel`) se consolidaron en un único bloque `it.each` parametrizado. Resultado: 12/12 sin regresiones.
+
+- Notes / Human checks:
+  - La página de caja ya estaba implementada; los tests actúan como red de seguridad y documentación viva.
+  - La variable `patientsQueue` es el patrón preferido para controlar datos de mock por test sin resetear módulos.
+
 ### 2026-03-01 — Plan TDD frontend
 
 - Actor: AI assistant (Copilot)
