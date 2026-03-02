@@ -124,20 +124,19 @@ describe("DisplayPage — RED", () => {
     expect(items[2]).toHaveTextContent("Tercero en cola");
   });
 
-  // ── 10. Hora de última actualización ─────────────────────────────────────
-  it("muestra la hora de actualización cuando lastUpdated no es null", () => {
-    mockLastUpdated = "2026-03-02T10:30:00Z";
+  // ── 10-11. Footer: hora de última actualización ───────────────────────────
+  it.each([
+    { lastUpdated: "2026-03-02T10:30:00Z", containsDash: false, label: "muestra hora real cuando lastUpdated no es null" },
+    { lastUpdated: null,                   containsDash: true,  label: "muestra '—' cuando lastUpdated es null" },
+  ])("$label", ({ lastUpdated, containsDash }) => {
+    mockLastUpdated = lastUpdated;
     renderDisplay();
     const footer = screen.getByText(/Última actualización:/i);
-    expect(footer.textContent).not.toContain("—");
-  });
-
-  // ── 11. "—" cuando lastUpdated es null ────────────────────────────────────
-  it("muestra '—' cuando lastUpdated es null", () => {
-    mockLastUpdated = null;
-    renderDisplay();
-    const footer = screen.getByText(/Última actualización:/i);
-    expect(footer.textContent).toContain("—");
+    if (containsDash) {
+      expect(footer.textContent).toContain("—");
+    } else {
+      expect(footer.textContent).not.toContain("—");
+    }
   });
 
   // ── 12. Prioridad visible en cada slot ─────────────────────────────────
