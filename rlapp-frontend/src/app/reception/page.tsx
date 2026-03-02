@@ -78,13 +78,16 @@ export default function ReceptionPage() {
   const { queueState } = useWaitingRoom(watchedQueueId || env.DEFAULT_QUEUE_ID);
 
   async function onSubmit(data: CheckInForm) {
+    if (submitting) return; // evita doble submit si el estado aun no se actualiza
+
+    const trimmedName = data.patientName.trim();
     setSubmitting(true);
-    // use global alert
+
     try {
       await registerReception({
         queueId: data.queueId,
         patientId: `p-${Date.now()}`,
-        patientName: data.patientName,
+        patientName: trimmedName,
         priority: data.priority,
         consultationType: data.consultationType,
         age: data.age ?? null,
