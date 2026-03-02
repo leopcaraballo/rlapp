@@ -248,4 +248,34 @@ describe("useWaitingRoom", () => {
     await waitFor(() => expect(mockGetMonitor).toHaveBeenCalled());
     expect(() => unmount()).not.toThrow();
   });
+
+  // ── 13. SignalR onConnected dispara console.info y registra cleanup ────────
+  it("registra signalRCleanup cuando connect retorna un objeto no-nulo", async () => {
+    const fakeConn = { stop: jest.fn() };
+    mockSignalRConnect.mockImplementation(
+      async (_queueId: string, handlers: Record<string, (() => void) | undefined>) => {
+        mockSignalRIsConnected.mockReturnValue(true);
+        handlers.onConnected?.();
+        return fakeConn;
+      },
+    );
+    const { unmount } = renderHook(() => useWaitingRoom("Q1", 99999));
+    await waitFor(() => expect(mockSignalRConnect).toHaveBeenCalled());
+    // Desmontar debe llamar a disconnect (signalRCleanup es truthy)
+    unmount();
+    await waitFor(() => expect(mockSignalRDisconnect).toHaveBeenCalled());
+  });
+
+  // ── 14. SignalR onDisconnected escribe en console pero no falla ────────────
+  it("no lanza errores cuando signalR llama a onDisconnected", async () => {
+    mockSignalRConnect.mockImplementation(
+      async (_queueId: string, handlers: Record<string, (() => void) | undefined>) => {
+        handlers.onDisconnected?.();
+        return null;
+      },
+    );
+    const { unmount } = renderHook(() => useWaitingRoom("Q1", 99999));
+    await waitFor(() => expect(mockSignalRConnect).toHaveBeenCalled());
+    expect(() => unmount()).not.toThrow();
+  });
 });
