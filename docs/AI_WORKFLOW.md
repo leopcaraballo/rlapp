@@ -1,5 +1,65 @@
 ## AI_WORKFLOW Log
 
+### 2026-03-02 — TDD waiting-room Bloques A-GREEN, B2-B5 y correcciones TS
+
+- Actor: AI assistant (Copilot / Claude Sonnet 4.6)
+- Task: Ejecutar el plan TDD Bloques A (registration GREEN+REFACTOR), B1 (waiting-room GREEN),
+  B2-B5 (tests de cobertura de capas: `useWaitingRoom`, `waitingRoomApi`, `SignalRAdapter`,
+  `waitingRoomSignalR`) y correcciones de errores TypeScript pre-existentes.
+- Files changed:
+  - `rlapp-frontend/test/hooks/useWaitingRoom.spec.ts` (nuevo — 14 tests)
+  - `rlapp-frontend/test/services/waitingRoomApi.spec.ts` (nuevo — 23 tests)
+  - `rlapp-frontend/test/infrastructure/signalRAdapter.spec.ts` (nuevo — 14 tests)
+  - `rlapp-frontend/test/services/waitingRoomSignalR.spec.ts` (nuevo — 17 tests)
+  - `rlapp-frontend/test/hooks/useQueueAsAppointments.coverage.spec.tsx` (corrección TS)
+  - `rlapp-frontend/docs/TDD_PLAN.md` (actualizado secciones 0, 9, 10)
+- Commits atómicos:
+  - `c90db2f` — `feat(registration): green`
+  - `d460c38` — `refactor(registration): extraer Priority type e ID_CARD_PATTERN`
+  - `549bbb8` — `feat(waiting-room): green` (simbólico — página ya implementada)
+  - `92f4682` — `test(waiting-room): cobertura useWaitingRoom, waitingRoomApi, SignalRAdapter y waitingRoomSignalR`
+  - `18feeab` — `test(waiting-room): ampliar cobertura con comandos y callbacks SignalR`
+  - `de4bddd` — `fix(types): corregir errores TS pre-existentes en casts de ReturnType y setEnv`
+
+- Actions performed:
+  1. Bloque A GREEN: confirmados 14/14 tests de registration page pasando. Commit green.
+  2. Bloque A REFACTOR: extraído `Priority = "Urgent" | "High" | "Medium" | "Low"` y
+     `ID_CARD_PATTERN = /^\d{6,12}$/` en `AppointmentRegistrationForm.tsx`.
+  3. Bloque B1 GREEN: confirmado que `/waiting-room/[queueId]/page.tsx` ya estaba implementado.
+     Commit simbólico.
+  4. Bloque B2 (`useWaitingRoom.spec.ts`): 14 tests cubriendo estado inicial, fetch al montar,
+     datos tras fetch, connectionState online/connecting/degraded, refresh manual, lastUpdated,
+     evento `rlapp:command-success` (mismo y distinto queueId), nextTurn null, desmontaje,
+     SignalR onConnected con cleanup y onDisconnected.
+     **Corrección clave:** mock de `AlertContext` devolvía nuevo objeto por render → `fetchAll`
+     cambiaba en cada render → bucle infinito de effect + OOM en test. Solución: objeto
+     `mockAlert` estable (misma referencia en cada llamada a `useAlert()`).
+  5. Bloque B3 (`waitingRoomApi.spec.ts`): 23 tests con patrón `global.fetch = jest.fn()`.
+     Cubre queries (getMonitor, getQueueState, getNextTurn 404→null, getRecentHistory),
+     rebuildProjection, checkInPatient (POST + evento `rlapp:command-success`), callNextCashier,
+     activateConsultingRoom (stationId→consultingRoomId), markAbsent (alias).
+  6. Bloque B4 (`signalRAdapter.spec.ts`): 14 tests mockeando `@microsoft/signalr`.
+  7. Bloque B5 (`waitingRoomSignalR.spec.ts`): 17 tests con todos los handlers de SignalR.
+  8. Corrección TS: casts `X as ReturnType` → `X as unknown as ReturnType` en 13 lugares;
+     tipado de `makeQueueState(patients: object[])` para evitar `never[]`;
+     renombrar `setEnv` → `setApiTestEnv` para evitar `TS2451`.
+
+- Resultado de cobertura:
+  - Antes: statements 81.61%, branches 70.56%, functions 76.53%, lines 83.96%
+  - Después: statements **91.00%** ✅, branches **79.04%** ✅, functions **87.97%** ✅, lines **93.17%** ✅
+  - Archivos clave mejorados:
+    - `useWaitingRoom.tsx`: 69.3% → 81.3% líneas
+    - `waitingRoom.ts`: 17.1% → 63.2% líneas
+    - `SignalRAdapter.ts`: 18.0% → 91.8% líneas
+    - `waitingRoomSignalR.ts`: 67.1% → 93.4% líneas
+
+- Notes / Human checks:
+  - Quedan 12 errores TS pre-existentes en 3 archivos no modificados en esta sesión:
+    `errorTranslations.coverage.spec.tsx` (parámetro `ApiError` sin campo `error`),
+    `application-layer.coverage.spec.ts` y `hooks-core.coverage.spec.tsx`
+    (`"Pediatric"` no asignable a `ConsultationType`). No introducidos por esta sesión.
+  - Modelo SA recomendado para tareas similares: Claude Sonnet 4.6 (Tier 2).
+
 ### 2026-03-02 — TDD registration (RED con it.each integrado)
 
 - Actor: AI assistant (Copilot)
