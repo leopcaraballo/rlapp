@@ -36,6 +36,26 @@ jest.mock("@/hooks/useConsultingRooms", () => ({
 
 import ConsultingRoomsPage from "@/app/consulting-rooms/page";
 
+// ── helpers ──────────────────────────────────────────────────────────────────
+/** Obtiene el contenedor de la tarjeta de un consultorio por su stationId */
+function getCard(stationId: string): HTMLElement {
+  return screen.getByText(stationId).closest("div") as HTMLElement;
+}
+
+/**
+ * Activa un consultorio y espera a que el botón cambie a "Desactivar".
+ * Reutilizable en tests que necesitan partir de un estado activo.
+ */
+async function activateCard(
+  user: ReturnType<typeof userEvent.setup>,
+  stationId: string,
+): Promise<HTMLElement> {
+  const card = getCard(stationId);
+  await user.click(within(card).getByRole("button", { name: /^Activar$/i }));
+  await waitFor(() => within(card).getByRole("button", { name: /^Desactivar$/i }));
+  return card;
+}
+
 // ── suite ────────────────────────────────────────────────────────────────────
 describe("ConsultingRoomsPage — RED", () => {
   beforeEach(() => {
@@ -68,9 +88,8 @@ describe("ConsultingRoomsPage — RED", () => {
     const user = userEvent.setup();
     render(<ConsultingRoomsPage />);
 
-    // Todos los botones iniciales dicen "Activar"
-    const activarBtns = screen.getAllByRole("button", { name: /^Activar$/i });
-    await user.click(activarBtns[0]); // CONS-01
+    const card = getCard("CONS-01");
+    await user.click(within(card).getByRole("button", { name: /^Activar$/i }));
 
     await waitFor(() => {
       expect(roomsMock.activate).toHaveBeenCalledWith("QUEUE-CR", "CONS-01");
@@ -82,12 +101,9 @@ describe("ConsultingRoomsPage — RED", () => {
     const user = userEvent.setup();
     render(<ConsultingRoomsPage />);
 
-    const card = screen.getByText("CONS-01").closest("div") as HTMLElement;
-    await user.click(within(card).getByRole("button", { name: /^Activar$/i }));
+    const card = await activateCard(user, "CONS-01");
 
-    await waitFor(() => {
-      expect(within(card).getByRole("button", { name: /^Desactivar$/i })).toBeInTheDocument();
-    });
+    expect(within(card).getByRole("button", { name: /^Desactivar$/i })).toBeInTheDocument();
   });
 
   // ── 5. showSuccess tras activate exitoso ─────────────────────────────────
@@ -95,8 +111,7 @@ describe("ConsultingRoomsPage — RED", () => {
     const user = userEvent.setup();
     render(<ConsultingRoomsPage />);
 
-    const activarBtns = screen.getAllByRole("button", { name: /^Activar$/i });
-    await user.click(activarBtns[0]);
+    await activateCard(user, "CONS-01");
 
     await waitFor(() => {
       expect(showSuccessMock).toHaveBeenCalledWith(
@@ -110,14 +125,7 @@ describe("ConsultingRoomsPage — RED", () => {
     const user = userEvent.setup();
     render(<ConsultingRoomsPage />);
 
-    // Primero activar
-    const card = screen.getByText("CONS-02").closest("div") as HTMLElement;
-    await user.click(within(card).getByRole("button", { name: /^Activar$/i }));
-    await waitFor(() => {
-      expect(within(card).getByRole("button", { name: /^Desactivar$/i })).toBeInTheDocument();
-    });
-
-    // Luego desactivar
+    const card = await activateCard(user, "CONS-02");
     await user.click(within(card).getByRole("button", { name: /^Desactivar$/i }));
 
     await waitFor(() => {
@@ -130,13 +138,7 @@ describe("ConsultingRoomsPage — RED", () => {
     const user = userEvent.setup();
     render(<ConsultingRoomsPage />);
 
-    const card = screen.getByText("CONS-02").closest("div") as HTMLElement;
-
-    // Activar primero
-    await user.click(within(card).getByRole("button", { name: /^Activar$/i }));
-    await waitFor(() => within(card).getByRole("button", { name: /^Desactivar$/i }));
-
-    // Desactivar
+    const card = await activateCard(user, "CONS-02");
     await user.click(within(card).getByRole("button", { name: /^Desactivar$/i }));
 
     await waitFor(() => {
@@ -149,10 +151,7 @@ describe("ConsultingRoomsPage — RED", () => {
     const user = userEvent.setup();
     render(<ConsultingRoomsPage />);
 
-    const card = screen.getByText("CONS-03").closest("div") as HTMLElement;
-    await user.click(within(card).getByRole("button", { name: /^Activar$/i }));
-    await waitFor(() => within(card).getByRole("button", { name: /^Desactivar$/i }));
-
+    const card = await activateCard(user, "CONS-03");
     await user.click(within(card).getByRole("button", { name: /^Desactivar$/i }));
 
     await waitFor(() => {
@@ -168,7 +167,7 @@ describe("ConsultingRoomsPage — RED", () => {
     const user = userEvent.setup();
     render(<ConsultingRoomsPage />);
 
-    const card = screen.getByText("CONS-01").closest("div") as HTMLElement;
+    const card = getCard("CONS-01");
     await user.click(within(card).getByRole("button", { name: /^Activar$/i }));
 
     await waitFor(() => {
@@ -185,10 +184,8 @@ describe("ConsultingRoomsPage — RED", () => {
     const user = userEvent.setup();
     render(<ConsultingRoomsPage />);
 
-    // Activar correctamente primero
-    const card = screen.getByText("CONS-01").closest("div") as HTMLElement;
-    await user.click(within(card).getByRole("button", { name: /^Activar$/i }));
-    await waitFor(() => within(card).getByRole("button", { name: /^Desactivar$/i }));
+    // Activar correctamente primero (activate sigue devolviendo true en este test)
+    const card = await activateCard(user, "CONS-01");
 
     // Intentar desactivar (falla)
     await user.click(within(card).getByRole("button", { name: /^Desactivar$/i }));
