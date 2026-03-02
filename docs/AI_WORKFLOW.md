@@ -1,5 +1,26 @@
 ## AI_WORKFLOW Log
 
+### 2026-03-02 — TDD dashboard (RED+REFACTOR)
+
+- Actor: AI assistant (Copilot)
+- Task: Ciclo TDD para la pantalla `/dashboard`; cobertura de título, tres secciones (En consultorio / En espera / Completados), empty states, isConnecting, error, y cita por cada estado.
+- Files changed:
+  - rlapp-frontend/test/app/dashboard/page.red.spec.tsx (nuevo — 12 pruebas)
+- Commits atómicos:
+  - `test(dashboard): red - título, secciones, empty states, isConnecting, error y citas por estado (12/12)` (incluye refactor)
+
+- Actions performed:
+  1. RED: se crearon 12 pruebas para `CompletedHistoryDashboard`, que es un wrapper delgado sobre `RealtimeAppointments`. Se mockearon `useQueueAsAppointments` y `audioService` para control total sin efectos secundarios. Producción correcta en 12/12 desde el inicio.
+  2. REFACTOR: se aplicó `it.each` a los empty states (tests 5-7) y a las citas por estado (tests 10-12). El resultado fue incluido en el commit RED por haber sido aplicado antes del staging.
+
+- Patrones consolidados:
+  - `makeAppointment(overrides)` como factory tipada para construir fixtures de `Appointment` en un paso.
+  - `it.each` con `{ label, texto/status, fullName }` para parametrizar variantes homogéneas.
+  - Mock de `audioService` con `jest.mock` para evitar errores de HTMLAudioElement en jsdom.
+
+- Notes / Human checks:
+  - No se detectó deuda técnica; sin cambios en producción.
+
 ### 2026-03-02 — TDD waiting-room (RED, sin refactor pendiente)
 
 - Actor: AI assistant (Copilot)
