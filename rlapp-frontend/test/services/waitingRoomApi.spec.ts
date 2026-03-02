@@ -1,0 +1,231 @@
+/**
+ * @jest-environment jsdom
+ *
+ * 🧪 Tests de cobertura para services/api/waitingRoom (Bloque B3)
+ * Cubre: getMonitor, getQueueState, getNextTurn, getRecentHistory, rebuildProjection.
+ * Usa global.fetch mock (mismo patrón que adapters.coverage.spec.ts).
+ */
+
+const setEnv = () => {
+  process.env.NEXT_PUBLIC_API_BASE_URL = "http://api.test";
+};
+
+type FetchMock = jest.Mock;
+
+function mockFetchOk(body: unknown, status = 200) {
+  (global as unknown as { fetch: FetchMock }).fetch.mockResolvedValueOnce({
+    ok: status >= 200 && status < 300,
+    status,
+    text: async () => JSON.stringify(body),
+  });
+}
+
+function mockFetchError(status: number, body: unknown) {
+  (global as unknown as { fetch: FetchMock }).fetch.mockResolvedValueOnce({
+    ok: false,
+    status,
+    text: async () => JSON.stringify(body),
+  });
+}
+
+// ── suite ─────────────────────────────────────────────────────────────────────
+describe("services/api/waitingRoom", () => {
+  beforeEach(() => {
+    jest.resetModules();
+    setEnv();
+    (global as unknown as { fetch: FetchMock }).fetch = jest.fn();
+  });
+
+  afterEach(() => {
+    jest.clearAllMocks();
+  });
+
+  // ── getMonitor ─────────────────────────────────────────────────────────────
+  describe("getMonitor", () => {
+    it("devuelve WaitingRoomMonitorView cuando el servidor responde 200", async () => {
+      const { getMonitor } = await import("@/services/api/waitingRoom");
+      mockFetchOk({
+        queueId: "QUEUE-1",
+        totalPatientsWaiting: 3,
+        highPriorityCount: 1,
+        normalPriorityCount: 2,
+        lowPriorityCount: 0,
+        lastPatientCheckedInAt: null,
+        averageWaitTimeMinutes: 5,
+        utilizationPercentage: 30,
+        projectedAt: "2026-03-02T10:00:00Z",
+      });
+      const result = await getMonitor("QUEUE-1");
+      expect(result.queueId).toBe("QUEUE-1");
+      expect(result.totalPatientsWaiting).toBe(3);
+      expect(result.highPriorityCount).toBe(1);
+    });
+
+    it("lanza error con status cuando el servidor responde 500", async () => {
+      const { getMonitor } = await import("@/services/api/waitingRoom");
+      mockFetchError(500, { error: "Internal Server Error" });
+      await expect(getMonitor("QUEUE-1")).rejects.toThrow();
+    });
+
+    it("incluye X-Correlation-Id en la cabecera de la petición", async () => {
+      const { getMonitor } = await import("@/services/api/waitingRoom");
+      mockFetchOk({
+        queueId: "QUEUE-1",
+        totalPatientsWaiting: 0,
+        highPriorityCount: 0,
+        normalPriorityCount: 0,
+        lowPriorityCount: 0,
+        lastPatientCheckedInAt: null,
+        averageWaitTimeMinutes: 0,
+        utilizationPercentage: 0,
+        projectedAt: "2026-03-02T10:00:00Z",
+      });
+      await getMonitor("QUEUE-1");
+      const fetchMock = (global as unknown as { fetch: FetchMock }).fetch;
+      const calledHeaders = fetchMock.mock.calls[0][1]?.headers ?? {};
+      expect(calledHeaders["X-Correlation-Id"]).toBeTruthy();
+    });
+
+    it("llama a la URL que contiene el queueId y el endpoint monitor", async () => {
+      const { getMonitor } = await import("@/services/api/waitingRoom");
+      mockFetchOk({ queueId: "Q2", totalPatientsWaiting: 0, highPriorityCount: 0, normalPriorityCount: 0, lowPriorityCount: 0, lastPatientCheckedInAt: null, averageWaitTimeMinutes: 0, utilizationPercentage: 0, projectedAt: "" });
+      await getMonitor("Q2");
+      const fetchMock = (global as unknown as { fetch: FetchMock }).fetch;
+      expect(fetchMock.mock.calls[0][0]).toContain("Q2");
+      expect(fetchMock.mock.calls[0][0]).toContain("monitor");
+    });
+  });
+
+  // ── getQueueState ──────────────────────────────────────────────────────────
+  describe("getQueueState", () => {
+    it("devuelve QueueStateView cuando el servidor responde 200", async () => {
+      const { getQueueState } = await import("@/services/api/waitingRoom");
+      mockFetchOk({
+        queueId: "QUEUE-1",
+        currentCount: 5,
+        maxCapacity: 20,
+        isAtCapacity: false,
+        availableSpots: 15,
+        patientsInQueue: [],
+        projectedAt: "2026-03-02T10:00:00Z",
+      });
+      const result = await getQueueState("QUEUE-1");
+      expect(result.currentCount).toBe(5);
+      expect(result.maxCapacity).toBe(20);
+    });
+
+    it("lanza error cuando el servidor responde 500", async () => {
+      const { getQueueState } = await import("@/services/api/waitingRoom");
+      mockFetchError(500, { error: "Internal Server Error" });
+      await expect(getQueueState("QUEUE-1")).rejects.toThrow();
+    });
+  });
+
+  // ── getNextTurn ────────────────────────────────────────────────────────────
+  describe("getNextTurn", () => {
+    it("devuelve NextTurnView cuando hay un turno activo (200)", async () => {
+      const { getNextTurn } = await import("@/services/api/waitingRoom");
+      mockFetchOk({
+        queueId: "QUEUE-1",
+        patientId: "p1",
+        patientName: "Ana",
+        priority: "High",
+        consultationType: "General",
+        status: "Called",
+        claimedAt: null,
+        calledAt: "2026-03-02T10:00:00Z",
+        stationId: null,
+        projectedAt: "2026-03-02T10:00:00Z",
+      });
+      const result = await getNextTurn("QUEUE-1");
+      expect(result?.patientName).toBe("Ana");
+    });
+
+    it("devuelve null cuando la cola no tiene turno activo (404)", async () => {
+      const { getNextTurn } = await import("@/services/api/waitingRoom");
+      (global as unknown as { fetch: FetchMock }).fetch.mockResolvedValueOnce({
+        ok: false,
+        status: 404,
+        text: async () => "",
+      });
+      const result = await getNextTurn("QUEUE-1");
+      expect(result).toBeNull();
+    });
+
+    it("lanza error cuando el servidor responde 500", async () => {
+      const { getNextTurn } = await import("@/services/api/waitingRoom");
+      mockFetchError(500, { error: "Internal Server Error" });
+      await expect(getNextTurn("QUEUE-1")).rejects.toThrow();
+    });
+  });
+
+  // ── getRecentHistory ───────────────────────────────────────────────────────
+  describe("getRecentHistory", () => {
+    it("devuelve array de RecentAttentionRecordView cuando responde 200", async () => {
+      const { getRecentHistory } = await import("@/services/api/waitingRoom");
+      mockFetchOk([
+        {
+          queueId: "QUEUE-1",
+          patientId: "p0",
+          patientName: "Carlos",
+          priority: "Low",
+          consultationType: "General",
+          completedAt: "2026-03-02T09:00:00Z",
+        },
+      ]);
+      const result = await getRecentHistory("QUEUE-1");
+      expect(result).toHaveLength(1);
+      expect(result[0].patientName).toBe("Carlos");
+    });
+
+    it("pasa el parámetro limit en la URL", async () => {
+      const { getRecentHistory } = await import("@/services/api/waitingRoom");
+      mockFetchOk([]);
+      await getRecentHistory("QUEUE-1", 50);
+      const fetchMock = (global as unknown as { fetch: FetchMock }).fetch;
+      expect(fetchMock.mock.calls[0][0]).toContain("limit=50");
+    });
+
+    it("devuelve array vacío cuando no hay historial", async () => {
+      const { getRecentHistory } = await import("@/services/api/waitingRoom");
+      mockFetchOk([]);
+      const result = await getRecentHistory("QUEUE-1");
+      expect(result).toEqual([]);
+    });
+  });
+
+  // ── rebuildProjection ──────────────────────────────────────────────────────
+  describe("rebuildProjection", () => {
+    it("devuelve mensaje de éxito cuando el servidor responde 200", async () => {
+      const { rebuildProjection } = await import("@/services/api/waitingRoom");
+      mockFetchOk({ message: "Proyección reconstruida correctamente", queueId: "QUEUE-1" });
+      const result = await rebuildProjection("QUEUE-1");
+      expect(result.message).toMatch(/proyecci/i);
+      expect(result.queueId).toBe("QUEUE-1");
+    });
+
+    it("usa método POST en la petición", async () => {
+      const { rebuildProjection } = await import("@/services/api/waitingRoom");
+      mockFetchOk({ message: "ok", queueId: "QUEUE-1" });
+      await rebuildProjection("QUEUE-1");
+      const fetchMock = (global as unknown as { fetch: FetchMock }).fetch;
+      expect(fetchMock.mock.calls[0][1]?.method).toBe("POST");
+    });
+
+    it("lanza error cuando el servidor responde 503", async () => {
+      const { rebuildProjection } = await import("@/services/api/waitingRoom");
+      mockFetchError(503, { error: "Service Unavailable" });
+      await expect(rebuildProjection("QUEUE-1")).rejects.toThrow();
+    });
+
+    it("incluye X-Idempotency-Key y X-Correlation-Id en encabezados", async () => {
+      const { rebuildProjection } = await import("@/services/api/waitingRoom");
+      mockFetchOk({ message: "ok", queueId: "QUEUE-1" });
+      await rebuildProjection("QUEUE-1");
+      const fetchMock = (global as unknown as { fetch: FetchMock }).fetch;
+      const headers = fetchMock.mock.calls[0][1]?.headers ?? {};
+      expect(headers["X-Idempotency-Key"]).toBeTruthy();
+      expect(headers["X-Correlation-Id"]).toBeTruthy();
+    });
+  });
+});
