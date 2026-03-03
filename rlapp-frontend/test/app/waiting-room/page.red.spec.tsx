@@ -25,6 +25,10 @@ let mockHistory: RecentAttentionRecordView[] = [];
 let mockLastUpdated: string | null = null;
 let mockRefresh: jest.Mock;
 
+jest.mock("@/context/AuthContext", () => ({
+  useAuth: () => ({ role: "admin", isAuthenticated: true, signOut: jest.fn() }),
+}));
+
 jest.mock("@/hooks/useWaitingRoom", () => ({
   useWaitingRoom: () => ({
     monitor: mockMonitor,
