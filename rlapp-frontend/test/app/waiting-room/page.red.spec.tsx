@@ -1,14 +1,13 @@
+import { http, HttpResponse } from "@test/mocks/handlers";
+import { server } from "@test/mocks/server";
 import { render, screen, waitFor } from "@testing-library/react";
 import userEvent from "@testing-library/user-event";
 import React from "react";
 
-import { http, HttpResponse } from "@test/mocks/handlers";
-import { server } from "@test/mocks/server";
-
 // ── mock React.use (Next.js App Router params: Promise<T>) ──────────────────
 let mockParams: { queueId: string };
-// eslint-disable-next-line @typescript-eslint/no-explicit-any
-jest.spyOn(React, "use").mockImplementation((_: unknown) => mockParams as any);
+ 
+jest.spyOn(React, "use").mockImplementation(() => mockParams as any);
 
 // ── mock useWaitingRoom ──────────────────────────────────────────────────────
 import type {
