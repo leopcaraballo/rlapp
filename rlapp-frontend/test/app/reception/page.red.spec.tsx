@@ -54,6 +54,7 @@ describe("ReceptionPage — RED", () => {
 
     render(<ReceptionPage />);
 
+    await user.type(screen.getByLabelText(/Cédula del paciente/i), "CC-99999");
     await user.type(
       screen.getByLabelText(/Nombre del paciente/i),
       "  Ana Perez  ",
@@ -76,6 +77,7 @@ describe("ReceptionPage — RED", () => {
 
     render(<ReceptionPage />);
 
+    await user.type(screen.getByLabelText(/Cédula del paciente/i), "TI-11111");
     await user.type(
       screen.getByLabelText(/Nombre del paciente/i),
       "Maria Lopez",
@@ -102,6 +104,7 @@ describe("ReceptionPage — RED", () => {
 
     render(<ReceptionPage />);
 
+    await user.type(screen.getByLabelText(/Cédula del paciente/i), "PA-22222");
     await user.type(
       screen.getByLabelText(/Nombre del paciente/i),
       "Carlos Ruiz",
