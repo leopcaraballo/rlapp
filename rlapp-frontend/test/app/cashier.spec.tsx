@@ -5,9 +5,31 @@ jest.mock("next/navigation", () => ({
   useSearchParams: () => ({ get: () => null }),
 }));
 
+jest.mock("@/context/AlertContext", () => ({
+  useAlert: () => ({ showError: jest.fn(), showSuccess: jest.fn(), showInfo: jest.fn() }),
+  AlertProvider: ({ children }: { children: React.ReactNode }) => <>{children}</>,
+}));
+
+jest.mock("@/hooks/useCashierStation", () => ({
+  useCashierStation: () => ({
+    busy: false,
+    error: null,
+    lastResult: null,
+    callNext: jest.fn(),
+    validate: jest.fn(),
+    markPending: jest.fn(),
+    markAbsent: jest.fn(),
+    cancel: jest.fn(),
+    clearError: jest.fn(),
+  }),
+}));
+
+const mockNextTurn: { current: import("@/services/api/types").NextTurnView | null } = { current: null };
+
 jest.mock("@/hooks/useWaitingRoom", () => ({
   useWaitingRoom: () => ({
     queueState: { patientsInQueue: [] },
+    nextTurn: mockNextTurn.current,
     refresh: jest.fn(),
   }),
 }));
@@ -15,9 +37,55 @@ jest.mock("@/hooks/useWaitingRoom", () => ({
 import CashierPage from "@/app/cashier/page";
 
 describe("CashierPage", () => {
+  beforeEach(() => {
+    mockNextTurn.current = null;
+  });
+
   it("renders cashier controls", () => {
     render(<CashierPage />);
     expect(screen.queryByText(/Caja/)).toBeTruthy();
     expect(screen.queryByText(/Llamar siguiente/)).toBeTruthy();
+  });
+
+  it("no muestra el turno activo cuando nextTurn es null", () => {
+    mockNextTurn.current = null;
+    render(<CashierPage />);
+    expect(screen.queryByText(/Turno activo en caja/)).toBeNull();
+  });
+
+  it("muestra el turno activo cuando nextTurn.status es 'cashier-called'", () => {
+    mockNextTurn.current = {
+      queueId: "Q-1",
+      patientId: "CC-001",
+      patientName: "Juan Prueba",
+      priority: "High",
+      consultationType: "General",
+      status: "cashier-called",
+      claimedAt: null,
+      calledAt: new Date().toISOString(),
+      stationId: null,
+      projectedAt: new Date().toISOString(),
+    };
+    render(<CashierPage />);
+    expect(screen.queryByText(/Turno activo en caja/)).toBeTruthy();
+    expect(screen.queryAllByText("Juan Prueba").length).toBeGreaterThan(0);
+    expect(screen.queryAllByText("CC-001").length).toBeGreaterThan(0);
+  });
+
+  it("no muestra el turno activo cuando nextTurn.status no es 'cashier-called'", () => {
+    mockNextTurn.current = {
+      queueId: "Q-1",
+      patientId: "CC-002",
+      patientName: "Pedro Test",
+      priority: "Medium",
+      consultationType: "General",
+      status: "waiting",
+      claimedAt: null,
+      calledAt: null,
+      stationId: null,
+      projectedAt: new Date().toISOString(),
+    };
+    render(<CashierPage />);
+    expect(screen.queryByText(/Turno activo en caja/)).toBeNull();
   });
 });
