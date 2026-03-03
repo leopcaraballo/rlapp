@@ -37,7 +37,7 @@ export default function LoginPage() {
 
   return (
     <main className={styles.loginRoot}>
-      <form className={styles.card} onSubmit={onSubmit}>
+      <form className={styles.card} onSubmit={onSubmit} noValidate>
         <h1 className={styles.title}>Acceso al sistema</h1>
         <p className={styles.subtitle}>
           Seleccione el rol operativo para continuar.
