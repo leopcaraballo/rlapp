@@ -71,10 +71,10 @@ Create atomic commits for the following changes:
 5. Updated documentation
 
 # Expected commits:
-- refactor(consumer): extract appointment entity to domain layer
-- refactor(consumer): create appointment repository port
-- refactor(consumer): implement mongoose appointment adapter
-- test(consumer): add unit tests for appointment entity
+- refactor(waitingroom-domain): extract appointment entity to domain layer
+- refactor(waitingroom-domain): create appointment repository port
+- refactor(waitingroom-infra): implement postgres appointment adapter
+- test(waitingroom-domain): add unit tests for appointment entity
 - docs(traceability): update AI_WORKFLOW.md with refactor entry
     `,
 });

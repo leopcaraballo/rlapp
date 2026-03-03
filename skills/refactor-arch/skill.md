@@ -23,14 +23,14 @@ Every refactoring must be backed by tests that guarantee behavior preservation:
 
 After each refactoring, verify that the resulting tests meet these criteria:
 
-| Criterion | Description | Corrective Action |
-|---|---|---|
-| **Maintainable** | Easy to update when requirements change | Extract reusable factories and helpers |
-| **Consistent** | Deterministic results; do not depend on execution order | Eliminate shared state between tests |
-| **Fast** | Quick execution; do not block the flow | Replace redundant E2E tests with unit tests |
-| **Isolated** | Each test is independent | Reset mocks and state in beforeEach |
-| **Readable** | Purpose is clear without additional context | Use AAA pattern (Arrange-Act-Assert) |
-| **Expressive** | Names describe expected behavior | `should return error when idCard does not exist` |
+| Criterion        | Description                                             | Corrective Action                                |
+| ---------------- | ------------------------------------------------------- | ------------------------------------------------ |
+| **Maintainable** | Easy to update when requirements change                 | Extract reusable factories and helpers           |
+| **Consistent**   | Deterministic results; do not depend on execution order | Eliminate shared state between tests             |
+| **Fast**         | Quick execution; do not block the flow                  | Replace redundant E2E tests with unit tests      |
+| **Isolated**     | Each test is independent                                | Reset mocks and state in beforeEach              |
+| **Readable**     | Purpose is clear without additional context             | Use AAA pattern (Arrange-Act-Assert)             |
+| **Expressive**   | Names describe expected behavior                        | `should return error when idCard does not exist` |
 
 > **Rule:** If a test does not meet 4/6 MC-FIRE criteria after the refactor, refactor the test as well.
 
@@ -52,15 +52,17 @@ After each refactoring, verify that the resulting tests meet these criteria:
 ```typescript
 // Example of reusable factory
 // test/factories/appointment.factory.ts
-import type { Appointment } from '@/domain/entities/appointment';
+import type { Appointment } from "@/domain/entities/appointment";
 
-export function buildAppointment(overrides: Partial<Appointment> = {}): Appointment {
+export function buildAppointment(
+  overrides: Partial<Appointment> = {},
+): Appointment {
   return {
-    id: 'default-id',
+    id: "default-id",
     idCard: 12345,
-    fullName: 'Test Patient',
-    priority: 'NORMAL',
-    status: 'PENDING',
+    fullName: "Test Patient",
+    priority: "NORMAL",
+    status: "PENDING",
     ...overrides,
   };
 }
@@ -72,12 +74,12 @@ export function buildAppointment(overrides: Partial<Appointment> = {}): Appointm
 
 When refactoring state management towards Zustand, apply:
 
-| Pattern | Before (anti-pattern) | After (correct) |
-|---|---|---|
-| Atomic selectors | `const { todos, filter, user } = useStore()` | `const todos = useStore(s => s.todos)` |
-| Actions as events | `setTodos([...todos, newTodo])` | `addTodo(newTodo)` |
-| State/actions separation | Everything mixed in a flat object | State and actions clearly separated |
-| Per-request store (SSR) | Global store in module (singleton) | Store injected via Context per request |
+| Pattern                  | Before (anti-pattern)                        | After (correct)                        |
+| ------------------------ | -------------------------------------------- | -------------------------------------- |
+| Atomic selectors         | `const { todos, filter, user } = useStore()` | `const todos = useStore(s => s.todos)` |
+| Actions as events        | `setTodos([...todos, newTodo])`              | `addTodo(newTodo)`                     |
+| State/actions separation | Everything mixed in a flat object            | State and actions clearly separated    |
+| Per-request store (SSR)  | Global store in module (singleton)           | Store injected via Context per request |
 
 ### Clean Architecture in Presentation Layer
 
@@ -94,6 +96,7 @@ rlapp-frontend/src/
 ```
 
 **Migration rules:**
+
 1. Move types and interfaces to `domain/` if they do not depend on React or Next.js.
 2. Move state logic to `application/stores/` as Zustand stores.
 3. Move API/WebSocket calls to `infrastructure/`.
@@ -102,6 +105,7 @@ rlapp-frontend/src/
 ### Next.js App Router
 
 When refactoring pages, respect App Router conventions:
+
 - Separate Server Components from Client Components (`'use client'`).
 - Move hooks and interactive state to dedicated client components.
 - Keep layouts and pages as lightweight as possible (delegating to components).
@@ -118,13 +122,13 @@ When refactoring pages, respect App Router conventions:
 
 ### Technical Debt Indicators
 
-| Indicator | Alert Threshold |
-|---|---|
+| Indicator                           | Alert Threshold                               |
+| ----------------------------------- | --------------------------------------------- |
 | Unresolved cross-layer dependencies | Any import that violates the inward flow rule |
-| Duplicated code | More than 3 identical lines in 2+ files |
-| Test coverage | Drop below 80% in any module |
-| Cyclomatic complexity | Functions with complexity > 10 |
-| Pending `// HUMAN CHECK` | More than 5 unresolved in the same module |
+| Duplicated code                     | More than 3 identical lines in 2+ files       |
+| Test coverage                       | Drop below 80% in any module                  |
+| Cyclomatic complexity               | Functions with complexity > 10                |
+| Pending `// HUMAN CHECK`            | More than 5 unresolved in the same module     |
 
 ## Context
 
@@ -149,50 +153,50 @@ src/
 │   ├── use-cases/       ← Inbound port implementations
 │   └── dtos/            ← Data Transfer Objects
 ├── infrastructure/      ← Concrete adapters
-│   ├── persistence/     ← Mongoose models, repositories
+│   ├── persistence/     ← PostgreSQL models, repositories
 │   ├── messaging/       ← RabbitMQ adapters
 │   ├── web/             ← Controllers, WebSocket Gateways
-│   └── config/          ← NestJS modules, providers
+│   └── config/          ← service composition, providers
 ```
 
 ## Rules
 
 ### Strict Layer Separation
 
-1. **domain/** CANNOT import from `infrastructure/`, `@nestjs/*`, `mongoose`, `amqplib`, or any infrastructure library.
+1. **domain/** CANNOT import from `infrastructure/`, `Microsoft.AspNetCore.*`, `Npgsql`, `Dapper`, `RabbitMQ.Client`, or any infrastructure library.
 2. **application/** can import from `domain/` but NOT from `infrastructure/`.
 3. **infrastructure/** implements the ports defined in `domain/ports/`.
 4. All dependencies flow inwards: `infra → app → domain`.
 
 ### Mandatory SOLID Principles
 
-| Principle | Application                                                                               |
-| --------- | ----------------------------------------------------------------------------------------- |
-| **SRP**   | Each class has a single responsibility. Separate business logic from orchestration.       |
-| **OCP**   | New features are added by creating new adapters, not modifying the domain.                |
-| **LSP**   | Adapters must fulfill the port contract without altering expected behavior.               |
-| **ISP**   | Small and specific port interfaces. Do not force unnecessary implementations.             |
-| **DIP**   | The domain defines interfaces (ports). The infrastructure implements them (adapters).     |
+| Principle | Application                                                                           |
+| --------- | ------------------------------------------------------------------------------------- |
+| **SRP**   | Each class has a single responsibility. Separate business logic from orchestration.   |
+| **OCP**   | New features are added by creating new adapters, not modifying the domain.            |
+| **LSP**   | Adapters must fulfill the port contract without altering expected behavior.           |
+| **ISP**   | Small and specific port interfaces. Do not force unnecessary implementations.         |
+| **DIP**   | The domain defines interfaces (ports). The infrastructure implements them (adapters). |
 
 ### Design Patterns to Apply
 
-| Category           | Pattern                 | Use in the project                                           |
-| ------------------ | ----------------------- | ------------------------------------------------------------ |
-| **Creational**     | Factory                 | Create domain entities with encapsulated validation          |
-| **Creational**     | Singleton               | NestJS `@Injectable()` — single instance of services         |
-| **Creational**     | Builder                 | Step-by-step construction of complex queries                 |
-| **Structural**     | Repository              | Abstract persistence behind an outbound port                 |
-| **Structural**     | Adapter                 | Connect infrastructure (Mongoose, RabbitMQ) to ports         |
-| **Structural**     | Facade                  | Use Cases simplify orchestration of multiple services        |
-| **Structural**     | Decorator               | DTOs with `class-validator` — declarative validation         |
-| **Structural**     | Proxy                   | Automatic logging/caching over repositories                  |
-| **Behavioral**     | Observer                | WebSocket notifications via domain events                    |
-| **Behavioral**     | Strategy                | ack/nack strategies in consumer based on error type          |
-| **Behavioral**     | Command                 | RabbitMQ messages as serialized commands                     |
-| **Behavioral**     | Chain of Responsibility | NestJS Pipeline (Guards → Pipes → Controllers)               |
-| **Behavioral**     | State                   | `AppointmentStatus` transitions with validation              |
-| **Behavioral**     | Template Method         | Base flow for message processing                             |
-| **Behavioral**     | Mediator                | NestJS Modules as dependency coordinators                    |
+| Category       | Pattern                 | Use in the project                                      |
+| -------------- | ----------------------- | ------------------------------------------------------- |
+| **Creational** | Factory                 | Create domain entities with encapsulated validation     |
+| **Creational** | Singleton               | DI container registration — single instance of services |
+| **Creational** | Builder                 | Step-by-step construction of complex queries            |
+| **Structural** | Repository              | Abstract persistence behind an outbound port            |
+| **Structural** | Adapter                 | Connect infrastructure (PostgreSQL, RabbitMQ) to ports  |
+| **Structural** | Facade                  | Use Cases simplify orchestration of multiple services   |
+| **Structural** | Decorator               | DTOs with `class-validator` — declarative validation    |
+| **Structural** | Proxy                   | Automatic logging/caching over repositories             |
+| **Behavioral** | Observer                | WebSocket notifications via domain events               |
+| **Behavioral** | Strategy                | ack/nack strategies in consumer based on error type     |
+| **Behavioral** | Command                 | RabbitMQ messages as serialized commands                |
+| **Behavioral** | Chain of Responsibility | API pipeline (middlewares → filters → handlers)         |
+| **Behavioral** | State                   | `AppointmentStatus` transitions with validation         |
+| **Behavioral** | Template Method         | Base flow for message processing                        |
+| **Behavioral** | Mediator                | Application services as dependency coordinators         |
 
 > **Complete reference:** See `assets/docs/architecture-patterns-catalog.md` for definitions, code examples, and technical justifications for each pattern.
 
@@ -214,7 +218,7 @@ src/
 
 ```bash
 # Detect infrastructure imports in business logic
-grep -rn "import.*mongoose\|import.*@nestjs\|import.*amqplib" backend/*/src/
+grep -rn "import.*Npgsql\|import.*RabbitMQ.Client\|import.*Microsoft.AspNetCore" rlapp-backend/src/Services/WaitingRoom/WaitingRoom.Domain
 ```
 
 ### Step 2 — Define ports (interfaces)
@@ -252,8 +256,8 @@ export class Appointment {
 Implement the ports with concrete technologies:
 
 ```typescript
-// infrastructure/persistence/mongoose-appointment.repository.ts
-// Pattern: Adapter + Repository — Implements the port with Mongoose
+// infrastructure/persistence/postgres-appointment.repository.cs
+// Pattern: Adapter + Repository — Implements the port with PostgreSQL
 @Injectable()
 export class MongooseAppointmentRepository implements AppointmentRepository {
   constructor(
@@ -271,7 +275,7 @@ export class MongooseAppointmentRepository implements AppointmentRepository {
 
 ```bash
 # The domain MUST NOT have infrastructure imports
-grep -rn "import.*mongoose\|import.*@nestjs\|import.*amqplib" backend/*/src/domain/
+grep -rn "using Npgsql\|using RabbitMQ.Client\|using Microsoft.AspNetCore" rlapp-backend/src/Services/WaitingRoom/WaitingRoom.Domain
 # Expected result: 0 matches
 ```
 

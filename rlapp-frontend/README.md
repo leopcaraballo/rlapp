@@ -2,8 +2,7 @@
 
 Frontend desarrollado con **Next.js 16 (App Router)** + **React 19** para la gestion completa de una sala de espera medica en tiempo real.
 Implementa **Arquitectura Hexagonal** (Ports & Adapters), comunicacion en tiempo real via **SignalR**, y un flujo clinico completo: recepcion, caja, consultorios medicos y pantalla publica de turnos.
-
-## Objetivo
+Frontend en Next.js 16 + React 19 para operación de sala de espera médica.
 
 Proveer una interfaz completa, tipada y resiliente para:
 
@@ -277,8 +276,8 @@ NEXT_PUBLIC_DEFAULT_QUEUE_ID=QUEUE-01
 | `NEXT_PUBLIC_DEFAULT_QUEUE_ID` | ID de cola por defecto | `QUEUE-01` |
 
 ## Instalacion
-
 ```bash
+cd rlapp-frontend
 npm install
 ```
 
@@ -291,10 +290,9 @@ npm run dev
 Aplicacion disponible en `http://localhost:3000`.
 
 ## Build produccion
-
 ```bash
-npm run build
-npm start
+npm test
+npm run test:cov
 ```
 
 ## Docker
@@ -341,6 +339,34 @@ Para usarlo, configurar `NEXT_PUBLIC_API_BASE_URL=http://localhost:3000/api/mock
 - Sanitización de inputs
 - Código documentado
 - Separación de responsabilidades
+
+
+## Observaciones tecnicas relevantes
+
+npm run dev
+```
+
+Aplicación disponible en `http://localhost:3000` (o `3001` en docker compose del proyecto).
+
+## Estructura funcional
+
+- `src/app`: rutas y pantallas
+- `src/hooks`: orquestación de estado y casos de uso de UI
+- `src/services/api`: endpoint client de sala de espera
+- `src/services/signalr`: conexión hub SignalR
+- `src/infrastructure/adapters`: HTTP y real-time adapters
+- `src/domain`: contratos y modelos de dominio
+- `test`: pruebas unitarias y de integración de frontend
+
+## Observaciones técnicas relevantes
+
+- Existe `SocketIoAdapter`, pero el runtime principal usa `SignalRAdapter`.
+- El archivo `src/proxi.ts` define middleware de seguridad y rate limiting; verificar convención de activación en Next.js (`middleware.ts`) para asegurar ejecución en producción.
+- El frontend envía `X-Correlation-Id` y `X-Idempotency-Key` en commands; el backend usa correlación y la idempotencia se materializa en event store y outbox.
+
+## Pruebas
+
+Pruebas presentes en `test/**` con Jest y e2e con Playwright.
 
 ## Scripts
 

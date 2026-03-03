@@ -6,13 +6,13 @@
 
 | Skill | Path | Trigger | Scope |
 |-------|------|---------|-------|
-| `backend-api (Senior Level)` | `skills/backend-api/skill.md` | When feedback mentions services, controllers, DTOs, validation, message queues, ack/nack, or business logic in the backend. | `backend/producer/src/, backend/consumer/src/` |
+| `backend-api (Senior Level)` | `skills/backend-api/skill.md` | When feedback mentions services, controllers, DTOs, validation, message queues, ack/nack, or business logic in the backend. | `rlapp-backend/src/Services/, rlapp-backend/src/BuildingBlocks/` |
 | `conventional-commits (Senior Level)` | `skills/conventional-commits/skill.md` | When creating commits, pushing code, formatting commit messages, or when feedback mentions git history, commit hygiene, or semantic versioning. | `.git/, scripts/` |
-| `docker-infra (Senior Level)` | `skills/docker-infra/skill.md` | When feedback mentions Docker, healthchecks, credentials, environment variables, ports, volumes, deployment, or infrastructure security. | `docker-compose.yml, .env, .env.example, backend/producer/Dockerfile, backend/consumer/Dockerfile, frontend/Dockerfile` |
-| `frontend-ui (Senior Level)` | `skills/frontend-ui/skill.md` | When feedback mentions UI components, WebSocket, CSS, styling, pages, dashboard, or frontend behavior. | `frontend/src/` |
-| `refactor-arch (Senior Level)` | `skills/refactor-arch/skill.md` | When feedback mentions architecture refactoring, hexagonal architecture, SOLID principles, design patterns, ports and adapters, domain isolation, coupling, decoupling, or dependency inversion. | `backend/producer/src/, backend/consumer/src/, frontend/src/` |
-| `security-audit` | `skills/security-audit/skill.md` | When feedback mentions security, vulnerabilities, audit, authentication, authorization, OWASP, secrets, certificates, encryption, or pen-testing. | `backend/producer/src/, backend/consumer/src/, frontend/src/, docker-compose.yml, .env.example` |
+| `docker-infra (Senior Level)` | `skills/docker-infra/skill.md` | When feedback mentions Docker, healthchecks, credentials, environment variables, ports, volumes, deployment, or infrastructure security. | `docker-compose.yml, rlapp-backend/Dockerfile, rlapp-frontend/Dockerfile, scripts/` |
+| `frontend-ui (Senior Level)` | `skills/frontend-ui/skill.md` | When feedback mentions UI components, WebSocket, CSS, styling, pages, dashboard, or frontend behavior. | `rlapp-frontend/src/` |
+| `refactor-arch (Senior Level)` | `skills/refactor-arch/skill.md` | When feedback mentions architecture refactoring, hexagonal architecture, SOLID principles, design patterns, ports and adapters, domain isolation, coupling, decoupling, or dependency inversion. | `rlapp-backend/src/, rlapp-frontend/src/` |
+| `security-audit` | `skills/security-audit/skill.md` | When feedback mentions security, vulnerabilities, audit, authentication, authorization, OWASP, secrets, certificates, encryption, or pen-testing. | `rlapp-backend/src/, rlapp-frontend/src/, docker-compose.yml` |
 | `skill-creator (Senior Level)` | `skills/skill-creator/skill.md` | When a task requires a specific capability not covered by existing skills in /skills. | `skills/, .agent/workflows/` |
-| `testing-qa (Senior Level)` | `skills/testing-qa/skill.md` | When feedback mentions tests, specs, unit testing, mocking, coverage, test failures, or QA validation. | `backend/producer/test/, backend/consumer/test/, backend/consumer/src/**/*.spec.ts, backend/producer/src/**/*.spec.ts, rlapp-frontend/test/, rlapp-frontend/src/**/*.test.{ts,tsx}` |
+| `testing-qa (Senior Level)` | `skills/testing-qa/skill.md` | When feedback mentions tests, specs, unit testing, mocking, coverage, test failures, or QA validation. | `rlapp-backend/src/Tests/, rlapp-frontend/test/, rlapp-frontend/src/**/*.test.{ts,tsx}` |
 
 <!-- END SKILL REFERENCES -->

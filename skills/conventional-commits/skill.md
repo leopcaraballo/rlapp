@@ -24,44 +24,44 @@ All commits in this project MUST follow the [Conventional Commits 1.0.0](https:/
 
 ### Allowed Types
 
-| Type       | When to use                                         | Example                                                           |
-| ---------- | --------------------------------------------------- | ----------------------------------------------------------------- |
-| `feat`     | New user-facing feature                             | `feat(consumer): implement randomized attention duration`         |
-| `fix`      | Bug fix                                             | `fix(producer): resolve validation pipe not catching DTO errors`  |
-| `refactor` | Code change without altering external behavior      | `refactor(orchestrator): consolidate to single GEMINI.md`         |
-| `docs`     | Documentation changes only                          | `docs(traceability): rewrite AI_WORKFLOW.md with interaction log` |
-| `test`     | Adding or correcting tests                          | `test(producer): add 36 unit tests for appointments service`      |
-| `chore`    | Maintenance tasks (deps, configs, cleanup)          | `chore(cleanup): remove obsolete DEBT_REPORT.MD`                  |
-| `build`    | Changes in build system or dependencies             | `build(docker): update Node.js image from alpine to slim`         |
-| `ci`       | CI/CD pipeline changes                              | `ci(github): add lint workflow on pull requests`                  |
-| `perf`     | Performance improvements                            | `perf(scheduler): precalculate office array in constructor`       |
-| `style`    | Formatting changes (spaces, semicolons, etc.)       | `style(frontend): fix indentation in page.module.css`             |
-| `revert`   | Reverts a previous commit                           | `revert: feat(consumer): implement randomized attention`          |
+| Type       | When to use                                    | Example                                                            |
+| ---------- | ---------------------------------------------- | ------------------------------------------------------------------ |
+| `feat`     | New user-facing feature                        | `feat(waitingroom-api): add cashier mark-absent endpoint`          |
+| `fix`      | Bug fix                                        | `fix(waitingroom-api): handle invalid queue id in command handler` |
+| `refactor` | Code change without altering external behavior | `refactor(orchestrator): consolidate to single GEMINI.md`          |
+| `docs`     | Documentation changes only                     | `docs(traceability): rewrite AI_WORKFLOW.md with interaction log`  |
+| `test`     | Adding or correcting tests                     | `test(waitingroom-domain): add invariant tests for WaitingQueue`   |
+| `chore`    | Maintenance tasks (deps, configs, cleanup)     | `chore(cleanup): remove obsolete DEBT_REPORT.MD`                   |
+| `build`    | Changes in build system or dependencies        | `build(docker): update Node.js image from alpine to slim`          |
+| `ci`       | CI/CD pipeline changes                         | `ci(github): add lint workflow on pull requests`                   |
+| `perf`     | Performance improvements                       | `perf(scheduler): precalculate office array in constructor`        |
+| `style`    | Formatting changes (spaces, semicolons, etc.)  | `style(frontend): fix indentation in page.module.css`              |
+| `revert`   | Reverts a previous commit                      | `revert: feat(waitingroom-api): add cashier mark-absent endpoint`  |
 
 ### Project Scopes
 
-| Scope          | Applies to                                                              |
-| -------------- | ----------------------------------------------------------------------- |
-| `producer`     | `backend/producer/src/`                                                 |
-| `consumer`     | `backend/consumer/src/`                                                 |
-| `frontend`     | `frontend/src/`                                                         |
-| `docker`       | `docker-compose.yml`, `Dockerfile`s                                     |
-| `orchestrator` | `.github/copilot-instructions.md`, `GEMINI.md`, orchestration system    |
-| `skills`       | `skills/*/`                                                             |
-| `scripts`      | `scripts/`                                                              |
-| `docs`         | `AI_WORKFLOW.md`, `DEBT_REPORT.md`, `README.md`, etc.                   |
-| `arch`         | Hexagonal architecture changes, ports and adapters                      |
-| `deps`         | package.json, dependencies                                              |
+| Scope                | Applies to                                                           |
+| -------------------- | -------------------------------------------------------------------- |
+| `waitingroom-api`    | `rlapp-backend/src/Services/WaitingRoom/WaitingRoom.API/`            |
+| `waitingroom-domain` | `rlapp-backend/src/Services/WaitingRoom/WaitingRoom.Domain/`         |
+| `frontend`           | `rlapp-frontend/src/`                                                |
+| `docker`             | `docker-compose.yml`, `Dockerfile`s                                  |
+| `orchestrator`       | `.github/copilot-instructions.md`, `GEMINI.md`, orchestration system |
+| `skills`             | `skills/*/`                                                          |
+| `scripts`            | `scripts/`                                                           |
+| `docs`               | `AI_WORKFLOW.md`, `DEBT_REPORT.md`, `README.md`, etc.                |
+| `arch`               | Hexagonal architecture changes, ports and adapters                   |
+| `deps`               | package.json, dependencies                                           |
 
 ### Formatting Rules
 
 1. **Lowercase description** — Do not start with a capital letter after the `:`.
-   - Good: `feat(producer): add validation pipe`
-   - Bad: `feat(producer): Add validation pipe`
+   - Good: `feat(waitingroom-api): add request validation filter`
+   - Bad: `feat(waitingroom-api): Add request validation filter`
 
 2. **No trailing period** — Do not end the description with `.`
-   - Good: `fix(consumer): resolve ack/nack race condition`
-   - Bad: `fix(consumer): resolve ack/nack race condition.`
+   - Good: `fix(waitingroom-worker): resolve outbox dispatch race condition`
+   - Bad: `fix(waitingroom-worker): resolve outbox dispatch race condition.`
 
 3. **Present imperative** — Use the imperative mood.
    - Good: `add`, `fix`, `remove`, `update`, `implement`, `refactor`
@@ -72,7 +72,7 @@ All commits in this project MUST follow the [Conventional Commits 1.0.0](https:/
 5. **Breaking changes** — Use `!` after the scope or `BREAKING CHANGE:` in the footer.
 
    ```
-   feat(producer)!: rename cedula to idCard across all DTOs
+   feat(waitingroom-api)!: rename patient document field across DTOs
 
    BREAKING CHANGE: All API consumers must update field names
    from 'cedula' to 'idCard' and 'nombre' to 'fullName'.
@@ -81,7 +81,7 @@ All commits in this project MUST follow the [Conventional Commits 1.0.0](https:/
 6. **Multiple changes** — If a commit spans multiple files, use the body with `-` to list them:
 
    ```
-   refactor(arch): extract domain entities from mongoose schemas
+   refactor(arch): extract domain entities from persistence models
 
    - Create domain/entities/appointment.entity.ts (pure class)
    - Create domain/ports/outbound/appointment.repository.ts (interface)
@@ -92,7 +92,7 @@ All commits in this project MUST follow the [Conventional Commits 1.0.0](https:/
 7. **Actor attribution** — In the body, indicate the actor if relevant:
 
    ```
-   fix(consumer): resolve race condition in office assignment
+   fix(waitingroom-worker): resolve race condition in outbox dispatch
 
    Co-authored-by: IA Agent
    Reviewed-by: Human

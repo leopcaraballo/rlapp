@@ -1,6 +1,6 @@
 ---
 name: backend-api (Senior Level)
-description: Development of high-performance NestJS microservices, message orchestration, and pure domain logic.
+description: Development of high-performance .NET services, message orchestration, and pure domain logic.
 license: "MIT"
 ---
 
@@ -8,28 +8,28 @@ license: "MIT"
 
 ## Context
 
-This project uses **NestJS** with two microservices:
+This project uses **.NET** services with API + Worker architecture:
 
-- **Producer:** REST API + WebSocket Gateway. Receives appointment requests and publishes to RabbitMQ.
-- **Consumer:** Listens to RabbitMQ queue, persists to MongoDB, and runs a Scheduler to assign offices.
+- **API:** Receives HTTP commands and persists events in PostgreSQL Event Store + Outbox.
+- **Worker:** Reads Outbox and publishes events to RabbitMQ with retry/backoff policies.
 
 ## Rules
 
-1. All DTOs must use `class-validator` decorators with `ValidationPipe` globally enabled.
+1. All DTOs must use explicit validation (DataAnnotations/FluentValidation) and centralized request validation.
 2. Field naming in **English**: `idCard`, `fullName`, `officeNumber`, `status`.
 3. Shared event type: `AppointmentEventPayload`.
 4. Every critical decision must include `// HUMAN CHECK` with justification.
 5. Services should handle errors explicitly — no silent catches.
-6. Consumer must use explicit `ack`/`nack` strategy:
+6. Worker/dispatcher must use explicit publish/retry strategy:
    - `ack` on success only.
    - `nack(msg, false, false)` for validation errors (no requeue).
    - `nack(msg, false, true)` for transient errors (requeue).
 
 ## Tools Permitted
 
-- **Read/Write:** Files within `backend/producer/src/` and `backend/consumer/src/`
+- **Read/Write:** Files within `rlapp-backend/src/Services/WaitingRoom/` and `rlapp-backend/src/BuildingBlocks/`
 - **Explore:** Use `grep`/`glob` to locate affected services, controllers, DTOs before changes
-- **Terminal:** `npm run test`, `npm run lint`, `npm run build` (within `backend/producer` or `backend/consumer`)
+- **Terminal:** `dotnet test`, `dotnet build`
 
 ## Workflow
 
@@ -42,5 +42,5 @@ This project uses **NestJS** with two microservices:
 
 ## Assets
 
-- `assets/templates/service-pattern.ts` — Reference NestJS service with race condition prevention
+- `assets/templates/service-pattern.ts` — Reference service pattern with race condition prevention
 - `assets/docs/ack-nack-strategy.md` — Detailed ack/nack documentation

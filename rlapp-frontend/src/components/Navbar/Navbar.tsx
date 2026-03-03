@@ -1,14 +1,14 @@
 "use client";
 
 import Link from "next/link";
-import { usePathname } from "next/navigation";
+import { usePathname, useRouter } from "next/navigation";
+
+import { useAuth } from "@/context/AuthContext";
+import { isPublicPath, isRouteAllowed } from "@/security/routeAccess";
 
 import styles from "./Navbar.module.css";
 
 const DEFAULT_QUEUE_ID = process.env.NEXT_PUBLIC_DEFAULT_QUEUE_ID || "QUEUE-01";
-
-/** Rutas donde el navbar NO debe aparecer */
-const HIDDEN_ROUTES = ["/"];
 
 /** Listado de vínculos de navegación global */
 const NAV_LINKS: Array<{ href: string; label: string }> = [
@@ -26,10 +26,29 @@ const NAV_LINKS: Array<{ href: string; label: string }> = [
  */
 export default function Navbar(): React.ReactNode {
   const pathname = usePathname();
+  const router = useRouter();
+  const { role, isAuthenticated, signOut } = useAuth();
 
-  if (HIDDEN_ROUTES.includes(pathname)) {
+  const isHidden =
+    pathname === "/" ||
+    pathname === "/login" ||
+    pathname.startsWith("/display");
+
+  if (isHidden || isPublicPath(pathname)) {
     return null;
   }
+
+  if (!isAuthenticated || !role) {
+    return null;
+  }
+
+  if (role === "patient") {
+    return null;
+  }
+
+  const visibleLinks = NAV_LINKS.filter((link) =>
+    isRouteAllowed(role, link.href),
+  );
 
   return (
     <nav className={styles.topNav}>
@@ -37,7 +56,7 @@ export default function Navbar(): React.ReactNode {
         Turnos Disponibles
       </Link>
 
-      {NAV_LINKS.map(({ href, label }) => {
+      {visibleLinks.map(({ href, label }) => {
         const isActive = pathname.startsWith(href);
         return (
           <Link
@@ -49,6 +68,17 @@ export default function Navbar(): React.ReactNode {
           </Link>
         );
       })}
+
+      <button
+        type="button"
+        className={styles.navLink}
+        onClick={() => {
+          signOut();
+          router.replace("/login");
+        }}
+      >
+        Cerrar sesion
+      </button>
     </nav>
   );
 }

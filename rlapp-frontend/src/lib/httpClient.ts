@@ -154,6 +154,16 @@ async function request<T>(
 }
 
 /**
+ * Genera Idempotency-Key único para operaciones de cambio de estado.
+ * Requerido por el backend para garantizar procesamiento idempotente.
+ */
+function idempotencyKey(): string {
+  return typeof crypto !== "undefined" && crypto.randomUUID
+    ? crypto.randomUUID()
+    : `${Date.now()}-${Math.floor(Math.random() * 10000)}`;
+}
+
+/**
  * API pública
  */
 
@@ -164,7 +174,10 @@ export function httpGet<T>(url: string) {
 export function httpPost<T>(url: string, body: unknown) {
   return request<T>(url, {
     method: "POST",
-    headers: { "Content-Type": "application/json" },
+    headers: {
+      "Content-Type": "application/json",
+      "Idempotency-Key": idempotencyKey(),
+    },
     body: JSON.stringify(body),
   });
 }

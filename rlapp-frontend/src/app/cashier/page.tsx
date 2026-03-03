@@ -32,7 +32,7 @@ export default function CashierPage() {
   const queueId = search?.get("queue") ?? env.DEFAULT_QUEUE_ID;
   const alert = useAlert();
   const cashier = useCashierStation();
-  const { queueState, refresh } = useWaitingRoom(queueId);
+  const { queueState, nextTurn, refresh } = useWaitingRoom(queueId);
 
   // Paciente seleccionado de la lista
   const [selected, setSelected] = useState<PatientInQueueDto | null>(null);
@@ -44,6 +44,27 @@ export default function CashierPage() {
       cashier.clearError();
     }
   }, [cashier.error, alert, cashier]);
+
+  // // HUMAN CHECK: Auto-selecciona el paciente devuelto por nextTurn cuando su
+  // estado es "cashier-called". Esto evita que el cajero tenga que buscar
+  // manualmente al paciente recién llamado, ya que la proyección lo elimina
+  // de la lista de espera al llamarlo. Comportamiento esperado: solo existe
+  // un nextTurn a la vez por cola.
+  useEffect(() => {
+    if (
+      nextTurn &&
+      nextTurn.status === "cashier-called" &&
+      (selected === null || selected.patientId !== nextTurn.patientId)
+    ) {
+      setSelected({
+        patientId: nextTurn.patientId,
+        patientName: nextTurn.patientName,
+        priority: nextTurn.priority,
+        checkInTime: nextTurn.calledAt ?? new Date().toISOString(),
+        waitTimeMinutes: 0,
+      });
+    }
+  }, [nextTurn, selected]);
 
   /** Seleccionar paciente de la lista de espera. */
   function selectPatient(patient: PatientInQueueDto) {
@@ -78,6 +99,8 @@ export default function CashierPage() {
   }
 
   const patients = queueState?.patientsInQueue ?? [];
+  // Turno activo: paciente llamado a caja pero aún pendiente de acción
+  const activeTurn = nextTurn?.status === "cashier-called" ? nextTurn : null;
 
   return (
     <main className={localStyles.splitLayout}>
@@ -98,6 +121,21 @@ export default function CashierPage() {
           </button>
         </header>
 
+        {/* Turno activo — paciente llamado a caja y pendiente de pago */}
+        {activeTurn && (
+          <div className={localStyles.activeTurnCard}>
+            <span className={localStyles.activeTurnLabel}>
+              Turno activo en caja
+            </span>
+            <span className={localStyles.activeTurnName}>
+              {activeTurn.patientName}
+            </span>
+            <span className={localStyles.activeTurnId}>
+              {activeTurn.patientId}
+            </span>
+          </div>
+        )}
+
         {patients.length === 0 ? (
           <div className={localStyles.emptyState}>
             <span className={localStyles.emptyIcon}>🪑</span>
@@ -115,8 +153,12 @@ export default function CashierPage() {
                     onClick={() => selectPatient(p)}
                   >
                     <div className={localStyles.patientInfo}>
-                      <span className={localStyles.patientName}>{p.patientName}</span>
-                      <span className={localStyles.patientId}>{p.patientId}</span>
+                      <span className={localStyles.patientName}>
+                        {p.patientName}
+                      </span>
+                      <span className={localStyles.patientId}>
+                        {p.patientId}
+                      </span>
                     </div>
                     <div className={localStyles.patientMeta}>
                       <span
@@ -124,7 +166,9 @@ export default function CashierPage() {
                       >
                         {PRIORITY_LABEL[p.priority] ?? p.priority}
                       </span>
-                      <span className={localStyles.waitTime}>{p.waitTimeMinutes} min</span>
+                      <span className={localStyles.waitTime}>
+                        {p.waitTimeMinutes} min
+                      </span>
                     </div>
                   </button>
                 </li>
@@ -144,7 +188,9 @@ export default function CashierPage() {
         {selected ? (
           <div className={localStyles.selectedCard}>
             <div className={localStyles.selectedHeader}>
-              <span className={localStyles.selectedName}>{selected.patientName}</span>
+              <span className={localStyles.selectedName}>
+                {selected.patientName}
+              </span>
               <span
                 className={`${localStyles.priorityBadge} ${localStyles[PRIORITY_CLASS[selected.priority] ?? "priorityMedium"]}`}
               >
@@ -154,11 +200,15 @@ export default function CashierPage() {
             <div className={localStyles.selectedDetails}>
               <div className={localStyles.detailRow}>
                 <span className={localStyles.detailLabel}>ID</span>
-                <span className={localStyles.detailValue}>{selected.patientId}</span>
+                <span className={localStyles.detailValue}>
+                  {selected.patientId}
+                </span>
               </div>
               <div className={localStyles.detailRow}>
                 <span className={localStyles.detailLabel}>Espera</span>
-                <span className={localStyles.detailValue}>{selected.waitTimeMinutes} min</span>
+                <span className={localStyles.detailValue}>
+                  {selected.waitTimeMinutes} min
+                </span>
               </div>
               <div className={localStyles.detailRow}>
                 <span className={localStyles.detailLabel}>Check-in</span>
@@ -213,4 +263,3 @@ export default function CashierPage() {
     </main>
   );
 }
-

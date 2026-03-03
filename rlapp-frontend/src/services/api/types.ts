@@ -6,6 +6,7 @@ export interface ApiError {
   message?: string;
   correlationId?: string;
   detail?: string;
+  status?: number;
 }
 
 export interface CommandSuccess {
@@ -14,6 +15,7 @@ export interface CommandSuccess {
   correlationId: string;
   eventCount: number;
   patientId?: string;
+  queueId?: string;
 }
 
 export interface WaitingRoomMonitorView {
@@ -74,7 +76,8 @@ export interface RecentAttentionRecordView {
 
 // Command DTOs (subset)
 export interface CheckInPatientDto {
-  queueId: string;
+  /** Identificador de la cola destino. Cuando se omite, el backend genera uno. */
+  queueId?: string | null;
   patientId: string;
   patientName: string;
   priority: AppointmentPriority;

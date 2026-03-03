@@ -14,7 +14,9 @@ using WaitingRoom.Application.Services;
 using WaitingRoom.Domain.Events;
 using WaitingRoom.Infrastructure.Messaging;
 using WaitingRoom.Infrastructure.Persistence.EventStore;
+using WaitingRoom.Infrastructure.Persistence;
 using WaitingRoom.Infrastructure.Persistence.Outbox;
+using WaitingRoom.Infrastructure.Persistence.Idempotency;
 using WaitingRoom.Infrastructure.Observability;
 using WaitingRoom.Infrastructure.Projections;
 using WaitingRoom.Infrastructure.Serialization;
@@ -60,7 +62,9 @@ builder.Host.UseSerilog();
 // ==============================================================================
 
 var connectionString = builder.Configuration.GetConnectionString("EventStore")
-    ?? throw new InvalidOperationException("EventStore connection string is required");
+    ?? (builder.Environment.IsEnvironment("Testing")
+        ? "Host=localhost;Port=5432;Database=rlapp_testing;"  // Placeholder — services overridden by WebApplicationFactory
+        : throw new InvalidOperationException("EventStore connection string is required"));
 
 var rabbitMqOptions = new RabbitMqOptions();
 builder.Configuration.GetSection("RabbitMq").Bind(rabbitMqOptions);
@@ -74,11 +78,18 @@ var services = builder.Services;
 // Infrastructure — Outbox Store
 services.AddSingleton<IOutboxStore>(sp => new PostgresOutboxStore(connectionString));
 
+// Infrastructure — Idempotency Store (CRITICAL for Check-In idempotence)
+services.AddSingleton<IIdempotencyStore>(sp => new PostgresIdempotencyStore(connectionString));
+
 // Infrastructure — Lag Tracker
 services.AddSingleton<IEventLagTracker>(sp => new PostgresEventLagTracker(connectionString));
 
 // Infrastructure — Event Type Registry
 services.AddSingleton<EventTypeRegistry>(sp => EventTypeRegistry.CreateDefault());
+
+// Infrastructure — Clinical identity + queue id generation
+services.AddSingleton<IPatientIdentityRegistry>(sp => new PostgresPatientIdentityRegistry(connectionString));
+services.AddSingleton<IQueueIdGenerator, GuidQueueIdGenerator>();
 
 // Infrastructure — Event Serializer
 services.AddSingleton<EventSerializer>();
@@ -178,9 +189,14 @@ services.AddCors(options =>
 });
 
 // Health Checks
-services.AddHealthChecks()
-    .AddCheck("self", () => Microsoft.Extensions.Diagnostics.HealthChecks.HealthCheckResult.Healthy())
-    .AddNpgSql(connectionString, name: "postgres", tags: new[] { "db", "postgres" });
+var healthChecks = services.AddHealthChecks()
+    .AddCheck("self", () => Microsoft.Extensions.Diagnostics.HealthChecks.HealthCheckResult.Healthy());
+
+// Skip Postgres health check in Testing environment (no real DB)
+if (!builder.Environment.IsEnvironment("Testing"))
+{
+    healthChecks.AddNpgSql(connectionString, name: "postgres", tags: new[] { "db", "postgres" });
+}
 
 // ==============================================================================
 // APPLICATION PIPELINE
@@ -188,8 +204,20 @@ services.AddHealthChecks()
 
 var app = builder.Build();
 
+// Initialize database schemas (idempotent, safe to call multiple times)
+// Skip in Testing environment (WebApplicationFactory replaces all Postgres services)
+if (!app.Environment.IsEnvironment("Testing"))
+{
+    using var scope = app.Services.CreateScope();
+    var loggerFactory = scope.ServiceProvider.GetRequiredService<ILoggerFactory>();
+    var logger = loggerFactory.CreateLogger<DatabaseInitializer>();
+    var initializer = new DatabaseInitializer(connectionString, logger);
+    await initializer.InitializeAsync();
+}
+
 // Middleware Pipeline (order matters)
 app.UseCorrelationId();
+app.UseIdempotencyKey();  // CRITICAL: Check and cache responses by idempotency key
 app.UseMiddleware<ExceptionHandlerMiddleware>();
 app.UseCors("FrontendDev");
 
@@ -280,9 +308,8 @@ commandGroup.MapPost("/api/waiting-room/check-in", async (
     var correlationId = httpContext.Items["CorrelationId"]?.ToString() ?? Guid.NewGuid().ToString();
 
     logger.LogInformation(
-        "CheckIn request received. CorrelationId: {CorrelationId}, QueueId: {QueueId}, PatientId: {PatientId}",
+        "CheckIn request received. CorrelationId: {CorrelationId}, PatientId: {PatientId}",
         correlationId,
-        dto.QueueId,
         dto.PatientId);
 
     // Map DTO → Command
@@ -302,7 +329,11 @@ commandGroup.MapPost("/api/waiting-room/check-in", async (
 
     // Execute command via handler
     var eventCount = await handler.HandleAsync(command, cancellationToken);
-    await ProjectQueueAsync(projection, eventStore, dto.QueueId, cancellationToken);
+    var queueId = handler.LastGeneratedQueueId;
+    if (!string.IsNullOrWhiteSpace(queueId))
+    {
+        await ProjectQueueAsync(projection, eventStore, queueId, cancellationToken);
+    }
 
     logger.LogInformation(
         "CheckIn completed. CorrelationId: {CorrelationId}, EventCount: {EventCount}",
@@ -314,13 +345,15 @@ commandGroup.MapPost("/api/waiting-room/check-in", async (
         Success = true,
         Message = "Patient checked in successfully",
         CorrelationId = correlationId,
-        EventCount = eventCount
+        EventCount = eventCount,
+        QueueId = queueId
     });
 })
 .WithName("CheckInPatient")
 .WithTags("WaitingRoom")
 .WithSummary("Registrar paciente en cola de espera")
 .WithDescription("Registra un nuevo paciente en la cola de espera indicada. Genera evento PatientCheckedIn en el Event Store.")
+.AddEndpointFilter<ReceptionistOnlyFilter>()
 .Accepts<CheckInPatientDto>("application/json")
 .Produces(200)
 .Produces(400)
@@ -353,20 +386,26 @@ commandGroup.MapPost("/api/reception/register", async (
     };
 
     var eventCount = await handler.HandleAsync(command, cancellationToken);
-    await ProjectQueueAsync(projection, eventStore, dto.QueueId, cancellationToken);
+    var queueId = handler.LastGeneratedQueueId;
+    if (!string.IsNullOrWhiteSpace(queueId))
+    {
+        await ProjectQueueAsync(projection, eventStore, queueId, cancellationToken);
+    }
 
     return Results.Ok(new
     {
         Success = true,
         Message = "Patient registered successfully",
         CorrelationId = correlationId,
-        EventCount = eventCount
+        EventCount = eventCount,
+        QueueId = queueId
     });
 })
 .WithName("RegisterPatientReception")
 .WithTags("Reception")
 .WithSummary("Registrar paciente desde recepcion")
 .WithDescription("Punto de entrada para recepcionistas. Registra paciente con los mismos datos que check-in pero desde el modulo de recepcion.")
+.AddEndpointFilter<ReceptionistOnlyFilter>()
 .Accepts<CheckInPatientDto>("application/json")
 .Produces(200)
 .Produces(400)
@@ -609,7 +648,8 @@ commandGroup.MapPost("/api/medical/call-next", async (
         Message = "Next patient called for medical attention",
         CorrelationId = correlationId,
         EventCount = result.EventCount,
-        PatientId = result.PatientId
+        PatientId = result.PatientId,
+        StationId = result.StationId
     });
 })
 .WithName("MedicalCallNext")
@@ -863,7 +903,8 @@ commandGroup.MapPost("/api/waiting-room/claim-next", async (
         Message = "Patient claimed successfully",
         CorrelationId = correlationId,
         EventCount = result.EventCount,
-        PatientId = result.PatientId
+        PatientId = result.PatientId,
+        StationId = result.StationId
     });
 })
 .WithName("ClaimNextPatient")
@@ -965,8 +1006,9 @@ commandGroup.MapPost("/api/waiting-room/complete-attention", async (
 // STARTUP
 // ==============================================================================
 
-// Ensure database schema exists (for development)
-if (app.Environment.IsDevelopment())
+// Ensure database schema exists (idempotent, required for all environments)
+// Skip in Testing environment (WebApplicationFactory replaces all Postgres services)
+if (!app.Environment.IsEnvironment("Testing"))
 {
     var eventStore = app.Services.GetRequiredService<IEventStore>();
     if (eventStore is PostgresEventStore postgresEventStore)
@@ -983,3 +1025,5 @@ app.Run();
 
 Log.Information("WaitingRoom.API stopped");
 Log.CloseAndFlush();
+// Expose Program class for WebApplicationFactory in integration tests
+public partial class Program { }
