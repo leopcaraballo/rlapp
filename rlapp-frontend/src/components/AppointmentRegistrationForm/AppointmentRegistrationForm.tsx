@@ -8,14 +8,16 @@ import { sanitizeText } from "@/security/sanitize";
 
 import styles from "./AppointmentRegistrationForm.module.css";
 
-/**
- * 🛡️ HUMAN CHECK:
- * UI component for appointment registration.
- */
+/** Acepta entre 6 y 12 dígitos numéricos (cédula/documento colombiano). */
+const ID_CARD_PATTERN = /^\d{6,12}$/;
+
+type Priority = "Urgent" | "High" | "Medium" | "Low";
+
+// HUMAN CHECK: Si el dominio incorpora nuevas prioridades, actualizar Priority y las opciones del select.
 export default function AppointmentRegistrationForm() {
   const [fullName, setFullName] = useState("");
   const [idCard, setIdCard] = useState("");
-  const [priority, setPriority] = useState<"Urgent" | "High" | "Medium" | "Low">("Medium");
+  const [priority, setPriority] = useState<Priority>("Medium");
 
   const { register, loading, success, error } = useAppointmentRegistration();
   const [validationError, setValidationError] = useState<string | null>(null);
@@ -32,8 +34,8 @@ export default function AppointmentRegistrationForm() {
       return;
     }
 
-    // Validar que idCard tenga entre 6 y 12 dígitos numéricos
-    if (!/^\d{6,12}$/.test(safeIdCard)) {
+    // validar que idCard tenga entre 6 y 12 dígitos numéricos
+    if (!ID_CARD_PATTERN.test(safeIdCard)) {
       setValidationError(
         "El número de identificación debe tener entre 6 y 12 dígitos.",
       );
@@ -80,7 +82,7 @@ export default function AppointmentRegistrationForm() {
         <select
           value={priority}
           onChange={(e) =>
-            setPriority(e.target.value as "Urgent" | "High" | "Medium" | "Low")
+            setPriority(e.target.value as Priority)
           }
           className={styles.input}
           disabled={loading}

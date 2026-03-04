@@ -1,6 +1,7 @@
 import { act, render, screen, waitFor } from "@testing-library/react";
 import React from "react";
 
+import type { ConnectionStatus } from "@/components/WebSocketStatus";
 import AppointmentsScreen from "@/app/page";
 
 function createMockAudio() {
@@ -22,7 +23,7 @@ function defaultHookReturn() {
     error: null as string | null,
     connected: false,
     isConnecting: false,
-    connectionStatus: "connecting" as const,
+    connectionStatus: "connecting" as ConnectionStatus,
   };
 }
 
