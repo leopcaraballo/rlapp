@@ -35,7 +35,8 @@ jest.mock("@/context/AlertContext", () => ({
 }));
 
 const mockMedical = {
-  busy: false, error: null, lastResult: null,
+  busy: false, error: null,
+  lastResult: null as { patientId?: string; stationId?: string } | null,
   claim: jest.fn(), call: jest.fn(), complete: jest.fn(),
   markAbsent: jest.fn(), clearError: jest.fn(),
 };

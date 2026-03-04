@@ -9,6 +9,7 @@
  * Convención: it.failing() = el test DEBE fallar contra v0 (=evidencia RED).
  * Commit par (GREEN): test/infrastructure/httpCommandAdapter.coverage.spec.ts
  */
+export {};
 
 type FetchMock = jest.Mock;
 

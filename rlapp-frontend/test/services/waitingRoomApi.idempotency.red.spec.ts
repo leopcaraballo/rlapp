@@ -7,6 +7,7 @@
  * Convención: it.failing() = el test DEBE fallar contra v0 (=evidencia RED).
  * Commit par (GREEN): test/services/waitingRoomApi.spec.ts
  */
+export {};
 
 type FetchMock = jest.Mock;
 

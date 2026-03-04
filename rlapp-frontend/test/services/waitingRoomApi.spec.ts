@@ -6,6 +6,7 @@
  * checkInPatient (postCommand + evento), callNextCashier, activateConsultingRoom, markAbsent.
  * Usa global.fetch mock (mismo patrón que adapters.coverage.spec.ts).
  */
+export {};
 
 const setApiTestEnv = () => {
   process.env.NEXT_PUBLIC_API_BASE_URL = "http://api.test";

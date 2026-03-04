@@ -22,8 +22,8 @@ jest.mock("@/hooks/useConsultingRooms", () => {
   return {
     useConsultingRooms: () => {
       const [busy, setBusy] = useState(false);
-      const [error, setError] = useState<string | null>(null);
-      const [lastResult, setLastResult] = useState<unknown>(null);
+      const [error, setError] = useState(null as string | null);
+      const [lastResult, setLastResult] = useState(null as unknown);
 
       const activate = useCallback(async (queueId: string, stationId: string) => {
         setBusy(true);
