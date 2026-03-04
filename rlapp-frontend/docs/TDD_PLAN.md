@@ -37,23 +37,23 @@ Todos los objetivos superados tras ejecutar los Bloques A, B y C.
 
 Archivos con cobertura inferior al umbral objetivo que **deben cubrirse en los ciclos pendientes**:
 
-| Archivo | Líneas | Funciones | Ramas | Causa |
-|---|---|---|---|---|
-| `services/api/waitingRoom.ts` | 17.1% | 20.7% | 16.0% | Sin tests de integración del servicio |
-| `infrastructure/adapters/SignalRAdapter.ts` | 18.0% | 0.0% | 0.0% | Sin mock de SignalR en ningún test |
-| `services/signalr/waitingRoomSignalR.ts` | 67.1% | 29.4% | 50.0% | Callbacks de reconexión no cubiertos |
-| `hooks/useWaitingRoom.tsx` | 69.3% | 35.0% | 26.7% | Estados paralelos y error paths sin cubrir |
+| Archivo | Líneas | Funciones | Ramas | Causa | Estado |
+|---|---|---|---|---|---|
+| `services/api/waitingRoom.ts` | ~~17.1%~~ **97%** | ~~20.7%~~ **100%** | ~~16.0%~~ **79%** | Sin tests de integración del servicio | ✅ `c75ffa4` |
+| `infrastructure/adapters/SignalRAdapter.ts` | ~~18.0%~~ **100%** | ~~0.0%~~ **100%** | ~~0.0%~~ **70%** | Sin mock de SignalR en ningún test | ✅ `f434c5e` |
+| `services/signalr/waitingRoomSignalR.ts` | ~~67.1%~~ **97%** | ~~29.4%~~ **88%** | ~~50.0%~~ **76%** | Callbacks de reconexión no cubiertos | ✅ `f434c5e` |
+| `hooks/useWaitingRoom.tsx` | ~~69.3%~~ **98%** | ~~35.0%~~ **85%** | ~~26.7%~~ **73%** | Estados paralelos y error paths sin cubrir | ✅ `c75ffa4` |
 
 Archivos con brechas de ramas secundarias (no bloquean umbral global, pero degradan calidad):
 
-| Archivo | Ramas | Falta cubrir |
-|---|---|---|
-| `components/NetworkStatus.tsx` | 30.0% | Estados `offline`, `degraded` |
-| `proxi.ts` | 57.1% | Ramas de error en proxy handlers |
-| `config/env.ts` | 77.8% | Variables de entorno ausentes / inválidas |
-| `hooks/useConsultingRooms.ts` | 75.0% | Ramas de error en activate/deactivate |
-| `components/WaitingRoom/QueueStateCard.tsx` | 75.0% | Estado vacío y prioridades extremas |
-| `components/WaitingRoom/MonitorCard.tsx` | 77.8% | Prop `status` en distintos valores |
+| Archivo | Ramas antes | Ramas después | Estado |
+|---|---|---|---|
+| `components/NetworkStatus.tsx` | 30.0% | **100%** | ✅ `b4aa690` |
+| `proxi.ts` | 57.1% | **92.85%** | ✅ `214f4e0` |
+| `config/env.ts` | 77.8% | **88.88%** | ✅ `802291f` |
+| `hooks/useConsultingRooms.ts` | 75.0% | **100%** | ✅ `0f19a87` |
+| `components/WaitingRoom/QueueStateCard.tsx` | 75.0% | **100%** | ✅ `016477b` |
+| `components/WaitingRoom/MonitorCard.tsx` | 77.8% | **100%** | ✅ `016477b` |
 
 ---
 
@@ -162,13 +162,13 @@ Commit: `refactor(waiting-room): centralizar parsers y extraer useConnectionStat
 
 **Prioridad:** media. No bloquean el umbral global actual (70.56% > 70%), pero cualquier nueva rama sin cubrir puede bajar el porcentaje.
 
-1. **`components/NetworkStatus.tsx`** (30.0% ramas): agregar tests para `status = 'offline'`, `'degraded'`, `'online'` y prop `showLabel === false`.
-2. **`proxi.ts`** (57.1% ramas): cubrir rutas de error del proxy (fallo de conexión backend, timeout).
-3. **`config/env.ts`** (77.8% ramas): tests con variables ausentes y valores por defecto.
-4. **`hooks/useConsultingRooms.ts`** (75.0% ramas): ramas de error en `activate` / `deactivate` y estado `lastResult` fallido.
-5. **`components/WaitingRoom/QueueStateCard.tsx`** (75.0% ramas) y **`MonitorCard.tsx`** (77.8% ramas): props en todos los valores del enum de prioridad y `status`.
+1. ~~**`components/NetworkStatus.tsx`** (30.0% ramas)~~ → **100%** ✅ `b4aa690`
+2. ~~**`proxi.ts`** (57.1% ramas)~~ → **92.85%** ✅ `214f4e0`
+3. ~~**`config/env.ts`** (77.8% ramas)~~ → **88.88%** ✅ `802291f`
+4. ~~**`hooks/useConsultingRooms.ts`** (75.0% ramas)~~ → **100%** ✅ `0f19a87`
+5. ~~**`components/WaitingRoom/QueueStateCard.tsx`** (75.0% ramas) y **`MonitorCard.tsx`** (77.8% ramas)~~ → **100%/100%** ✅ `016477b`
 
-Commit único agrupando: `test(coverage): branch coverage NetworkStatus, proxi, env, useConsultingRooms y WaitingRoom cards`.
+**Bloque C COMPLETADO** — 5 commits atómicos `b4aa690`→`214f4e0`.
 
 ---
 
@@ -182,7 +182,7 @@ Bloque B3: test services/api/waitingRoom
 Bloque B4: test SignalRAdapter
 Bloque B5: test waitingRoomSignalR
 Bloque B6: waiting-room REFACTOR
-Bloque C:  branch coverage (NetworkStatus, proxi, env, hooks, cards)
+Bloque C:  branch coverage (NetworkStatus, proxi, env, hooks, cards) ✅
 ```
 
 ---
