@@ -662,3 +662,33 @@ Razón: Estos tests son intensivos y validan escenarios ya verificados mediante 
   - Total it.failing (= evidencias RED): 25 tests
   - Todos los *.red.spec.* pasan en CI (25/25 ✅)
   - Los specs verdes (GREEN) existentes: sin regresiones ✅
+
+### 2026-03-04 — Auditoría integral: corrección errores TS introducidos por red specs
+
+  - Actor: AI assistant (Copilot) — modelo Claude Sonnet 4.6
+  - Branch: `refac/frontend-viewes` — commit `2c8647e`
+  - Solicitud: Verificar que todos los gaps estén cubiertos, TDD seguido, AI_WORKFLOW.md actualizado y atomic commits.
+
+  - Hallazgo: Los 9 red specs del Grupo C introdujeron 9 nuevos errores TypeScript
+    (27 total vs 18 preexistentes). Causa: tipos incompatibles y colisión de namespace global.
+
+  - Errores corregidos (9 → 0 nuevos; total vuelve a 18 preexistentes):
+    1. test/app/medical.red.spec.tsx:38 — lastResult tipado como null; corregido a
+       `null as { patientId?: string; stationId?: string } | null` (TS2322)
+    2. test/hooks/useConsultingRooms.string-e.red.spec.tsx:25-26 — useState<T>()
+       dentro de require('react') no acepta type arguments; reemplazado por
+       `useState(null as string | null)` e `useState(null as unknown)` (TS2347 x2)
+    3. test/infrastructure/httpCommandAdapter.idempotency.red.spec.ts — añadido
+       `export {}` para convertir en módulo ES y evitar colisión de namespace
+       con type FetchMock y function mockFetchOk (TS2300, TS2393)
+    4. test/services/waitingRoomApi.idempotency.red.spec.ts — ídem (TS2300, TS2393)
+    5. test/services/waitingRoomApi.spec.ts — añadido `export {}` para romper la
+       colisión de namespace global persistente con los archivos de script vecinos
+
+  - Validación post-fix:
+    - npx tsc --noEmit → 18 errores (solo preexistentes, 0 nuevos) ✅
+    - npx jest red --no-coverage --forceExit → 16 suites PASS ✅
+    - Cobertura: statements 93.17%, branches 79.04% (sin cambio; solo test files modificados) ✅
+    - ESLint: limpio ✅
+
+  - Commit atómico: `2c8647e` — fix(types): corregir errores TS en red specs
