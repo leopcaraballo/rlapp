@@ -278,4 +278,72 @@ describe("useWaitingRoom", () => {
     await waitFor(() => expect(mockSignalRConnect).toHaveBeenCalled());
     expect(() => unmount()).not.toThrow();
   });
+
+  // ── 15. fetchAll outer-catch: throws sincrónicamente (lines 77-87) ──────────
+  it("establece connectionState = 'connecting' cuando un servicio lanza síncronamente", async () => {
+    mockGetMonitor.mockImplementation(() => { throw new Error("sync error"); });
+
+    const { result } = renderHook(() => useWaitingRoom("Q1", 99999));
+    await waitFor(() =>
+      expect(result.current.connectionState).toMatch(/connecting|degraded/),
+    );
+    expect(result.current.monitor).toBeNull();
+  });
+
+  // ── 16. fetchAll outer-catch: showError tras 3 fallos síncronos (lines 82-87) ─
+  it("llama a showError cuando failureCount alcanza 3 con errores síncronos", async () => {
+    mockGetMonitor.mockImplementation(() => { throw new Error("sync error"); });
+
+    const { result } = renderHook(() => useWaitingRoom("Q1", 99999));
+    await waitFor(() => expect(result.current.connectionState).toMatch(/connecting|degraded/));
+
+    await act(async () => { result.current.refresh(); });
+    await waitFor(() => expect(mockGetMonitor).toHaveBeenCalledTimes(2));
+
+    await act(async () => { result.current.refresh(); });
+    await waitFor(() => {
+      expect(result.current.connectionState).toBe("degraded");
+    });
+    expect(mockShowError).toHaveBeenCalledWith(
+      expect.stringContaining("Problemas de red"),
+    );
+  });
+
+  // ── 17. SignalR callbacks (lines 115-119) + signalRCleanup (132) ────────────
+  it("registra cleanup y ejecuta callbacks SignalR cuando conecta con éxito", async () => {
+    const fakeConn = {};
+    mockSignalRConnect.mockImplementation(
+      async (_queueId: string, handlers: Record<string, (() => void) | undefined>) => {
+        mockSignalRIsConnected.mockReturnValue(true);
+        // Llamar los 5 callbacks de datos: cubre líneas 115-119 (cuerpos de arrow fn)
+        handlers.onMonitor?.();
+        handlers.onQueueState?.();
+        handlers.onNextTurn?.();
+        handlers.onRecentHistory?.();
+        handlers.onAny?.();
+        handlers.onConnected?.();
+        return fakeConn;
+      },
+    );
+    const { unmount } = renderHook(() => useWaitingRoom("Q1", 99999));
+    // Carga inicial + al menos un disparo por los callbacks de arriba → observable
+    await waitFor(() =>
+      expect(mockGetMonitor.mock.calls.length).toBeGreaterThanOrEqual(2),
+    );
+    // Dar tiempo a que el IIFE async complete (fakeConn → signalRCleanup asignado)
+    await act(async () => {
+      await new Promise<void>((r) => setTimeout(r, 10));
+    });
+    unmount();
+    await waitFor(() => expect(mockSignalRDisconnect).toHaveBeenCalled());
+  });
+
+  // ── 18. SignalR IIFE catch (line 136): connect lanza excepción ─────────────
+  it("no falla cuando signalRConnect lanza una excepción (catch del IIFE)", async () => {
+    mockSignalRConnect.mockRejectedValue(new Error("connection refused"));
+    const { result, unmount } = renderHook(() => useWaitingRoom("Q1", 99999));
+    // El polling REST sigue activo incluso si SignalR falla
+    await waitFor(() => expect(result.current.connectionState).toBe("online"));
+    expect(() => unmount()).not.toThrow();
+  });
 });
