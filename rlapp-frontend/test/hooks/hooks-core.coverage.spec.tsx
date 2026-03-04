@@ -243,4 +243,11 @@ describe("useConsultingRooms", () => {
     act(() => { result.current.clearError(); });
     expect(result.current.error).toBeNull();
   });
+
+  it("usa String(e) como mensaje cuando el error lanzado no es instanceof Error", async () => {
+    mockAdapter.activateConsultingRoom.mockRejectedValue("error de red" as never);
+    const { result } = renderHook(() => useConsultingRooms());
+    await act(async () => { await result.current.activate("q1", "c1"); });
+    expect(result.current.error).toBe("error de red");
+  });
 });
