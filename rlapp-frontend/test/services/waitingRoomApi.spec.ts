@@ -225,7 +225,8 @@ describe("services/api/waitingRoom", () => {
       await rebuildProjection("QUEUE-1");
       const fetchMock = (global as unknown as { fetch: FetchMock }).fetch;
       const headers = fetchMock.mock.calls[0][1]?.headers ?? {};
-      expect(headers["X-Idempotency-Key"]).toBeTruthy();
+      // POST-PR#51: header renombrado de X-Idempotency-Key a Idempotency-Key (sin prefijo X-)
+      expect(headers["Idempotency-Key"]).toBeTruthy();
       expect(headers["X-Correlation-Id"]).toBeTruthy();
     });
   });
