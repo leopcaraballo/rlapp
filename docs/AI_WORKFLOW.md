@@ -629,3 +629,36 @@ Razón: Estos tests son intensivos y validan escenarios ya verificados mediante 
 
   - Estrategia aplicada: Red → Green → Refactor con commits atómicos por scope.
   - §0.3 Bloque C: COMPLETADO ✅ — TDD_PLAN.md actualizado.
+
+### 2026-03-04 — Retrofit TDD: evidencia RED para tests no conformes (9 archivos)
+
+  - Actor: AI assistant (Copilot) — modelo Claude Sonnet 4.6
+  - Branch: `refac/frontend-viewes` — commits `45236a2`, `4bee23b`, `acd2217`
+  - Solicitud: Refactorizar todos los tests escritos sin formato R/G/R para que incluyan la fase RED.
+
+  - Estrategia: it.failing() como convención de RED retroactivo.
+    Cada *.red.spec.* usa un mock "v0" (implementación pre-feature) y envuelve
+    en it.failing() los tests que fallarían contra esa v0. Los tests pasan en CI
+    porque it.failing() marca como verde un test que falla, y como rojo uno que
+    pasa inesperadamente.
+
+  - Archivos creados (9 red specs en 3 grupos atómicos):
+
+    Grupo A — Grupo §0.3 branch coverage (componentes UI):
+    - test/components/NetworkStatus.red.spec.tsx: 5 it.failing (états, lastUpdated, Forzar)
+    - test/components/WaitingRoom/QueueStateCard.red.spec.tsx: 4 it.failing (null, Sí/No, lista)
+    - test/components/WaitingRoom/MonitorCard.red.spec.tsx: 1 it.failing (value ?? '-')
+
+    Grupo B — Grupo §0.3 branch coverage (lógica):
+    - test/hooks/useConsultingRooms.string-e.red.spec.tsx: 1 it.failing (String(e))
+    - test/config/env.branches.red.spec.ts: 2 it.failing (WS_URL null, DEFAULT_QUEUE_ID fallback)
+    - test/lib/proxi.ratelimit.red.spec.ts: 3 it.failing (x-real-ip, unknown, rate limit 429)
+
+    Grupo C — Fixes post-PR#51:
+    - test/app/medical.red.spec.tsx: 7 it.failing (useWaitingRoom, guards, auto-fill)
+    - test/infrastructure/httpCommandAdapter.idempotency.red.spec.ts: 1 it.failing (Idempotency-Key sin X-)
+    - test/services/waitingRoomApi.idempotency.red.spec.ts: 1 it.failing (Idempotency-Key sin X-)
+
+  - Total it.failing (= evidencias RED): 25 tests
+  - Todos los *.red.spec.* pasan en CI (25/25 ✅)
+  - Los specs verdes (GREEN) existentes: sin regresiones ✅
