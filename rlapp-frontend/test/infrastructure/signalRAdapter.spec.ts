@@ -227,4 +227,40 @@ describe("SignalRAdapter", () => {
     // stop() se llama en el segundo connect para limpiar la primera conexión
     expect(mockStop).toHaveBeenCalled();
   });
+
+  // ── 15. WS_DISABLED: connect() retorna sin llamar a start() (lines 25-26) ─
+  it("connect() retorna inmediatamente sin iniciar conexión cuando WS_DISABLED es true", async () => {
+    const envMock = jest.requireMock("@/config/env") as { env: { WS_DISABLED: boolean; WS_URL: string } };
+    envMock.env.WS_DISABLED = true;
+    try {
+      adapter.connect();
+      await new Promise((r) => setTimeout(r, 10));
+      expect(mockStart).not.toHaveBeenCalled();
+    } finally {
+      envMock.env.WS_DISABLED = false;
+    }
+  });
+
+  // ── 16. onreconnecting con Error invoca onErrorCb (line 77-78) ─────────────
+  it("onError se invoca cuando onreconnecting recibe un Error", async () => {
+    const errCb = jest.fn();
+    adapter.onError(errCb);
+    adapter.connect();
+    await new Promise((r) => setTimeout(r, 0));
+    const reconnectingHandler = capturedHandlers["_reconnecting"] as (err?: unknown) => void;
+    const err = new Error("reconnecting error");
+    reconnectingHandler?.(err);
+    expect(errCb).toHaveBeenCalledWith(err);
+  });
+
+  // ── 17. onreconnecting con non-Error non-null envuelve en Error (line 78-79) ─
+  it("onError envuelve en Error cuando onreconnecting recibe un valor no-Error", async () => {
+    const errCb = jest.fn();
+    adapter.onError(errCb);
+    adapter.connect();
+    await new Promise((r) => setTimeout(r, 0));
+    const reconnectingHandler = capturedHandlers["_reconnecting"] as (err?: unknown) => void;
+    reconnectingHandler?.("string error");
+    expect(errCb).toHaveBeenCalledWith(new Error("string error"));
+  });
 });

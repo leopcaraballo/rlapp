@@ -225,4 +225,48 @@ describe("waitingRoomSignalR", () => {
     const reconnectingHandler = capturedEvents["_onreconnecting"] as (err?: unknown) => void;
     expect(() => reconnectingHandler?.()).not.toThrow();
   });
+
+  // ── 18. WS_DISABLED: connect() devuelve null (lines 66-67) ────────────────
+  it("connect() devuelve null cuando NEXT_PUBLIC_WS_DISABLED es 'true'", async () => {
+    const original = process.env.NEXT_PUBLIC_WS_DISABLED;
+    process.env.NEXT_PUBLIC_WS_DISABLED = "true";
+    // Reiniciar módulo para que la constante WS_DISABLED se re-evalúe
+    jest.resetModules();
+    const { connect: connectFresh } = await import("@/services/signalr/waitingRoomSignalR");
+    try {
+      const result = await connectFresh("Q1");
+      expect(result).toBeNull();
+    } finally {
+      process.env.NEXT_PUBLIC_WS_DISABLED = original;
+      jest.resetModules();
+    }
+  });
+
+  // ── 19. segunda connect() con estado Disconnected limpia conexión (line 81) ─
+  it("segunda connect() con misma conexión en Disconnected crea nueva (connection = null)", async () => {
+    // Primera conexión: mock en estado Disconnected (buildConn default)
+    await connect("Q1");
+    expect(mockBuildFn).toHaveBeenCalledTimes(1);
+    // Segunda conexión: la existente está en Disconnected → se limpia → se crea otra
+    await connect("Q1");
+    expect(mockBuildFn).toHaveBeenCalledTimes(2);
+  });
+
+  // ── 20. onclose CON Error — rama instanceof Error (lines 128-129) ──────────
+  it("onclose con Error registra el mensaje y llama a onDisconnected", async () => {
+    const disconnectedCb = jest.fn();
+    await connect("Q1", { onDisconnected: disconnectedCb });
+    const closeHandler = capturedEvents["_onclose"] as (err?: unknown) => void;
+    expect(() => closeHandler?.(new Error("closed with error"))).not.toThrow();
+    expect(disconnectedCb).toHaveBeenCalled();
+  });
+
+  // ── 21. onclose CON non-Error truthy — String(err) (line 129) ──────────────
+  it("onclose con string error registra el mensaje string y llama a onDisconnected", async () => {
+    const disconnectedCb = jest.fn();
+    await connect("Q1", { onDisconnected: disconnectedCb });
+    const closeHandler = capturedEvents["_onclose"] as (err?: unknown) => void;
+    expect(() => closeHandler?.("network reset")).not.toThrow();
+    expect(disconnectedCb).toHaveBeenCalled();
+  });
 });
