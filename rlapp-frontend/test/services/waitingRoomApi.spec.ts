@@ -308,4 +308,202 @@ describe("services/api/waitingRoom", () => {
       expect(fetchMock.mock.calls[0][0]).toContain("/api/cashier/mark-absent");
     });
   });
+
+  // ── dispatchAuthInvalid (401 / 403) ───────────────────────────────────────
+  describe("handleResponse — dispatchAuthInvalid", () => {
+    it("despacha 'unauthorized' cuando el servidor responde 401", async () => {
+      const { getMonitor } = await import("@/services/api/waitingRoom");
+      mockFetchError(401, { error: "Unauthorized" });
+      const events: CustomEvent[] = [];
+      const listener = (e: Event) => events.push(e as CustomEvent);
+      window.addEventListener("rlapp:auth-invalid", listener);
+      await expect(getMonitor("Q1")).rejects.toThrow();
+      window.removeEventListener("rlapp:auth-invalid", listener);
+      expect(events).toHaveLength(1);
+      expect(events[0].detail).toMatchObject({ reason: "unauthorized", status: 401 });
+    });
+
+    it("despacha 'forbidden' cuando el servidor responde 403", async () => {
+      const { getMonitor } = await import("@/services/api/waitingRoom");
+      mockFetchError(403, { error: "Forbidden" });
+      const events: CustomEvent[] = [];
+      const listener = (e: Event) => events.push(e as CustomEvent);
+      window.addEventListener("rlapp:auth-invalid", listener);
+      await expect(getMonitor("Q1")).rejects.toThrow();
+      window.removeEventListener("rlapp:auth-invalid", listener);
+      expect(events).toHaveLength(1);
+      expect(events[0].detail).toMatchObject({ reason: "forbidden", status: 403 });
+    });
+  });
+
+  // ── registerReception ─────────────────────────────────────────────────────
+  describe("registerReception", () => {
+    it("llama a POST /api/reception/register con el body correcto", async () => {
+      const { registerReception } = await import("@/services/api/waitingRoom");
+      mockFetchOk({ success: true });
+      const dto = { queueId: "Q1", patientId: "P1", actor: "nurse" } as Parameters<typeof registerReception>[0];
+      await registerReception(dto);
+      const fetchMock = (global as unknown as { fetch: FetchMock }).fetch;
+      expect(fetchMock.mock.calls[0][0]).toContain("/api/reception/register");
+      expect(fetchMock.mock.calls[0][1]?.method).toBe("POST");
+    });
+  });
+
+  // ── validatePayment ───────────────────────────────────────────────────────
+  describe("validatePayment", () => {
+    it("llama a POST /api/cashier/validate-payment", async () => {
+      const { validatePayment } = await import("@/services/api/waitingRoom");
+      mockFetchOk({ success: true });
+      const dto = { queueId: "Q1", patientId: "P1", actor: "cashier" } as Parameters<typeof validatePayment>[0];
+      await validatePayment(dto);
+      const fetchMock = (global as unknown as { fetch: FetchMock }).fetch;
+      expect(fetchMock.mock.calls[0][0]).toContain("/api/cashier/validate-payment");
+    });
+  });
+
+  // ── markPaymentPending ────────────────────────────────────────────────────
+  describe("markPaymentPending", () => {
+    it("llama a POST /api/cashier/mark-payment-pending", async () => {
+      const { markPaymentPending } = await import("@/services/api/waitingRoom");
+      mockFetchOk({ success: true });
+      const dto = { queueId: "Q1", patientId: "P1", actor: "cashier" } as Parameters<typeof markPaymentPending>[0];
+      await markPaymentPending(dto);
+      const fetchMock = (global as unknown as { fetch: FetchMock }).fetch;
+      expect(fetchMock.mock.calls[0][0]).toContain("/api/cashier/mark-payment-pending");
+    });
+  });
+
+  // ── markAbsentAtCashier ───────────────────────────────────────────────────
+  describe("markAbsentAtCashier", () => {
+    it("llama a POST /api/cashier/mark-absent", async () => {
+      const { markAbsentAtCashier } = await import("@/services/api/waitingRoom");
+      mockFetchOk({ success: true });
+      await markAbsentAtCashier({ queueId: "Q1", patientId: "P1", actor: "cashier" });
+      const fetchMock = (global as unknown as { fetch: FetchMock }).fetch;
+      expect(fetchMock.mock.calls[0][0]).toContain("/api/cashier/mark-absent");
+    });
+  });
+
+  // ── cancelByPayment ───────────────────────────────────────────────────────
+  describe("cancelByPayment", () => {
+    it("llama a POST /api/cashier/cancel-payment", async () => {
+      const { cancelByPayment } = await import("@/services/api/waitingRoom");
+      mockFetchOk({ success: true });
+      await cancelByPayment({ queueId: "Q1", patientId: "P1", actor: "cashier" });
+      const fetchMock = (global as unknown as { fetch: FetchMock }).fetch;
+      expect(fetchMock.mock.calls[0][0]).toContain("/api/cashier/cancel-payment");
+    });
+  });
+
+  // ── cancelPayment (alias) ─────────────────────────────────────────────────
+  describe("cancelPayment (alias → cancelByPayment)", () => {
+    it("delega a cancelByPayment usando la ruta correcta", async () => {
+      const { cancelPayment } = await import("@/services/api/waitingRoom");
+      mockFetchOk({ success: true });
+      await cancelPayment({ queueId: "Q1", patientId: "P1", actor: "cashier" });
+      const fetchMock = (global as unknown as { fetch: FetchMock }).fetch;
+      expect(fetchMock.mock.calls[0][0]).toContain("/api/cashier/cancel-payment");
+    });
+  });
+
+  // ── claimNextPatient ──────────────────────────────────────────────────────
+  describe("claimNextPatient", () => {
+    it("llama a POST /api/waiting-room/claim-next", async () => {
+      const { claimNextPatient } = await import("@/services/api/waitingRoom");
+      mockFetchOk({ success: true });
+      const dto = { queueId: "Q1", actor: "doctor", stationId: "ROOM-1" } as Parameters<typeof claimNextPatient>[0];
+      await claimNextPatient(dto);
+      const fetchMock = (global as unknown as { fetch: FetchMock }).fetch;
+      expect(fetchMock.mock.calls[0][0]).toContain("/api/waiting-room/claim-next");
+    });
+  });
+
+  // ── callPatient ───────────────────────────────────────────────────────────
+  describe("callPatient", () => {
+    it("llama a POST /api/waiting-room/call-patient", async () => {
+      const { callPatient } = await import("@/services/api/waitingRoom");
+      mockFetchOk({ success: true });
+      await callPatient({ queueId: "Q1", patientId: "P1", actor: "doctor" });
+      const fetchMock = (global as unknown as { fetch: FetchMock }).fetch;
+      expect(fetchMock.mock.calls[0][0]).toContain("/api/waiting-room/call-patient");
+    });
+  });
+
+  // ── completeAttention ─────────────────────────────────────────────────────
+  describe("completeAttention", () => {
+    it("llama a POST /api/waiting-room/complete-attention", async () => {
+      const { completeAttention } = await import("@/services/api/waitingRoom");
+      mockFetchOk({ success: true });
+      const dto = { queueId: "Q1", patientId: "P1", actor: "doctor" } as Parameters<typeof completeAttention>[0];
+      await completeAttention(dto);
+      const fetchMock = (global as unknown as { fetch: FetchMock }).fetch;
+      expect(fetchMock.mock.calls[0][0]).toContain("/api/waiting-room/complete-attention");
+    });
+  });
+
+  // ── callNextMedical ───────────────────────────────────────────────────────
+  describe("callNextMedical", () => {
+    it("llama a POST /api/medical/call-next", async () => {
+      const { callNextMedical } = await import("@/services/api/waitingRoom");
+      mockFetchOk({ success: true });
+      await callNextMedical({ queueId: "Q1", actor: "doctor" });
+      const fetchMock = (global as unknown as { fetch: FetchMock }).fetch;
+      expect(fetchMock.mock.calls[0][0]).toContain("/api/medical/call-next");
+    });
+  });
+
+  // ── deactivateConsultingRoom ──────────────────────────────────────────────
+  describe("deactivateConsultingRoom", () => {
+    it("convierte stationId a consultingRoomId y llama a POST correcto", async () => {
+      const { deactivateConsultingRoom } = await import("@/services/api/waitingRoom");
+      mockFetchOk({ success: true });
+      await deactivateConsultingRoom({ queueId: "Q1", actor: "doctor", stationId: "ROOM-2" });
+      const fetchMock = (global as unknown as { fetch: FetchMock }).fetch;
+      expect(fetchMock.mock.calls[0][0]).toContain("/api/medical/consulting-room/deactivate");
+      const body = JSON.parse(fetchMock.mock.calls[0][1]?.body as string);
+      expect(body.consultingRoomId).toBe("ROOM-2");
+    });
+
+    it("envía consultingRoomId null cuando stationId es undefined", async () => {
+      const { deactivateConsultingRoom } = await import("@/services/api/waitingRoom");
+      mockFetchOk({ success: true });
+      await deactivateConsultingRoom({ queueId: "Q1", actor: "doctor" });
+      const fetchMock = (global as unknown as { fetch: FetchMock }).fetch;
+      const body = JSON.parse(fetchMock.mock.calls[0][1]?.body as string);
+      expect(body.consultingRoomId).toBeNull();
+    });
+  });
+
+  // ── startConsultation ─────────────────────────────────────────────────────
+  describe("startConsultation", () => {
+    it("llama a POST /api/medical/start-consultation", async () => {
+      const { startConsultation } = await import("@/services/api/waitingRoom");
+      mockFetchOk({ success: true });
+      await startConsultation({ queueId: "Q1", patientId: "P1", actor: "doctor" });
+      const fetchMock = (global as unknown as { fetch: FetchMock }).fetch;
+      expect(fetchMock.mock.calls[0][0]).toContain("/api/medical/start-consultation");
+    });
+  });
+
+  // ── finishConsultation ────────────────────────────────────────────────────
+  describe("finishConsultation", () => {
+    it("llama a POST /api/medical/finish-consultation", async () => {
+      const { finishConsultation } = await import("@/services/api/waitingRoom");
+      mockFetchOk({ success: true });
+      await finishConsultation({ queueId: "Q1", patientId: "P1", actor: "doctor" });
+      const fetchMock = (global as unknown as { fetch: FetchMock }).fetch;
+      expect(fetchMock.mock.calls[0][0]).toContain("/api/medical/finish-consultation");
+    });
+  });
+
+  // ── markAbsentMedical ─────────────────────────────────────────────────────
+  describe("markAbsentMedical", () => {
+    it("llama a POST /api/medical/mark-absent", async () => {
+      const { markAbsentMedical } = await import("@/services/api/waitingRoom");
+      mockFetchOk({ success: true });
+      await markAbsentMedical({ queueId: "Q1", patientId: "P1", actor: "doctor" });
+      const fetchMock = (global as unknown as { fetch: FetchMock }).fetch;
+      expect(fetchMock.mock.calls[0][0]).toContain("/api/medical/mark-absent");
+    });
+  });
 });
