@@ -63,10 +63,11 @@ describe("HttpCommandAdapter", () => {
   });
 
   it("checkInPatient lanza error traducido si el servidor responde 400", async () => {
+    // POST-PR#51: translateApiError corto-circuita todos los 400 con mensaje genérico de validación
     mockFetchError(400, { error: "DomainViolation", message: "Queue is at maximum capacity" });
     await expect(
       adapter.checkInPatient({ queueId: "q1", patientId: "p1", patientName: "Ana", priority: "Low", consultationType: "General", actor: "rx" }),
-    ).rejects.toThrow("La sala de espera ha alcanzado su capacidad máxima");
+    ).rejects.toThrow("La solicitud contiene datos invalidos. Verifique el formulario e intente nuevamente.");
   });
 
   // ─── callNextAtCashier ───────────────────────────────────────────────────
@@ -190,6 +191,7 @@ describe("HttpCommandAdapter", () => {
     const headers = init.headers as Record<string, string>;
     expect(headers["Content-Type"]).toBe("application/json");
     expect(headers["X-Correlation-Id"]).toBeTruthy();
-    expect(headers["X-Idempotency-Key"]).toBeTruthy();
+    // POST-PR#51: header renombrado de X-Idempotency-Key a Idempotency-Key (sin prefijo X-)
+    expect(headers["Idempotency-Key"]).toBeTruthy();
   });
 });
