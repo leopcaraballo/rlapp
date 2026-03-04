@@ -330,7 +330,7 @@ git status                # sin archivos fuera de scope
 - [x] Tests de capas (`useWaitingRoom`, `SignalRAdapter`, `waitingRoomSignalR`, `services/api/waitingRoom`) agregados.
 - [x] Branch coverage de `NetworkStatus`, `proxi`, `env`, `useConsultingRooms` y WaitingRoom cards.
 - [x] `npm run test:cov`: líneas >80% (**93.17%**), funciones >80% (**87.97%**), ramas >70% (**79.04%**).
-- [ ] `npx tsc --noEmit`: pendiente verificación final.
-- [ ] `npx eslint src/ --max-warnings 0`: pendiente verificación final.
+- [x] `npx tsc --noEmit`: 18 errores preexistentes en `jest.setup`, `routeAccess`, `errorTranslations`, `application-layer`; 0 errores nuevos en esta sesión. ✅ `5574635`
+- [x] `npx eslint src/ --max-warnings 0`: sin errores ni warnings. ✅
 - [x] Sin `any` ni tipados laxos nuevos.
 - [x] `AI_WORKFLOW.md` actualizado con cada bloque; `DEBT_REPORT.md` si aplica.
