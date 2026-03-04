@@ -4,7 +4,7 @@
 
 ---
 
-## 0. Estado actual — 2 de marzo de 2026
+## 0. Estado actual — 4 de marzo de 2026
 
 ### 0.1 Cobertura global (última ejecución registrada)
 
@@ -24,12 +24,12 @@ Todos los objetivos superados tras ejecutar los Bloques A, B y C.
 | `/` (ruta base) | ✓ | ✓ | ✓ | incluido en reception |
 | `/reception` | ✓ | ✓ | ✓ | `cc7bdc9` |
 | `/cashier` | ✓ | ✓ | ✓ | `dd9aa1f` |
-| `/medical` | ✓ | (implícito) | ✓ | `2bef98d` |
+| `/medical` | ✓ | ✓ | ✓ | `89d4912` (12 tests post-PR#51) |
 | `/consulting-rooms` | ✓ | (implícito) | ✓ | `ac03fe2` |
 | `/display/[queueId]` | ✓ | (implícito) | ✓ | `bd67c85` |
 | `/dashboard` | ✓ | (implícito) | ✓ | `c97119b` |
 | `/registration` | ✓ | **PENDIENTE** | **PENDIENTE** | — |
-| `/waiting-room/[queueId]` | ✓ | **PENDIENTE** | **PENDIENTE** | — |
+| `/waiting-room/[queueId]` | ✓ | ✓ | (implícito) | 12/12 pasan tras merge PR#51 |
 
 > "Implícito": el refactor y los ajustes de producción se realizaron en el mismo ciclo sin commit GREEN separado, lo cual viola la convención R/G/R del §2. No requiere rehacer el trabajo, pero se debe documentar.
 
