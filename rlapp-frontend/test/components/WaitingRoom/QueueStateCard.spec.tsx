@@ -52,8 +52,8 @@ describe("QueueStateCard", () => {
     const state: QueueStateView = {
       ...BASE,
       patientsInQueue: [
-        { patientId: "p1", patientName: "Juan Pérez", priority: "High", waitTimeMinutes: 10 },
-        { patientId: "p2", patientName: "Ana García", priority: "Low", waitTimeMinutes: 5 },
+        { patientId: "p1", patientName: "Juan Pérez", priority: "High", waitTimeMinutes: 10, checkInTime: "2026-03-04T10:00:00.000Z" },
+        { patientId: "p2", patientName: "Ana García", priority: "Low", waitTimeMinutes: 5, checkInTime: "2026-03-04T10:05:00.000Z" },
       ],
     };
     render(<QueueStateCard queueState={state} />);

@@ -97,7 +97,7 @@ describe("useCheckIn", () => {
       await result.current.checkIn({
         ...input,
         priority: "Urgent",
-        consultationType: "Pediatric",
+        consultationType: "Specialist",
         actor: "doctor",
         age: 5,
         isPregnant: false,
@@ -105,7 +105,7 @@ describe("useCheckIn", () => {
       });
     });
     expect(mockAdapter.checkInPatient).toHaveBeenCalledWith(
-      expect.objectContaining({ priority: "Urgent", consultationType: "Pediatric", actor: "doctor", age: 5, isPregnant: false, notes: "alergia" }),
+      expect.objectContaining({ priority: "Urgent", consultationType: "Specialist", actor: "doctor", age: 5, isPregnant: false, notes: "alergia" }),
     );
   });
 });
