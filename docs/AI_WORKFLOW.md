@@ -576,3 +576,22 @@ Razón: Estos tests son intensivos y validan escenarios ya verificados mediante 
 
   - Notes / Human checks:
     - El early return de `errorTranslations.ts` para status 400 fue un cambio de comportamiento deliberado de PR#51. Si se necesita discriminar errores de dominio dentro de 400 en el futuro, se deberá refinar la lógica antes del early return.
+
+### 2026-03-04 — Cobertura §0.3: gaps críticos (waitingRoom, useWaitingRoom, SignalR)
+
+  - Actor: AI assistant (Copilot) — modelo Claude Sonnet 4.6
+  - Branch: `refac/frontend-viewes` — commits `a685b90`, `c75ffa4`, `f434c5e`
+  - Solicitud: Cubrir brechas críticas de cobertura del §0.3 del TDD_PLAN.
+
+  - Resultados por archivo:
+
+    | Archivo | Antes (líneas/ramas) | Después (líneas/ramas) |
+    |---|---|---|
+    | `services/api/waitingRoom.ts` | 63%/65% | 97%/79% ✅ |
+    | `hooks/useWaitingRoom.tsx` | 81%/55% | 98%/73% ✅ |
+    | `infrastructure/adapters/SignalRAdapter.ts` | 91%/53% | 100%/70% ✅ |
+    | `services/signalr/waitingRoomSignalR.ts` | 90%/57% | 97%/76% ✅ |
+
+  - Tests añadidos: +17 (waitingRoomApi) +4 (useWaitingRoom) +3 (signalRAdapter) +4 (waitingRoomSignalR) = 28 nuevos tests
+
+  - Únicos no testeables: línea 39 (alert fallback sin AlertProvider) y líneas 35,43 (race condition en startWithRetry).
