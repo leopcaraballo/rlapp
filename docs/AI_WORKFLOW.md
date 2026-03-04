@@ -542,3 +542,37 @@ Razón: Estos tests son intensivos y validan escenarios ya verificados mediante 
 
   - Notes / Human checks:
     - Los 3 `any` preexistentes en `src/` (líneas 106, 111 de `httpClient.ts` y línea 76 de `useAppointmentRegistration.ts`) son anteriores a este plan y no fueron introducidos por estos tests.
+
+### 2026-03-04 — Corrección de gaps post-merge PR#51 (frontend hardening alignment)
+
+  - Actor: AI assistant (Copilot) — modelo Claude Sonnet 4.6
+  - Branch: `refac/frontend-viewes` — commits `d65e1af`, `4e74200`, `89d4912`, `4a1889e`
+  - Solicitud: Analizar el frontend luego del merge de PR#51 y cubrir todos los gaps de cobertura generados.
+
+  - Gaps identificados (origen PR#51 — commit `7309d42`):
+
+    | Archivo | Cambio en PR#51 | Gap generado |
+    |---|---|---|
+    | `HttpCommandAdapter.ts` | Renombrado `X-Idempotency-Key` → `Idempotency-Key` | Test fallaba con header incorrecto |
+    | `errorTranslations.ts` | Early return para status 400 (mensaje genérico) | Test esperaba mensaje de dominio específico |
+    | `waitingRoom.ts` | Mismo renombre en `commandHeaders()` | Test fallaba con header incorrecto |
+    | `medical/page.tsx` | +207 líneas: `useWaitingRoom`, 5 guards de validación, auto-fill | Un solo smoke test sin mocks para nuevos hooks |
+
+  - Acciones ejecutadas:
+    1. `fix(httpCommandAdapter)`: actualizar `"X-Idempotency-Key"` → `"Idempotency-Key"` y mensaje de error 400 en `httpCommandAdapter.coverage.spec.ts`.
+    2. `fix(waitingRoomApi)`: actualizar header en `waitingRoomApi.spec.ts`.
+    3. `test(medical)`: reescribir `test/app/medical.spec.tsx` de 1 test a 12 tests. Nuevos mocks para `useAlert` y `useWaitingRoom`. Cobertura: render, `activePatient` (claimed/called/waiting/null), 4 guards de validación, estado `busy`, badge auto-rellenado.
+    4. `docs(tdd-plan)`: actualizar §0.2 — `/medical` marcado GREEN (`89d4912`), `/waiting-room/[queueId]` marcado GREEN (12/12 pasan tras merge).
+
+  - Resultados de tests:
+    - `httpCommandAdapter.coverage.spec.ts`: 17/17 PASS ✅
+    - `waitingRoomApi.spec.ts`: 23/23 PASS ✅
+    - `medical.spec.tsx`: 12/12 PASS ✅
+    - `waiting-room/page.red.spec.tsx`: 12/12 PASS ✅ (sin modificación, ya pasaban)
+
+  - ESLint: sin errores en todos los archivos modificados.
+
+  - Estrategia aplicada: Red → Green → Refactor con commits atómicos por scope.
+
+  - Notes / Human checks:
+    - El early return de `errorTranslations.ts` para status 400 fue un cambio de comportamiento deliberado de PR#51. Si se necesita discriminar errores de dominio dentro de 400 en el futuro, se deberá refinar la lógica antes del early return.
