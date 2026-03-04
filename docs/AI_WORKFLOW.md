@@ -1,5 +1,64 @@
 ## AI_WORKFLOW Log
 
+### 2026-03-03 — Merge develop→refac/frontend-viewes: resolución de conflictos + cobertura TDD de gaps post-merge
+
+- Actor: AI assistant (Copilot / Claude Sonnet 4.6)
+- Task: Resolver 10 conflictos de merge entre `origin/develop` y `refac/frontend-viewes`,
+  luego analizar el estado TDD post-merge y cubrir todos los gaps generados aplicando
+  la estrategia red-green-refactor con commits atómicos.
+- AO model: Claude Sonnet 4.6 (Tier 2)
+- SA model: Claude Sonnet 4.6 (Tier 2)
+
+- Archivos de fuente modificados:
+  - `rlapp-frontend/src/app/login/page.tsx` — añade `noValidate` en `<form>` para delegar validación de TTL al `onSubmit`
+  - `rlapp-frontend/src/app/reception/page.tsx` — restaura `patientName.trim()` eliminado durante resolución de conflicto
+
+- Archivos de test creados o actualizados:
+  - `rlapp-frontend/test/app/login/page.spec.tsx` (nuevo — 11 tests)
+  - `rlapp-frontend/test/components/Navbar.coverage.spec.tsx` (reescrito — 14 tests con mocks de `useAuth`/`useRouter`)
+  - `rlapp-frontend/test/app/reception/page.red.spec.tsx` (actualizado — agrega campo `patientId` a 3 tests)
+  - `rlapp-frontend/test/app/waiting-room/page.red.spec.tsx` (actualizado — agrega mock `useAuth` + fixes lint)
+  - `rlapp-frontend/test/app/cashier.spec.tsx` (reescrito — 4 tests con mocks de `useAlert`, `useCashierStation`, `useWaitingRoom`)
+
+- Commits atómicos:
+  - `9d1817e` — `test(login): green - cobertura login/page.tsx agregada desde merge develop`
+  - `3bde667` — `test(navbar): fix - actualizar tests para AuthContext introducido en merge`
+  - `5d5bcc3` — `fix(reception): patientName.trim restaurado + tests actualizan campo patientId`
+  - `2f008ef` — `test(waiting-room): fix - agregar mock useAuth en tests (gap de merge)`
+  - `4b7eac9` — `test(cashier): green - nextTurn auto-selección y activeTurn (gap de merge)`
+  - `7d61b30` — `fix(lint): corregir errores de ESLint preexistentes en waiting-room test`
+
+- Acciones realizadas:
+  1. **Merge + conflictos**: `git pull --no-rebase origin develop` generó 10 conflictos.
+     Resueltos manualmente en `package.json`, `jest.config.ts`, `jest.setup.ts`,
+     `medical/page.tsx`, `reception/page.tsx`, páginas de cobertura, `handlers.ts`,
+     `AI_WORKFLOW.md`, `README.md`, `package-lock.json`.
+  2. **Análisis de gaps**: identificados 5 gaps funcionales introducidos por el merge:
+     - `login/page.tsx` (nuevo archivo sin tests)
+     - `Navbar.tsx` (ahora usa `useAuth`, tests anteriores sin mock → FAIL)
+     - `reception/page.tsx` (`patientId` ahora es campo de formulario requerido)
+     - `waiting-room/page.tsx` (ahora usa `useAuth`, tests sin mock → FAIL)
+     - `cashier/page.tsx` (lógica `nextTurn` auto-selección y `activeTurn` sin tests)
+  3. **Correcciones aplicadas** (ver sección de archivos modificados arriba).
+  4. **Verificación GREEN**: 44/44 tests en los 5 archivos afectados pasan.
+  5. **TypeScript**: `npx tsc --noEmit` → sin errores.
+  6. **ESLint**: `npx eslint <archivos>` → limpio tras corregir `simple-import-sort` y `no-unused-vars` preexistentes en `waiting-room/page.red.spec.tsx`.
+  7. **Suite completa**: 54/57 suites PASS. Los 3 tests en 2 suites que fallan
+     (`waitingRoomApi.spec.ts`, `httpCommandAdapter.coverage.spec.ts`) son pre-existentes
+     y no relacionados con los cambios de esta sesión.
+
+- Resultado de cobertura:
+  - Cobertura previa (pre-merge, sesión 2026-03-02): statements 91%, branches 79.04%, lines 93.17%
+  - Cobertura actual: no regenerable en esta sesión — `--forceExit` interrumpe la escritura
+    del reporte antes de que `jest` complete el teardown (open handles pre-existentes en 2 suites).
+  - Los 5 nuevos/actualizados archivos de test cubren toda la funcionalidad nueva del merge.
+
+- Notas / Human checks:
+  - Los 2 suites con fallos pre-existentes (`waitingRoomApi`, `httpCommandAdapter`) dejan
+    open handles que impiden la ejecución limpia de `jest --coverage`. // HUMAN CHECK
+  - El TTL del formulario de login es validado solo por JavaScript (`onSubmit`); la restricción
+    HTML5 `min={5}` persiste en el DOM como hint de UX pero ya no bloquea el submit.
+
 ### 2026-03-02 — TDD waiting-room Bloques A-GREEN, B2-B5 y correcciones TS
 
 - Actor: AI assistant (Copilot / Claude Sonnet 4.6)
