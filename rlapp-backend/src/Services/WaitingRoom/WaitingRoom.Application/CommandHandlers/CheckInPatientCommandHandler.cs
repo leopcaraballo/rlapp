@@ -29,23 +29,15 @@ public sealed class CheckInPatientCommandHandler
     private readonly IEventStore _eventStore;
     private readonly IEventPublisher _eventPublisher;
     private readonly IClock _clock;
-    private readonly IQueueIdGenerator _queueIdGenerator;
-    private readonly IPatientIdentityRegistry _patientIdentityRegistry;
-
-    public string? LastGeneratedQueueId { get; private set; }
 
     public CheckInPatientCommandHandler(
         IEventStore eventStore,
         IEventPublisher eventPublisher,
-        IClock clock,
-        IQueueIdGenerator? queueIdGenerator = null,
-        IPatientIdentityRegistry? patientIdentityRegistry = null)
+        IClock clock)
     {
         _eventStore = eventStore ?? throw new ArgumentNullException(nameof(eventStore));
         _eventPublisher = eventPublisher ?? throw new ArgumentNullException(nameof(eventPublisher));
         _clock = clock ?? throw new ArgumentNullException(nameof(clock));
-        _queueIdGenerator = queueIdGenerator ?? new DefaultQueueIdGenerator();
-        _patientIdentityRegistry = patientIdentityRegistry ?? new NoOpPatientIdentityRegistry();
     }
 
     /// <summary>
@@ -72,32 +64,20 @@ public sealed class CheckInPatientCommandHandler
         CheckInPatientCommand command,
         CancellationToken cancellationToken = default)
     {
-        var queueId = string.IsNullOrWhiteSpace(command.QueueId)
-            ? _queueIdGenerator.Generate()
-            : command.QueueId;
-
-        LastGeneratedQueueId = queueId;
-
-        await _patientIdentityRegistry.EnsureRegisteredAsync(
-            patientId: command.PatientId,
-            patientName: command.PatientName,
-            actor: command.Actor,
-            cancellationToken: cancellationToken);
-
         // STEP 1: Load the aggregate from event store
         // This reconstructs the complete aggregate state from all past events
-        var queue = await _eventStore.LoadAsync(queueId, cancellationToken);
+        var queue = await _eventStore.LoadAsync(command.QueueId, cancellationToken);
 
         if (queue is null)
         {
             var queueMetadata = EventMetadata.CreateNew(
-                aggregateId: queueId,
+                aggregateId: command.QueueId,
                 actor: command.Actor,
                 correlationId: command.CorrelationId ?? Guid.NewGuid().ToString());
 
             queue = WaitingQueue.Create(
-                queueId: queueId,
-                queueName: queueId,
+                queueId: command.QueueId,
+                queueName: command.QueueId,
                 maxCapacity: DefaultQueueCapacity,
                 metadata: queueMetadata);
         }
@@ -109,7 +89,7 @@ public sealed class CheckInPatientCommandHandler
 
         // Build metadata once
         var metadata = EventMetadata.CreateNew(
-            aggregateId: queueId,
+            aggregateId: command.QueueId,
             actor: command.Actor,
             correlationId: command.CorrelationId ?? Guid.NewGuid().ToString());
 
@@ -144,20 +124,6 @@ public sealed class CheckInPatientCommandHandler
 
         // STEP 5: Return result
         return eventsToPublish.Count;
-    }
-
-    private sealed class DefaultQueueIdGenerator : IQueueIdGenerator
-    {
-        public string Generate() => Guid.NewGuid().ToString("D");
-    }
-
-    private sealed class NoOpPatientIdentityRegistry : IPatientIdentityRegistry
-    {
-        public Task EnsureRegisteredAsync(
-            string patientId,
-            string patientName,
-            string actor,
-            CancellationToken cancellationToken = default) => Task.CompletedTask;
     }
 
     private static string ResolvePriority(CheckInPatientCommand command)

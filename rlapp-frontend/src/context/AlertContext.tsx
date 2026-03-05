@@ -1,6 +1,5 @@
 "use client";
-import React, { createContext, useCallback,useContext, useState } from "react";
-
+import React, { createContext, useContext, useState, useCallback } from "react";
 import Alert from "@/components/Alert";
 
 type Variant = "error" | "success" | "info";
@@ -37,9 +36,11 @@ export function AlertProvider({ children }: { children: React.ReactNode }) {
   return (
     <AlertContext.Provider value={value}>
       {children}
-      <div style={{ position: "fixed", top: 72, right: 16, zIndex: 9999, display: "flex", flexDirection: "column", gap: 8 }}>
+      <div style={{ position: "fixed", top: 16, right: 16, zIndex: 9999 }}>
         {messages.map((m) => (
-          <Alert key={m.id} message={m.message} variant={m.variant} />
+          <div key={m.id} style={{ marginBottom: 8 }}>
+            <Alert message={m.message} variant={m.variant} />
+          </div>
         ))}
       </div>
     </AlertContext.Provider>
@@ -48,9 +49,6 @@ export function AlertProvider({ children }: { children: React.ReactNode }) {
 
 export function useAlert() {
   const ctx = useContext(AlertContext);
-  if (!ctx) {
-    // Provide a safe no-op fallback when AlertProvider is not present
-    return { showError: (_m: string) => {}, showSuccess: (_m: string) => {}, showInfo: (_m: string) => {} };
-  }
+  if (!ctx) throw new Error("useAlert must be used within AlertProvider");
   return ctx;
 }

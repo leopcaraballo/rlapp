@@ -149,11 +149,7 @@ describe("httpClient", () => {
       "https://api.test/foo",
       expect.objectContaining({
         method: "POST",
-        headers: expect.objectContaining({
-          "Content-Type": "application/json",
-          "Idempotency-Key": expect.any(String),
-        }),
-        signal: expect.any(AbortSignal),
+        headers: { "Content-Type": "application/json" },
       }),
     );
   });
@@ -178,25 +174,5 @@ describe("middleware", () => {
     expect(res.headers.get("X-Frame-Options")).toBe("DENY");
     expect(res.headers.get("Content-Security-Policy")).toContain("default-src");
     expect(res.status).toBeUndefined();
-  });
-
-  it("obtiene IP desde x-real-ip cuando x-forwarded-for no está presente", () => {
-    const res = middleware(buildRequest("GET", { "x-real-ip": "2.2.2.2" }));
-    expect(res.status).toBeUndefined();
-  });
-
-  it("usa 'unknown' como IP cuando no hay headers de IP", () => {
-    const res = middleware(buildRequest("GET"));
-    expect(res.status).toBeUndefined();
-  });
-
-  it("retorna 429 cuando un IP supera el rate limit", () => {
-    // 26 requests con el mismo IP en el mismo window
-    const ip = "3.3.3.3";
-    let last: ReturnType<typeof middleware> | undefined;
-    for (let i = 0; i < 26; i++) {
-      last = middleware(buildRequest("GET", { "x-forwarded-for": ip }));
-    }
-    expect(last!.status).toBe(429);
   });
 });

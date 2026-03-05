@@ -1,28 +1,30 @@
-# Mocking Guide — Backend/Frontend Testing
+# Mocking Guide — NestJS Testing
 
 ## Mock Factory Pattern
 
 Create reusable mock factories to avoid duplicating mock setups:
 
 ```typescript
-// Common mock factory for repository-style dependencies
-const createRepositoryMock = () => ({
+// Common mock factory for Mongoose Model
+const createModelMock = () => ({
   find: jest.fn(),
   findOne: jest.fn(),
-  save: jest.fn(),
-  update: jest.fn(),
-  count: jest.fn(),
+  findOneAndUpdate: jest.fn(),
+  create: jest.fn(),
+  countDocuments: jest.fn(),
 });
 ```
 
 ## Provider Mocking
 
-### Repository Adapter
+### Mongoose Model
 
 ```typescript
+import { getModelToken } from '@nestjs/mongoose';
+
 {
-  provide: 'AppointmentRepository',
-  useValue: createRepositoryMock(),
+  provide: getModelToken('Appointment'),
+  useValue: createModelMock(),
 }
 ```
 
@@ -56,7 +58,7 @@ const createRepositoryMock = () => ({
 }
 ```
 
-## Chaining Query Builders
+## Chaining Mongoose Queries
 
 When mocking chained queries like `find().sort().exec()`:
 

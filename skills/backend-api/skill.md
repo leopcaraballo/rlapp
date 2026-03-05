@@ -1,35 +1,40 @@
 ---
 name: backend-api (Senior Level)
-description: Development of high-performance .NET services, message orchestration, and pure domain logic.
+description: Development of high-performance NestJS microservices, message orchestration, and pure domain logic.
+trigger: When feedback mentions services, controllers, DTOs, validation, message queues, ack/nack, or business logic in the backend.
+scope: backend/producer/src/, backend/consumer/src/
+author: "Orchestrator Team"
+version: "2.0.0 (Senior Grade)"
 license: "MIT"
+autoinvoke: true
 ---
 
 # Skill: Backend API (Senior Grade)
 
 ## Context
 
-This project uses **.NET** services with API + Worker architecture:
+This project uses **NestJS** with two microservices:
 
-- **API:** Receives HTTP commands and persists events in PostgreSQL Event Store + Outbox.
-- **Worker:** Reads Outbox and publishes events to RabbitMQ with retry/backoff policies.
+- **Producer:** REST API + WebSocket Gateway. Receives appointment requests and publishes to RabbitMQ.
+- **Consumer:** Listens to RabbitMQ queue, persists to MongoDB, and runs a Scheduler to assign offices.
 
 ## Rules
 
-1. All DTOs must use explicit validation (DataAnnotations/FluentValidation) and centralized request validation.
+1. All DTOs must use `class-validator` decorators with `ValidationPipe` globally enabled.
 2. Field naming in **English**: `idCard`, `fullName`, `officeNumber`, `status`.
 3. Shared event type: `AppointmentEventPayload`.
 4. Every critical decision must include `// HUMAN CHECK` with justification.
 5. Services should handle errors explicitly — no silent catches.
-6. Worker/dispatcher must use explicit publish/retry strategy:
+6. Consumer must use explicit `ack`/`nack` strategy:
    - `ack` on success only.
    - `nack(msg, false, false)` for validation errors (no requeue).
    - `nack(msg, false, true)` for transient errors (requeue).
 
 ## Tools Permitted
 
-- **Read/Write:** Files within `rlapp-backend/src/Services/WaitingRoom/` and `rlapp-backend/src/BuildingBlocks/`
+- **Read/Write:** Files within `backend/producer/src/` and `backend/consumer/src/`
 - **Explore:** Use `grep`/`glob` to locate affected services, controllers, DTOs before changes
-- **Terminal:** `dotnet test`, `dotnet build`
+- **Terminal:** `npm run test`, `npm run lint`, `npm run build` (within `backend/producer` or `backend/consumer`)
 
 ## Workflow
 
@@ -42,5 +47,5 @@ This project uses **.NET** services with API + Worker architecture:
 
 ## Assets
 
-- `assets/templates/service-pattern.ts` — Reference service pattern with race condition prevention
+- `assets/templates/service-pattern.ts` — Reference NestJS service with race condition prevention
 - `assets/docs/ack-nack-strategy.md` — Detailed ack/nack documentation

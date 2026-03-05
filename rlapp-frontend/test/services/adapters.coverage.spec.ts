@@ -18,7 +18,6 @@ jest.mock("socket.io-client", () => {
 const setEnv = () => {
   process.env.NEXT_PUBLIC_API_BASE_URL = "http://api.test";
   process.env.NEXT_PUBLIC_WS_URL = "ws://ws.test";
-  // NODE_ENV es de solo lectura en los tipos de Next.js; en Jest siempre es "test"
 };
 
 describe("HttpAppointmentAdapter", () => {
@@ -59,7 +58,7 @@ describe("HttpAppointmentAdapter", () => {
     const response = await adapter.createAppointment({
       fullName: "Jane",
       idCard: 99,
-      priority: "High",
+      priority: "high",
     });
 
     expect(response).toEqual({ id: "42" });
@@ -84,7 +83,7 @@ describe("HttpAppointmentAdapter", () => {
     const adapter = new HttpAppointmentAdapter();
 
     await expect(
-      adapter.createAppointment({ fullName: "X", idCard: 1, priority: "High" }),
+      adapter.createAppointment({ fullName: "X", idCard: 1, priority: "high" }),
     ).rejects.toMatchObject({ message: "SERVER_ERROR", serverMessage: "boom" });
   });
 
@@ -101,7 +100,7 @@ describe("HttpAppointmentAdapter", () => {
     const adapter = new HttpAppointmentAdapter();
 
     await expect(
-      adapter.createAppointment({ fullName: "X", idCard: 1, priority: "High" }),
+      adapter.createAppointment({ fullName: "X", idCard: 1, priority: "high" }),
     ).rejects.toMatchObject({ message: "RATE_LIMIT", serverMessage: "slow" });
     expect(fetch).toHaveBeenCalledTimes(1);
   });

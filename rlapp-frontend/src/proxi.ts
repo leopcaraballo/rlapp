@@ -69,8 +69,6 @@ export function middleware(req: NextRequest) {
 
   /**
    * CSP compatible con Next (dev + prod)
-   * Permite conexiones a localhost:5000 (desde navegador) y api:8080 (desde contenedor)
-   * para que frontend pueda comunicarse con el backend
    */
   res.headers.set(
     "Content-Security-Policy",
@@ -79,7 +77,7 @@ export function middleware(req: NextRequest) {
       "script-src 'self' 'unsafe-inline'",
       "style-src 'self' 'unsafe-inline'",
       "img-src 'self' data:",
-      "connect-src 'self' http://localhost:5000 http://api:8080 ws://localhost:5000 ws://api:8080",
+      "connect-src 'self'",
       "frame-ancestors 'none'",
       "base-uri 'self'",
       "form-action 'self'",

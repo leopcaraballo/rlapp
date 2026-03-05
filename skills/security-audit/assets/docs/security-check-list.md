@@ -1,11 +1,11 @@
 # Security Check-list (Elite Grade)
 
-## 1. Backend (ASP.NET Core)
+## 1. Backend (NestJS)
 
 - [ ] **CORS**: ¿Está restringido a dominios conocidos?
 - [ ] **Rate Limiting**: ¿Protegido contra fuerza bruta?
-- [ ] **Request Validation**: ¿se valida entrada con filtros/validadores y modelo tipado?
-- [ ] **Security Headers**: ¿usa cabeceras de seguridad equivalentes en gateway/API?
+- [ ] **ValidationPipe**: ¿`whitelist: true` y `forbidNonWhitelisted: true`?
+- [ ] **Security Headers**: ¿Usa `helmet`?
 - [ ] **Sensitive Data**: ¿Se filtran contraseñas/PIDs en logs?
 
 ## 2. Infrastructure (Docker)

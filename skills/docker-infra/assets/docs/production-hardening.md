@@ -5,25 +5,25 @@
 ### Credentials
 
 - [ ] Replace default RabbitMQ credentials (`guest`/`guest`) with secrets
-- [ ] Replace default PostgreSQL credentials with secrets
+- [ ] Replace default MongoDB credentials (`admin`/`admin123`) with secrets
 - [ ] Move all credentials to `.env` (never committed to Git)
 - [ ] Verify `.gitignore` includes `.env`
 
 ### Ports
 
 - [ ] Remove RabbitMQ Management UI port (`15672`) from production config
-- [ ] Remove PostgreSQL external port (`5432`) from production config when not required
-- [ ] Keep only necessary ports exposed publicly (frontend and API)
+- [ ] Remove MongoDB external port (`27017`) from production config
+- [ ] Keep only necessary ports: Producer API (`3000`), Frontend (`3001`)
 
 ### Healthchecks
 
 - [ ] Verify all services have `healthcheck` definitions
 - [ ] Verify `depends_on` uses `condition: service_healthy`
-- [ ] Backend services expose `/health` endpoints
+- [ ] NestJS services expose `/health` endpoint
 
 ### Volumes & Build
 
-- [ ] Remove development volume mounts no longer needed in production
+- [ ] Remove development volume mounts (`./backend/producer:/app`)
 - [ ] Remove `command: npm run start:dev` overrides
 - [ ] Use multi-stage Dockerfile with `production` target
 - [ ] Remove `node_modules` volume exclusions

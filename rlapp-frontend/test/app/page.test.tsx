@@ -5,16 +5,16 @@ import { render, screen } from "@testing-library/react";
 
 import Home from "@/app/page";
 
-// Mock del hook que usa RealtimeAppointments
-jest.mock("@/hooks/useQueueAsAppointments", () => ({
-  useQueueAsAppointments: () => ({
+// Mock del hook personalizado
+jest.mock("@/hooks/useAppointmentsWebSocket", () => ({
+  useAppointmentsWebSocket: () => ({
     appointments: [
       {
         id: "1",
         fullName: "Test Patient",
         status: "waiting",
         office: null,
-        priority: "Medium",
+        priority: "medium",
         timestamp: Date.now(),
       },
       {
@@ -22,7 +22,7 @@ jest.mock("@/hooks/useQueueAsAppointments", () => ({
         fullName: "Active Patient",
         status: "called",
         office: "1",
-        priority: "High",
+        priority: "high",
         timestamp: Date.now(),
       },
     ],

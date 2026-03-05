@@ -68,9 +68,8 @@ public sealed class EventDrivenPipelineE2ETests : IAsyncLifetime
 
     public EventDrivenPipelineE2ETests()
     {
-        _testConnectionString =
-            Environment.GetEnvironmentVariable("RLAPP_INTEGRATION_EVENTSTORE_CONNECTION")
-            ?? "Host=localhost;Port=5432;Database=rlapp_waitingroom_test;Username=rlapp;Password=rlapp_secure_password";
+        // Use test database
+        _testConnectionString = "Host=localhost;Port=5432;Database=rlapp_waitingroom_test;Username=rlapp;Password=rlapp_secure_password";
 
         // Build service provider for test
         var services = new ServiceCollection();
@@ -125,8 +124,10 @@ public sealed class EventDrivenPipelineE2ETests : IAsyncLifetime
 
     async Task IAsyncLifetime.InitializeAsync()
     {
-        if (_eventStore is PostgresEventStore)
+        // Setup test database
+        if (_eventStore is PostgresEventStore postgresEventStore)
         {
+            // Truncate test data tables
             var connection = new Npgsql.NpgsqlConnection(_testConnectionString);
             await connection.OpenAsync();
 
@@ -185,7 +186,7 @@ public sealed class EventDrivenPipelineE2ETests : IAsyncLifetime
         var eventList = eventsFromStore.ToList();
         var patientCheckedInEvent = eventList.OfType<PatientCheckedIn>().Single();
         Assert.Equal(TestQueueId, patientCheckedInEvent.QueueId);
-        Assert.Equal(TestPatientId.ToUpperInvariant(), patientCheckedInEvent.PatientId);
+        Assert.Equal(TestPatientId, patientCheckedInEvent.PatientId);
         Assert.Equal(TestPatientName, patientCheckedInEvent.PatientName);
 
         // Assert: Step 3 - Verify event in outbox (before dispatch)

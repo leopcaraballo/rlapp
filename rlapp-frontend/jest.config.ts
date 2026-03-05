@@ -12,31 +12,11 @@ const config: Config = {
   testEnvironment: "jest-environment-jsdom",
   collectCoverageFrom: ["<rootDir>/src/**/*.{ts,tsx}"],
   coveragePathIgnorePatterns: ["/node_modules/"],
-  /**
-   * Reporteros de salida — se activan con `npm run test:report`.
-   * El reporter "default" mantiene la salida de consola legible.
-   * El reporter nativo "json" vuelca resultados a test-results/jest-results.json.
-   * // HUMAN CHECK — El archivo JSON es el artefacto de pipeline; ajustar ruta
-   *   si el CI espera una ubicación diferente.
-   */
-  coverageDirectory: "<rootDir>/test-results/coverage",
-  coverageReporters: ["text", "lcov", "json-summary", "html"],
   moduleNameMapper: {
     "^@/(.*)$": "<rootDir>/src/$1",
     "^@test/(.*)$": "<rootDir>/test/$1",
-    "^until-async$": "<rootDir>/test/__mocks__/until-async.ts",
-  },
-  transformIgnorePatterns: [
-    "node_modules/(?!msw|@mswjs/interceptors|until-async)/",
-  ],
-  testEnvironmentOptions: {
-    customExportConditions: ["node"],
   },
   testMatch: [
-    "<rootDir>/test/security/**/*.spec.ts",
-    "<rootDir>/test/security/**/*.test.ts",
-    "<rootDir>/test/security/**/*.spec.tsx",
-    "<rootDir>/test/security/**/*.test.tsx",
     "<rootDir>/test/hooks/**/*.spec.ts",
     "<rootDir>/test/hooks/**/*.test.ts",
     "<rootDir>/test/hooks/**/*.spec.tsx",
@@ -69,22 +49,6 @@ const config: Config = {
     "<rootDir>/test/services/**/*.test.ts",
     "<rootDir>/test/services/**/*.spec.tsx",
     "<rootDir>/test/services/**/*.test.tsx",
-    "<rootDir>/test/application/**/*.spec.ts",
-    "<rootDir>/test/application/**/*.test.ts",
-    "<rootDir>/test/application/**/*.spec.tsx",
-    "<rootDir>/test/application/**/*.test.tsx",
-    "<rootDir>/test/infrastructure/**/*.spec.ts",
-    "<rootDir>/test/infrastructure/**/*.test.ts",
-    "<rootDir>/test/infrastructure/**/*.spec.tsx",
-    "<rootDir>/test/infrastructure/**/*.test.tsx",
-    "<rootDir>/test/context/**/*.spec.ts",
-    "<rootDir>/test/context/**/*.test.ts",
-    "<rootDir>/test/context/**/*.spec.tsx",
-    "<rootDir>/test/context/**/*.test.tsx",
-    "<rootDir>/test/repositories/**/*.spec.ts",
-    "<rootDir>/test/repositories/**/*.test.ts",
-    "<rootDir>/test/repositories/**/*.spec.tsx",
-    "<rootDir>/test/repositories/**/*.test.tsx",
   ],
 };
 

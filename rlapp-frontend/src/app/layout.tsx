@@ -3,11 +3,8 @@ import "@/styles/globals.css";
 import type { Metadata } from "next";
 import { Inter } from "next/font/google";
 
-import Navbar from "@/components/Navbar/Navbar";
-import { AlertProvider } from "@/context/AlertContext";
-import { AuthProvider } from "@/context/AuthContext";
 import { DependencyProvider } from "@/context/DependencyContext";
-import RouteGuard from "@/security/RouteGuard";
+import { AlertProvider } from "@/context/AlertContext";
 
 const inter = Inter({
   subsets: ["latin"],
@@ -28,14 +25,7 @@ export default function RootLayout({
     <html lang="es">
       <body className={inter.className}>
         <DependencyProvider>
-          <AuthProvider>
-            <AlertProvider>
-              <RouteGuard>
-                <Navbar />
-                {children}
-              </RouteGuard>
-            </AlertProvider>
-          </AuthProvider>
+          <AlertProvider>{children}</AlertProvider>
         </DependencyProvider>
       </body>
     </html>

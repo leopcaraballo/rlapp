@@ -6,47 +6,13 @@
 
 | Skill | Path | Trigger | Scope |
 |-------|------|---------|-------|
-| `backend-api (Senior Level)` | `skills/backend-api/skill.md` | When feedback mentions services, controllers, DTOs, validation, message queues, ack/nack, or business logic in the backend. | `rlapp-backend/src/Services/, rlapp-backend/src/BuildingBlocks/` |
+| `backend-api (Senior Level)` | `skills/backend-api/skill.md` | When feedback mentions services, controllers, DTOs, validation, message queues, ack/nack, or business logic in the backend. | `backend/producer/src/, backend/consumer/src/` |
 | `conventional-commits (Senior Level)` | `skills/conventional-commits/skill.md` | When creating commits, pushing code, formatting commit messages, or when feedback mentions git history, commit hygiene, or semantic versioning. | `.git/, scripts/` |
-| `docker-infra (Senior Level)` | `skills/docker-infra/skill.md` | When feedback mentions Docker, healthchecks, credentials, environment variables, ports, volumes, deployment, or infrastructure security. | `docker-compose.yml, rlapp-backend/Dockerfile, rlapp-frontend/Dockerfile, scripts/` |
-| `frontend-ui (Senior Level)` | `skills/frontend-ui/skill.md` | When feedback mentions UI components, WebSocket, CSS, styling, pages, dashboard, or frontend behavior. | `rlapp-frontend/src/` |
-| `refactor-arch (Senior Level)` | `skills/refactor-arch/skill.md` | When feedback mentions architecture refactoring, hexagonal architecture, SOLID principles, design patterns, ports and adapters, domain isolation, coupling, decoupling, or dependency inversion. | `rlapp-backend/src/, rlapp-frontend/src/` |
-| `security-audit` | `skills/security-audit/skill.md` | When feedback mentions security, vulnerabilities, audit, authentication, authorization, OWASP, secrets, certificates, encryption, or pen-testing. | `rlapp-backend/src/, rlapp-frontend/src/, docker-compose.yml` |
+| `docker-infra (Senior Level)` | `skills/docker-infra/skill.md` | When feedback mentions Docker, healthchecks, credentials, environment variables, ports, volumes, deployment, or infrastructure security. | `docker-compose.yml, .env, .env.example, backend/producer/Dockerfile, backend/consumer/Dockerfile, frontend/Dockerfile` |
+| `frontend-ui (Senior Level)` | `skills/frontend-ui/skill.md` | When feedback mentions UI components, WebSocket, CSS, styling, pages, dashboard, or frontend behavior. | `frontend/src/` |
+| `refactor-arch (Senior Level)` | `skills/refactor-arch/skill.md` | When feedback mentions architecture refactoring, hexagonal architecture, SOLID principles, design patterns, ports and adapters, domain isolation, coupling, decoupling, or dependency inversion. | `backend/producer/src/, backend/consumer/src/, frontend/src/` |
+| `security-audit` | `skills/security-audit/skill.md` | When feedback mentions security, vulnerabilities, audit, authentication, authorization, OWASP, secrets, certificates, encryption, or pen-testing. | `backend/producer/src/, backend/consumer/src/, frontend/src/, docker-compose.yml, .env.example` |
 | `skill-creator (Senior Level)` | `skills/skill-creator/skill.md` | When a task requires a specific capability not covered by existing skills in /skills. | `skills/, .agent/workflows/` |
-| `testing-qa (Senior Level)` | `skills/testing-qa/skill.md` | When feedback mentions tests, specs, unit testing, mocking, coverage, test failures, or QA validation. | `rlapp-backend/src/Tests/, rlapp-frontend/test/, rlapp-frontend/src/**/*.test.{ts,tsx}` |
+| `testing-qa (Senior Level)` | `skills/testing-qa/skill.md` | When feedback mentions tests, specs, unit testing, mocking, coverage, test failures, or QA validation. | `backend/producer/test/, backend/consumer/test/, backend/consumer/src/**/*.spec.ts, backend/producer/src/**/*.spec.ts` |
 
 <!-- END SKILL REFERENCES -->
-
-## Sub-skills integrados por agente
-
-> Los siguientes sub-skills estan alojados en `assets/` de cada skill principal.
-> Son invocados exclusivamente por los agentes especializados.
-
-### Backend Agent (skills/backend-api/assets/)
-
-| Sub-skill | Archivo | Activacion |
-|-----------|---------|------------|
-| clean-code-reviewer | `skill_backend_clean-code-reviewer.md` | Codigo nuevo o revisado, funciones >20 lineas, violaciones SOLID |
-| integration-test-generator | `skill_backend_integration-test-generator.md` | Endpoints nuevos o sin cobertura de tests |
-| contract-test-generator | `skill_backend_contract-test-generator.md` | Microservicios con DTOs compartidos o APIs sin contrato |
-
-### Frontend Agent (skills/frontend-ui/assets/)
-
-| Sub-skill | Archivo | Activacion |
-|-----------|---------|------------|
-| component-reviewer | `skill_frontend_component-reviewer.md` | Componentes nuevos o >200 lineas, logica mezclada con UI |
-| accessibility-checker | `skill_frontend_accessibility-checker.md` | Componentes de UI, formularios, modales, elementos interactivos |
-| ui-test-generator | `skill_frontend_ui-test-generator.md` | Componentes y flujos implementados, formularios con validaciones |
-
-### QA Agent (skills/testing-qa/assets/)
-
-| Sub-skill | Archivo | Activacion |
-|-----------|---------|------------|
-| test-strategy-planner | `skill_qa_test-strategy-planner.md` | Inicio de ciclo QA, nueva funcionalidad, cambio de arquitectura |
-| gherkin-case-generator | `skill_qa_gherkin-case-generator.md` | HU con criterios de aceptacion definidos |
-| risk-identifier | `skill_qa_risk-identifier.md` | Integraciones externas, datos sensibles, flujos criticos |
-| test-data-specifier | `skill_qa_test-data-specifier.md` | Datos complejos, validaciones de negocio, datasets especiales |
-| critical-flow-mapper | `skill_qa_critical-flow-mapper.md` | Flujos de alto valor, multi-sistema, estados criticos |
-| regression-strategy | `skill_qa_regression-strategy.md` | Funcionalidades previas, modulos compartidos, releases |
-| automation-flow-proposer | `skill_qa_automation-flow-proposer.md` | Flujos criticos estabilizados, cobertura manual insuficiente |
-| performance-analyzer | `skill_qa_performance-analyzer.md` | SLAs definidos, endpoints criticos, procesos batch |

@@ -94,9 +94,3 @@ logger.LogInformation("Database schema ready. Starting Outbox Worker...");
 
 await host.RunAsync();
 
-// Expose Program class for testing — placed in WaitingRoom.Worker namespace to avoid
-// ambiguity with WaitingRoom.API's global::Program
-namespace WaitingRoom.Worker
-{
-    public partial class WorkerProgram { }
-}

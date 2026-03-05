@@ -15,7 +15,7 @@ describe("WaitingAppointmentCard", () => {
     fullName: "John Doe",
     status: "waiting",
     office: null,
-    priority: "High",
+    priority: "high",
     timestamp: Date.now(),
     idCard: 0,
   };
@@ -44,7 +44,7 @@ describe("WaitingAppointmentCard", () => {
     it("should show correct badge for medium priority", () => {
       const mediumPriority: Appointment = {
         ...mockAppointment,
-        priority: "Medium",
+        priority: "medium",
       };
 
       render(<WaitingAppointmentCard appointment={mediumPriority} />);
@@ -55,7 +55,7 @@ describe("WaitingAppointmentCard", () => {
     it("should show correct badge for low priority", () => {
       const lowPriority: Appointment = {
         ...mockAppointment,
-        priority: "Low",
+        priority: "low",
       };
 
       render(<WaitingAppointmentCard appointment={lowPriority} />);
@@ -101,7 +101,7 @@ describe("WaitingAppointmentCard", () => {
         <WaitingAppointmentCard appointment={mockAppointment} />,
       );
 
-      const statusBadge = container.querySelector('[data-status="High"]');
+      const statusBadge = container.querySelector('[data-status="high"]');
       expect(statusBadge).toBeInTheDocument();
     });
   });

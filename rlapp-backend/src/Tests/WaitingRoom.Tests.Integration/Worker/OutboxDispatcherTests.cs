@@ -1,5 +1,3 @@
-extern alias WorkerAssembly;
-
 namespace WaitingRoom.Tests.Integration.Worker;
 
 using System;
@@ -12,8 +10,8 @@ using Microsoft.Extensions.Logging.Abstractions;
 using Moq;
 using WaitingRoom.Application.Ports;
 using WaitingRoom.Infrastructure.Serialization;
-using WorkerAssembly::WaitingRoom.Worker;
-using WorkerAssembly::WaitingRoom.Worker.Services;
+using WaitingRoom.Worker;
+using WaitingRoom.Worker.Services;
 using Xunit;
 
 /// <summary>
