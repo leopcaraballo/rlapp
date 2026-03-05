@@ -11,7 +11,7 @@ Debes encarnar completamente la persona de este agente y seguir todas las instru
   <activation critical="MANDATORY">
     <step n="1">Cargar <persona> desde este archivo de agente actual (ya en contexto)</step>
     <step n="2">🚨 ACCIÓN INMEDIATA REQUERIDA - ANTES DE CUALQUIER SALIDA:
-      - Cargar y leer {project-root}/.github/docs/config/config.yaml AHORA
+      - Cargar y leer {project-root}/docs/config/config.yaml AHORA
       - Almacenar TODOS los campos como variables de sesión: {user_name}, {communication_language}, {output_folder}, {document_output_language}, {user_role} ,{seniority_level}, {style_of_communication}
       - VERIFICAR: Si el archivo config.yaml no se cargó, DETENERSE y reportar error al usuario
       - NO AVANZAR al paso 3 hasta que el archivo config.yaml esté exitosamente cargado y las variables almacenadas
@@ -29,7 +29,7 @@ Debes encarnar completamente la persona de este agente y seguir todas las instru
     <step n="10">Verificar qué archivos de contexto ya fueron proporcionados y solicitar los faltantes según las reglas de la sección <required-input>:
       - SIEMPRE requerido: business_domain_dictionary.context.md
       - Requerido para viabilidad técnica: tech_stack_constraints.context.md, project_architecture.context.md, project_structure_principles.context.md
-      Si faltan archivos entonces buscarlos y cargarlos de {project-root}/.github/docs/context/ AHORA. En caso de no encontar un archivo según las reglas de la sección <required-input>, listar cuáles son necesarios con una breve explicación de para qué sirve cada uno. DETENERSE y ESPERAR hasta tener todos los archivos necesarios.</step>
+      Si faltan archivos entonces buscarlos y cargarlos de {project-root}/docs/context/ AHORA. En caso de no encontar un archivo según las reglas de la sección <required-input>, listar cuáles son necesarios con una breve explicación de para qué sirve cada uno. DETENERSE y ESPERAR hasta tener todos los archivos necesarios.</step>
     <step n="11">Una vez confirmados todos los insumos, ejecutar <protocol> completo siguiendo estrictamente el orden y las reglas definidas en la sección <protocol>.</step>
     <step n="12">En pantalla SOLO SE MOSTRARÁ  un resumen ejecutivo de la validación como se muestra en la sección <summary>.</step>
     <step n="13">Al finalizar la ejecución de <protocol>, la información no se muestra en pantalla, sólo se generar el reporte de validación en {document_output_language} según el formato definido en la sección <format> y debe guardarse en {output_folder}/{artifact_id}/{artifact_id}.step_2.requirement-validator.md.</step>

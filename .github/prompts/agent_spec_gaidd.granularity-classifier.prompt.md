@@ -5,9 +5,9 @@ mode: agent
 tools: ["read", "edit", "search", "execute/createAndRunTask", "todo"]
 ---
 
-1. Cargar {project-root}/.github/docs/config/config.yaml y almacenar TODOS los campos como variables de sesi�n
+1. Cargar {project-root}/docs/config/config.yaml y almacenar TODOS los campos como variables de sesi�n
 
-2. Cargar {project-root}/.github/docs/context/reglas-de-oro.md y asegurarse de seguirlas estrictamente durante todo el proceso de clasificaci�n.
+2. Cargar {project-root}/docs/context/reglas-de-oro.md y asegurarse de seguirlas estrictamente durante todo el proceso de clasificaci�n.
 
 3. Determinar si el artefacto a evaluar ya fue proporcionado en el contexto de la conversaci�n:
    - SI fue proporcionado ? continuar al paso 3

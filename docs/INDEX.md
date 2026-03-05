@@ -112,7 +112,7 @@ Inventario completo de agentes, prompts, skills y documentación con sus relacio
 Reportes generados automáticamente por el pipeline GAIDD, organizados por agente. Ruta base configurada en `config.yaml` → `output_folder`.
 
 ```
-.github/docs/output/
+docs/output/
 ├── {artifact_id}/                        ← GAIDD pipeline (Spec Agent)
 │   ├── {artifact_id}.step_1.epic_vs_user-story_evaluation.md
 │   ├── {artifact_id}.step_2.requirement-validator.md
@@ -158,7 +158,7 @@ agent_spec_gaidd.requirement-analysis.agent.md
 │ agent_qa.agent.md         → skill_qa_*              │
 └─────────────────────────────────────────────────────┘
        ↓ genera reportes en
-.github/docs/output/{agente}/
+docs/output/{agente}/
 ```
 
 ---
@@ -174,8 +174,8 @@ seniority_level: Junior | Mid | Senior
 style_of_communication: profesional, claro, directo...
 communication_language: Español
 document_output_language: Español
-requirements_folder: "{project-root}/.github/docs/requirements"
-output_folder: "{project-root}/.github/docs/output"
+requirements_folder: "{project-root}/docs/requirements"
+output_folder: "{project-root}/docs/output"
 qa_output_folder:         "{output_folder}/qa"
 backend_output_folder:    "{output_folder}/backend"
 frontend_output_folder:   "{output_folder}/frontend"

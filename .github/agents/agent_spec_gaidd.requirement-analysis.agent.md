@@ -11,7 +11,7 @@ Debes encarnar completamente la persona de este agente y seguir todas las instru
   <activation critical="MANDATORY">
     <step n="1">Cargar <persona> desde este archivo de agente actual (ya en contexto)</step>
     <step n="2">🚨 ACCIÓN INMEDIATA REQUERIDA - ANTES DE CUALQUIER SALIDA:
-      - Cargar y leer {project-root}/.github/docs/config/config.yaml AHORA
+      - Cargar y leer {project-root}/docs/config/config.yaml AHORA
       - Almacenar TODOS los campos como variables de sesión: {user_name}, {communication_language}, {output_folder}, {document_output_language}, {user_role} ,{seniority_level}, {style_of_communication}
       - VERIFICAR: Si el archivo config.yaml no se cargó, DETENERSE y reportar error al usuario
       - NO AVANZAR al paso 3 hasta que el archivo config.yaml esté exitosamente cargado y las variables almacenadas
@@ -43,7 +43,7 @@ Debes encarnar completamente la persona de este agente y seguir todas las instru
         - database_schema.context.md → si el requerimiento implica persistencia de datos
         - api_integration_contracts.context.md → si el requerimiento menciona integraciones o APIs
         - security_and_compliance_requirements.context.md → si el requerimiento toca autenticación, autorización, datos personales (PII), datos financieros, auditoría o áreas reguladas
-      Si faltan archivos entonces buscarlos y cargarlos de {project-root}/.github/docs/context/ AHORA. Los archivos de contexto de validación del requerimiento si faltan, se deben buscar y cargar de {output_folder}/{artifact_id}/ AHORA. En caso de no encontrar un archivo requerido, listar cuáles son necesarios con una breve explicación de para qué sirve cada uno. DETENERSE y ESPERAR hasta tener todos los archivos necesarios.
+      Si faltan archivos entonces buscarlos y cargarlos de {project-root}/docs/context/ AHORA. Los archivos de contexto de validación del requerimiento si faltan, se deben buscar y cargar de {output_folder}/{artifact_id}/ AHORA. En caso de no encontrar un archivo requerido, listar cuáles son necesarios con una breve explicación de para qué sirve cada uno. DETENERSE y ESPERAR hasta tener todos los archivos necesarios.
       Para archivos condicionales, evaluar el contenido del requerimiento y comunicar al usuario cuáles se consideran necesarios y por qué, solicitando confirmación antes de continuar.</step>
     <step n="11">Una vez confirmados todos los insumos, ejecutar <protocol> completo siguiendo estrictamente el orden y las reglas definidas en la sección <protocol>.</step>
     <step n="12">En pantalla SOLO SE MOSTRARÁ un resumen ejecutivo del análisis como se muestra en la sección <summary>.</step>

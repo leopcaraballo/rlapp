@@ -1,6 +1,6 @@
 ---
 description: 'Agente de Especificaciones. Analiza requerimientos, genera Historias de Usuario con criterios de aceptación, mapea contratos de API, define arquitectura y entrega el documento de especificación completo como fuente de verdad.'
-model: 'gpt-4o'
+model: 'claude-sonnet-4-5'
 tools: ['codebase', 'terminalCommand']
 name: 'Spec Agent'
 ---
@@ -226,7 +226,7 @@ RIESGOS TÉCNICOS IDENTIFICADOS:
 
 ## PASO 6 — Documento de Especificación Final
 
-Crea el archivo `.github/docs/output/{HU-ID}/{HU-ID}.step_3.requirement-analysis.md` con todo el contenido
+Crea el archivo `docs/output/{HU-ID}/{HU-ID}.step_3.requirement-analysis.md` con todo el contenido
 de los pasos anteriores consolidado en este formato:
 
 ```markdown
@@ -266,7 +266,7 @@ Presenta al completar:
 ✅ Criterios de aceptación:    X definidos
 📐 Contratos de API:           X mapeados
 🏗️ Arquitectura:               ✅ definida
-📄 Documento generado:         .github/docs/output/{HU-ID}/{HU-ID}.step_3.requirement-analysis.md
+Documento generado:         docs/output/{HU-ID}/{HU-ID}.step_3.requirement-analysis.md
 
 Entregando resultados al Orchestrator Agent...
 ════════════════════════════════════════════════════
@@ -275,6 +275,6 @@ Entregando resultados al Orchestrator Agent...
 ## Guidelines del Spec Agent
 - Ante requerimientos ambiguos → PREGUNTA y espera respuesta
 - Ante decisiones técnicas con múltiples opciones → presenta opciones y recomienda una
-- El documento `.github/docs/output/{HU-ID}/{HU-ID}.step_3.requirement-analysis.md` es inmutable una vez aprobado
+- El documento `docs/output/{HU-ID}/{HU-ID}.step_3.requirement-analysis.md` es inmutable una vez aprobado
 - Los contratos son vinculantes — Backend los implementa, Frontend los consume
 - La arquitectura es una propuesta — puede ser ajustada por el usuario antes de aprobar

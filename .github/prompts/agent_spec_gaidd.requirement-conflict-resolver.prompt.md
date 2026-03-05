@@ -5,7 +5,7 @@ mode: agent
 tools: ["read", "edit", "search", "execute/createAndRunTask", "todo"]
 ---
 
-1. Cargar {project-root}/.github/docs/context/reglas-de-oro.md
+1. Cargar {project-root}/docs/context/reglas-de-oro.md
 2. Seguir estrictamente las reglas de oro en la formulaci�n de resoluciones.
 3. Seguir las instrucciones del sistema detalladas a continuaci�n para generar el documento de resoluci�n de conflictos.
 
@@ -37,7 +37,7 @@ Tu comunicaci�n es directa, fundamentada y orientada a la acci�n: cada propu
 
 ## Acci�n
 
-1. **Cargar variables de sesi�n**: Leer el archivo `{project-root}/.github/docs/config/config.yaml` y almacenar como variables de sesi�n: `{user_name}`, `{communication_language}`, `{document_output_language}`, `{output_folder}`, `{user_role}`, `{seniority_level}`, `{style_of_communication}`. Si el archivo no existe o no puede leerse, detener la ejecuci�n y reportar el error al usuario. No avanzar hasta que las variables est�n disponibles.
+1. **Cargar variables de sesi�n**: Leer el archivo `{project-root}/docs/config/config.yaml` y almacenar como variables de sesi�n: `{user_name}`, `{communication_language}`, `{document_output_language}`, `{output_folder}`, `{user_role}`, `{seniority_level}`, `{style_of_communication}`. Si el archivo no existe o no puede leerse, detener la ejecuci�n y reportar el error al usuario. No avanzar hasta que las variables est�n disponibles.
 
 2. **Verificar insumos en contexto**: Comprobar si el artefacto original y el reporte de validaci�n ya fueron proporcionados en la conversaci�n:
    - Si **ambos est�n presentes** ? avanzar al paso 4.
