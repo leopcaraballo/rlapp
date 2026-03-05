@@ -36,15 +36,18 @@ services:
     image: rabbitmq:3.12-management-alpine
     container_name: rlapp-rabbitmq
     environment:
-      RABBITMQ_DEFAULT_USER: guest
-      RABBITMQ_DEFAULT_PASS: guest
+      RABBITMQ_DEFAULT_USER: rlapp
+      RABBITMQ_DEFAULT_PASS: rlapp_rabbit_password
       RABBITMQ_DEFAULT_VHOST: "/"
+      RABBITMQ_ENABLED_PLUGINS_FILE: /etc/rabbitmq/enabled_plugins
     ports:
       - "5672:5672"
       - "15672:15672"
+      - "15692:15692"
     volumes:
       - rabbitmq_data:/var/lib/rabbitmq
       - ./rlapp-backend/infrastructure/rabbitmq/rabbitmq.conf:/etc/rabbitmq/rabbitmq.conf:ro
+      - ./rlapp-backend/infrastructure/rabbitmq/enabled_plugins:/etc/rabbitmq/enabled_plugins:ro
       - ./rlapp-backend/infrastructure/rabbitmq/init-rabbitmq.sh:/docker-entrypoint-initdb.d/init-rabbitmq.sh:ro
     healthcheck:
       test: rabbitmq-diagnostics -q ping
@@ -70,11 +73,11 @@ services:
     environment:
       ASPNETCORE_ENVIRONMENT: Production
       ASPNETCORE_HTTP_PORTS: 8080
-      ConnectionStrings__EventStore: Host=postgres;Port=5432;Database=rlapp_waitingroom;Username=rlapp;Password=rlapp_secure_password
+      ConnectionStrings__EventStore: Host=postgres;Port=5432;Database=rlapp_waitingroom;Username=rlapp;Password=rlapp_secure_password;Timeout=60;CommandTimeout=600
       RabbitMq__HostName: rabbitmq
       RabbitMq__Port: 5672
-      RabbitMq__UserName: guest
-      RabbitMq__Password: guest
+      RabbitMq__UserName: rlapp
+      RabbitMq__Password: rlapp_rabbit_password
       RabbitMq__VirtualHost: /
       RabbitMq__ExchangeName: rlapp.events
       RabbitMq__ExchangeType: topic
@@ -106,9 +109,12 @@ services:
     container_name: rlapp-worker
     environment:
       DOTNET_ENVIRONMENT: Production
-      ConnectionStrings__EventStore: Host=postgres;Port=5432;Database=rlapp_waitingroom;Username=rlapp;Password=rlapp_secure_password
+      ConnectionStrings__EventStore: Host=postgres;Port=5432;Database=rlapp_waitingroom;Username=rlapp;Password=rlapp_secure_password;Timeout=60;CommandTimeout=600
       RabbitMq__HostName: rabbitmq
       RabbitMq__Port: 5672
+      RabbitMq__UserName: rlapp
+      RabbitMq__Password: rlapp_rabbit_password
+      RabbitMq__VirtualHost: /
     depends_on:
       postgres:
         condition: service_healthy
@@ -128,17 +134,28 @@ services:
       dockerfile: Dockerfile
     container_name: rlapp-frontend
     environment:
-      # Variables de entorno para la aplicación Next.js (usar nombres esperados por el código)
+      # Variables NEXT_PUBLIC_* se embeben en el JS del cliente y se ejecutan en el NAVEGADOR del host.
+      # El navegador NO puede resolver 'api:8080' (nombre interno Docker).
+      # Debe apuntar a localhost:5000 (puerto mapeado del host → contenedor api:8080).
       NEXT_PUBLIC_API_BASE_URL: http://localhost:5000
       NEXT_PUBLIC_WS_URL: http://localhost:5000
+      # Habilita WebSockets/SignalR en el frontend (false = conectar)
+      NEXT_PUBLIC_WS_DISABLED: "false"
+      NODE_ENV: development
     ports:
       - "3001:3000"
+    # Development tweaks: mount source, keep node_modules in anonymous volume, run dev server
+    volumes:
+      - ./rlapp-frontend:/app:delegated
+      - frontend_node_modules:/app/node_modules
+    working_dir: /app
+    command: ["npm", "run", "dev", "--", "-p", "3000", "-H", "0.0.0.0"]
     depends_on:
       api:
         condition: service_healthy
     healthcheck:
-      # Use CMD-SHELL and allow more time/retries because Next.js dev may take a few seconds
-      test: ["CMD-SHELL", "curl -f http://localhost:3000/ || exit 1"]
+      # wget está disponible en node:20-slim tras el apt-get install en el Dockerfile
+      test: ["CMD-SHELL", "wget -q --spider http://localhost:3000/ || exit 1"]
       interval: 15s
       timeout: 10s
       retries: 12
@@ -249,6 +266,22 @@ services:
     depends_on:
       - postgres
 
+  # ---------------------------------------------------------------------------
+  # PostgreSQL Exporter — Metricas de PostgreSQL para Prometheus
+  # ---------------------------------------------------------------------------
+  postgres_exporter:
+    image: prometheuscommunity/postgres-exporter:latest
+    container_name: rlapp-postgres-exporter
+    environment:
+      DATA_SOURCE_NAME: "postgresql://rlapp:rlapp_secure_password@postgres:5432/rlapp_waitingroom?sslmode=disable"
+    ports:
+      - "9187:9187"
+    depends_on:
+      postgres:
+        condition: service_healthy
+    networks:
+      - rlapp-network
+
 networks:
   rlapp-network:
     driver: bridge
@@ -266,4 +299,6 @@ volumes:
   seq_data:
     driver: local
   pgadmin_data:
+    driver: local
+  frontend_node_modules:
     driver: local

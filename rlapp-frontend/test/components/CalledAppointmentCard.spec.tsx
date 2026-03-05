@@ -15,7 +15,7 @@ describe("CalledAppointmentCard", () => {
     fullName: "Jane Smith",
     status: "called",
     office: "3",
-    priority: "medium",
+    priority: "Medium",
     timestamp: 1707907200000,
     idCard: 0,
   };
@@ -93,7 +93,7 @@ describe("CalledAppointmentCard", () => {
     it("should show high priority badge", () => {
       const highPriority: Appointment = {
         ...mockAppointment,
-        priority: "high",
+        priority: "High",
       };
 
       render(<CalledAppointmentCard appointment={highPriority} />);
@@ -104,7 +104,7 @@ describe("CalledAppointmentCard", () => {
     it("should show low priority badge", () => {
       const lowPriority: Appointment = {
         ...mockAppointment,
-        priority: "low",
+        priority: "Low",
       };
 
       render(<CalledAppointmentCard appointment={lowPriority} />);

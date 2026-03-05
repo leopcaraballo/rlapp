@@ -42,7 +42,7 @@ ${testingSkill}
 - Keep existing tests passing + create new ones
 
 ## Constraints:
-- domain/ CANNOT import from infrastructure/, @nestjs/*, mongoose, amqplib
+- domain/ CANNOT import from infrastructure/, Microsoft.AspNetCore.*, Npgsql, Dapper, RabbitMQ.Client
 - application/ can import from domain/ but NOT from infrastructure/
 - All dependencies flow inwards: infra -> app -> domain
 - Test coverage >80%
@@ -77,15 +77,15 @@ Extract office assignment logic from the infrastructure service to a domain enti
 1. Create \`OfficeAssignment\` entity in domain/entities/
 2. Create \`OfficeAssignmentPort\` in domain/ports/outbound/
 3. Move assignment logic to the domain (without Mongoose imports)
-4. Create adapter \`MongooseOfficeAssignmentAdapter\` in infrastructure/
-5. Update wiring in NestJS Module
+4. Create adapter \`PostgresOfficeAssignmentAdapter\` in infrastructure/
+5. Update wiring in service composition root
 6. Unit tests for the domain entity
 7. Integration tests for the adapter
 
 # Deliverables:
 1. OfficeAssignment entity (pure domain)
 2. OfficeAssignmentPort (interface)
-3. MongooseOfficeAssignmentAdapter (implementation)
+3. PostgresOfficeAssignmentAdapter (implementation)
 4. Tests >80% coverage
     `,
 });

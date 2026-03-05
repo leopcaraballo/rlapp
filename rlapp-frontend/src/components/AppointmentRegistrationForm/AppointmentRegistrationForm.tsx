@@ -8,14 +8,16 @@ import { sanitizeText } from "@/security/sanitize";
 
 import styles from "./AppointmentRegistrationForm.module.css";
 
-/**
- * 🛡️ HUMAN CHECK:
- * UI component for appointment registration.
- */
+/** Acepta entre 6 y 12 dígitos numéricos (cédula/documento colombiano). */
+const ID_CARD_PATTERN = /^\d{6,12}$/;
+
+type Priority = "Urgent" | "High" | "Medium" | "Low";
+
+// HUMAN CHECK: Si el dominio incorpora nuevas prioridades, actualizar Priority y las opciones del select.
 export default function AppointmentRegistrationForm() {
   const [fullName, setFullName] = useState("");
   const [idCard, setIdCard] = useState("");
-  const [priority, setPriority] = useState<"high" | "medium" | "low">("medium");
+  const [priority, setPriority] = useState<Priority>("Medium");
 
   const { register, loading, success, error } = useAppointmentRegistration();
   const [validationError, setValidationError] = useState<string | null>(null);
@@ -32,8 +34,8 @@ export default function AppointmentRegistrationForm() {
       return;
     }
 
-    // Validar que idCard tenga entre 6 y 12 dígitos numéricos
-    if (!/^\d{6,12}$/.test(safeIdCard)) {
+    // validar que idCard tenga entre 6 y 12 dígitos numéricos
+    if (!ID_CARD_PATTERN.test(safeIdCard)) {
       setValidationError(
         "El número de identificación debe tener entre 6 y 12 dígitos.",
       );
@@ -45,7 +47,7 @@ export default function AppointmentRegistrationForm() {
   };
 
   return (
-    <>
+    <div className={styles.page}>
       <FormLoadingOverlay
         isLoading={loading}
         message="Registrando tu turno..."
@@ -80,14 +82,15 @@ export default function AppointmentRegistrationForm() {
         <select
           value={priority}
           onChange={(e) =>
-            setPriority(e.target.value as "high" | "medium" | "low")
+            setPriority(e.target.value as Priority)
           }
           className={styles.input}
           disabled={loading}
         >
-          <option value="low">Prioridad Baja</option>
-          <option value="medium">Prioridad Media</option>
-          <option value="high">Prioridad Alta</option>
+          <option value="Low">Prioridad Baja</option>
+          <option value="Medium">Prioridad Media</option>
+          <option value="High">Prioridad Alta</option>
+          <option value="Urgent">Prioridad Urgente</option>
         </select>
 
         <button disabled={loading} className={styles.button}>
@@ -98,6 +101,6 @@ export default function AppointmentRegistrationForm() {
         {validationError && <p className={styles.error}>{validationError}</p>}
         {error && <p className={styles.error}>{error}</p>}
       </form>
-    </>
+    </div>
   );
 }

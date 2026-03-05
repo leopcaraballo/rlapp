@@ -29,12 +29,12 @@ ENV ASPNETCORE_URLS=http://+:8080
 # Pass the build ARG into an ENV so it exists at runtime
 ENV APP_DLL=${APP_DLL}
 
+# Instalar curl para el healthcheck (imagen basada en Debian)
+RUN apt-get update \
+    && apt-get install -y --no-install-recommends curl \
+    && rm -rf /var/lib/apt/lists/*
+
 EXPOSE 8080
 
 # HUMAN CHECK: env vars are expanded at runtime; use shell to evaluate $APP_DLL
 ENTRYPOINT ["sh", "-c", "dotnet /app/$APP_DLL"]
-
-# Install lightweight HTTP client for healthchecks (curl)
-RUN apt-get update \
-	&& apt-get install -y --no-install-recommends curl \
-	&& rm -rf /var/lib/apt/lists/*

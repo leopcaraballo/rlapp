@@ -1,0 +1,123 @@
+#!/bin/bash
+# Script de prueba E2E del flujo completo de negocio
+set -e
+
+API="http://localhost:5000"
+QUEUE="QUEUE-01"
+TS=$(date +%s%3N)
+
+echo ""
+echo "=============================================="
+echo "  PRUEBA E2E — FLUJO COMPLETO DE NEGOCIO"
+echo "  Cola: $QUEUE | Timestamp: $TS"
+echo "=============================================="
+
+# ─── PASO 1: Recepción ────────────────────────────
+echo ""
+echo "[1/6] RECEPCIÓN — registrar paciente en $QUEUE..."
+STEP1=$(curl -sf -X POST "$API/api/reception/register" \
+  -H "Content-Type: application/json" \
+  -H "X-User-Role: Receptionist" \
+  -H "Idempotency-Key: e2e-regist-$TS" \
+  -d "{\"queueId\":\"$QUEUE\",\"patientId\":\"p-e2e-$TS\",\"patientName\":\"Ana Lopez\",\"priority\":\"Medium\",\"consultationType\":\"General\",\"actor\":\"recepcion\"}")
+echo "  Respuesta: $STEP1"
+QUEUE_ID=$(echo "$STEP1" | grep -o '"queueId":"[^"]*"' | cut -d'"' -f4)
+echo "  queueId retornado: $QUEUE_ID"
+
+sleep 2
+
+# ─── PASO 2: Verificar queue-state ────────────────
+echo ""
+echo "[2/6] VERIFICAR queue-state de $QUEUE..."
+STEP2=$(curl -sf "$API/api/v1/waiting-room/$QUEUE/queue-state")
+echo "  Pacientes en cola: $(echo "$STEP2" | grep -o '"patientsInQueue":\[[^]]*\]' | head -1)"
+PATIENT_COUNT=$(echo "$STEP2" | grep -o '"patientId"' | wc -l)
+echo "  Cantidad de pacientes encontrados: $PATIENT_COUNT"
+if [ "$PATIENT_COUNT" -gt 0 ]; then
+  echo "  ✅ Paciente registrado correctamente en $QUEUE"
+else
+  echo "  ❌ ERROR: Paciente NO aparece en queue-state"
+  exit 1
+fi
+
+# ─── PASO 3: Cajero — llamar siguiente ──────────
+echo ""
+echo "[3/6] CAJERO — llamar siguiente paciente..."
+STEP3=$(curl -sf -X POST "$API/api/cashier/call-next" \
+  -H "Content-Type: application/json" \
+  -H "Idempotency-Key: e2e-cashier-$TS" \
+  -d "{\"queueId\":\"$QUEUE\",\"actor\":\"cajero\"}")
+echo "  Respuesta: $STEP3"
+CALLED_PATIENT=$(echo "$STEP3" | grep -o '"patientId":"[^"]*"' | cut -d'"' -f4)
+echo "  Paciente llamado: $CALLED_PATIENT"
+
+sleep 2
+
+# ─── PASO 4: Verificar next-turn ─────────────────
+echo ""
+echo "[4/6] VERIFICAR next-turn (debe ser cashier-called)..."
+STEP4=$(curl -sf "$API/api/v1/waiting-room/$QUEUE/next-turn" || echo '{"status":"not-found"}')
+NEXT_STATUS=$(echo "$STEP4" | grep -o '"status":"[^"]*"' | cut -d'"' -f4)
+NEXT_PATIENT=$(echo "$STEP4" | grep -o '"patientId":"[^"]*"' | cut -d'"' -f4)
+echo "  Status: $NEXT_STATUS | PatientId: $NEXT_PATIENT"
+if [ "$NEXT_STATUS" = "cashier-called" ]; then
+  echo "  ✅ Proyección next-turn correcta (cashier-called)"
+else
+  echo "  ❌ ERROR: next-turn status incorrecto: $NEXT_STATUS"
+  exit 1
+fi
+
+# ─── PASO 5: Cajero — validar pago ───────────────
+echo ""
+echo "[5/6] CAJERO — validar pago para $NEXT_PATIENT..."
+STEP5=$(curl -sf -X POST "$API/api/cashier/validate-payment" \
+  -H "Content-Type: application/json" \
+  -H "Idempotency-Key: e2e-payment-$TS" \
+  -d "{\"queueId\":\"$QUEUE\",\"patientId\":\"$NEXT_PATIENT\",\"actor\":\"cajero\",\"paymentReference\":\"REF-E2E-$TS\"}")
+echo "  Respuesta: $STEP5"
+
+sleep 2
+
+# ─── PASO 6: Médico — reclamar siguiente ─────────
+STEP6_ACTIVATE=$(curl -sf -X POST "$API/api/medical/consulting-room/activate" \
+  -H "Content-Type: application/json" \
+  -H "Idempotency-Key: e2e-activate-$TS" \
+  -d "{\"queueId\":\"$QUEUE\",\"consultingRoomId\":\"CONS-01\",\"actor\":\"doctor\"}")
+echo "  Consultorio activado: $STEP6_ACTIVATE"
+
+echo ""
+echo "[6/6] MÉDICO — reclamar siguiente paciente..."
+STEP6=$(curl -sf -X POST "$API/api/medical/call-next" \
+  -H "Content-Type: application/json" \
+  -H "Idempotency-Key: e2e-medical-$TS" \
+  -d "{\"queueId\":\"$QUEUE\",\"actor\":\"doctor\",\"stationId\":\"CONS-01\"}")
+echo "  Respuesta: $STEP6"
+MED_PATIENT=$(echo "$STEP6" | grep -o '"patientId":"[^"]*"' | cut -d'"' -f4)
+echo "  Paciente reclamado: $MED_PATIENT"
+
+sleep 2
+
+# ─── PASO 7: Verificar next-turn (claimed) ────────
+echo ""
+echo "[7/7] VERIFICAR next-turn después de claim (debe ser claimed)..."
+STEP7=$(curl -sf "$API/api/v1/waiting-room/$QUEUE/next-turn" || echo '{"status":"not-found"}')
+FINAL_STATUS=$(echo "$STEP7" | grep -o '"status":"[^"]*"' | cut -d'"' -f4)
+FINAL_PATIENT=$(echo "$STEP7" | grep -o '"patientId":"[^"]*"' | cut -d'"' -f4)
+echo "  Status: $FINAL_STATUS | PatientId: $FINAL_PATIENT"
+
+# ─── RESUMEN ───────────────────────────────────────
+echo ""
+echo "=============================================="
+echo "  RESUMEN E2E"
+echo "=============================================="
+echo "  queueId utilizado:    $QUEUE"
+echo "  Paciente registrado:  p-e2e-$TS"
+echo "  Paciente en cajero:   $NEXT_PATIENT"
+echo "  Status final turn:    $FINAL_STATUS"
+echo ""
+if [ "$NEXT_STATUS" = "cashier-called" ]; then
+  echo "  ✅ FLUJO E2E COMPLETADO CON ÉXITO"
+else
+  echo "  ⚠️  FLUJO PARCIALMENTE COMPLETADO"
+fi
+echo "=============================================="

@@ -87,11 +87,11 @@ export function resetMocks() {
   mockRepository.createAppointment.mockClear();
   mockRealTime.connect.mockClear();
   mockRealTime.disconnect.mockClear();
-  mockRealTime.onSnapshot.mockClear();
-  mockRealTime.onAppointmentUpdated.mockClear();
-  mockRealTime.onAppointmentCalled.mockClear();
-  mockRealTime.onConnect.mockClear();
-  mockRealTime.onDisconnect.mockClear();
-  mockRealTime.onError.mockClear();
-  mockRealTime.isConnected.mockClear();
+  (mockRealTime.onSnapshot as jest.Mock).mockClear();
+  (mockRealTime.onAppointmentUpdated as jest.Mock).mockClear();
+  (mockRealTime.onAppointmentCalled as jest.Mock).mockClear();
+  (mockRealTime.onConnect as jest.Mock).mockClear();
+  (mockRealTime.onDisconnect as jest.Mock).mockClear();
+  (mockRealTime.onError as jest.Mock).mockClear();
+  (mockRealTime.isConnected as jest.Mock).mockClear();
 }

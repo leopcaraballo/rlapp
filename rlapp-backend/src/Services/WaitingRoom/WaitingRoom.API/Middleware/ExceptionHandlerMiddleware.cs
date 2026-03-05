@@ -78,6 +78,15 @@ public sealed class ExceptionHandlerMiddleware
                     CorrelationId = correlationId
                 }),
 
+            PatientIdentityConflictException identityConflictEx => (
+                HttpStatusCode.Conflict,
+                new ErrorResponse
+                {
+                    Error = "PatientIdentityConflict",
+                    Message = identityConflictEx.Message,
+                    CorrelationId = correlationId
+                }),
+
             _ => (
                 HttpStatusCode.InternalServerError,
                 new ErrorResponse

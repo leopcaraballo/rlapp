@@ -50,7 +50,7 @@ describe("AppointmentCard (deprecated)", () => {
       office: "A1",
       timestamp: now,
       status: "waiting" as const,
-      priority: "high" as const,
+      priority: "High" as const,
     };
 
     render(

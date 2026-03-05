@@ -18,11 +18,13 @@ export interface WaitingAppointmentCardProps {
 // Helper functions (used only in this component)
 function getPriorityBadge(priority: string): string {
   switch (priority) {
-    case "high":
+    case "Urgent":
+      return "🔴 Urgente";
+    case "High":
       return "🔴 Alta";
-    case "medium":
+    case "Medium":
       return "🟡 Media";
-    case "low":
+    case "Low":
     default:
       return "🟢 Baja";
   }
@@ -30,8 +32,7 @@ function getPriorityBadge(priority: string): string {
 
 export function WaitingAppointmentCard({
   appointment,
-  // eslint-disable-next-line @typescript-eslint/no-unused-vars
-  _timeIcon = "📝",
+  timeIcon = "📝",
 }: WaitingAppointmentCardProps) {
   return (
     <li className={`${styles.appointmentCard} ${styles.waiting}`}>
@@ -52,6 +53,9 @@ export function WaitingAppointmentCard({
             {getPriorityBadge(appointment.priority)}
           </span>
         </div>
+      </div>
+      <div className={styles.cardFooter}>
+        <span className={styles.horaLabel}>{timeIcon}</span>
       </div>
     </li>
   );

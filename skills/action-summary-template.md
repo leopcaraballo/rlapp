@@ -31,11 +31,11 @@
 - **SA Model:** `GPT-5.1-Codex-Max`
 - **Recommended Model:** `GPT-5.1-Codex (Tier 1) — logica de dominio con idempotencia, complejidad alta`
 - **Files Changed:**
-  - `backend/consumer/src/appointments/turnos.service.ts` — Added idempotency check using `findOne` before `create`
-  - `backend/consumer/src/schemas/appointment.schema.ts` — Added unique compound index on `{ idCard, createdAt }`
+  - `rlapp-backend/src/Services/WaitingRoom/WaitingRoom.Application/...` — Added idempotency validation on command handling
+  - `rlapp-backend/src/Services/WaitingRoom/WaitingRoom.Infrastructure/...` — Added unique persistence guard for duplicate writes
 - **What Was Done:** Implementada guardia de idempotencia en creación de citas para prevenir duplicados durante redelivery de RabbitMQ.
 - **What to Validate:**
-  - [ ] `cd backend/consumer && npm run test`
+  - [ ] `dotnet test rlapp-backend/RLAPP.slnx`
   - [ ] Enviar mensaje duplicado via RabbitMQ management UI → verificar que no haya entrada duplicada
 - **HUMAN CHECK Added:** Sí — `turnos.service.ts:45` (idempotency window logic)
 - **Breaking Changes:** No

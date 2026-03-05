@@ -17,18 +17,20 @@ export interface CompletedAppointmentCardProps {
 
 function getPriorityBadge(priority: string): string {
   switch (priority) {
-    case "high":
+    case "Urgent":
+      return "🔴 Urgente";
+    case "High":
       return "🔴 Alta";
-    case "medium":
+    case "Medium":
       return "🟡 Media";
-    case "low":
+    case "Low":
     default:
       return "🟢 Baja";
   }
 }
 
-function calculateDuration(start: number, end?: number): string {
-  if (!end) return "N/A";
+function calculateDuration(start: number, end?: number | null): string {
+  if (end == null) return "N/A";
   const seconds = Math.floor((end - start) / 1000);
   if (seconds < 60) return `${seconds}s`;
   const minutes = Math.floor(seconds / 60);

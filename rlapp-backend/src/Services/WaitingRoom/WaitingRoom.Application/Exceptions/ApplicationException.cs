@@ -56,3 +56,21 @@ public class EventConflictException : ApplicationException
         ActualVersion = actualVersion;
     }
 }
+
+/// <summary>
+/// Thrown when an existing patient identity conflicts with incoming registration data.
+/// </summary>
+public sealed class PatientIdentityConflictException : ApplicationException
+{
+    public string PatientId { get; }
+    public string ExistingName { get; }
+    public string IncomingName { get; }
+
+    public PatientIdentityConflictException(string patientId, string existingName, string incomingName)
+        : base($"Patient identity conflict for '{patientId}'. Existing name differs from incoming payload.")
+    {
+        PatientId = patientId;
+        ExistingName = existingName;
+        IncomingName = incomingName;
+    }
+}

@@ -5,6 +5,7 @@ obj/
 *.dll
 *.pdb
 *.nupkg
+test-results.log
 
 # Visual Studio
 .vs/
