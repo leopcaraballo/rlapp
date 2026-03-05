@@ -16,7 +16,7 @@ using WaitingRoom.Infrastructure.Serialization;
 /// - Mark as Dispatched or Failed
 /// - Guarantee transactional consistency
 /// - Implement retry with exponential backoff
-/// - Handle poison messages
+/// - Handle poison messages with dead letter support
 ///
 /// Architecture:
 /// - Pure infrastructure service
@@ -24,6 +24,9 @@ using WaitingRoom.Infrastructure.Serialization;
 /// - NO Application logic
 /// - Uses existing abstractions
 /// - Deterministic behavior
+///
+/// // HUMAN CHECK: verify retry policy for poison messages — is MaxRetryAttempts=5
+/// appropriate for clinical event processing? Consider regulatory requirements.
 /// </summary>
 internal sealed class OutboxDispatcher
 {

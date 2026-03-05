@@ -6,6 +6,7 @@ using RabbitMQ.Client.Events;
 using System;
 using System.Text;
 using System.Text.Json;
+using WaitingRoom.Infrastructure.Messaging;
 
 /// <summary>
 /// RabbitMQ implementation of IProjectionEventSubscriber.
@@ -60,8 +61,8 @@ internal sealed class RabbitMqProjectionEventSubscriber : IProjectionEventSubscr
 
             var queueArgs = new Dictionary<string, object>
             {
-                { "x-dead-letter-exchange", "waiting_room_events.dlx" },
-                { "x-dead-letter-routing-key", "deadletter" }
+                { "x-dead-letter-exchange", WaitingRoom.Infrastructure.Messaging.DeadLetterConfiguration.DeadLetterExchangeName },
+                { "x-dead-letter-routing-key", WaitingRoom.Infrastructure.Messaging.DeadLetterConfiguration.DeadLetterRoutingKey }
             };
 
             _channel.QueueDeclare(

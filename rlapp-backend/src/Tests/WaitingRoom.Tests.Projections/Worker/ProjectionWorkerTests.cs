@@ -67,9 +67,9 @@ public class ProjectionWorkerTests
             x => x.Log(
                 It.Is<LogLevel>(l => l == LogLevel.Error),
                 It.IsAny<EventId>(),
-                It.Is<It.IsAnyType>((v, t) => v.ToString().Contains("Error processing event") || v.ToString().Contains("projection worker")),
+                It.Is<It.IsAnyType>((v, t) => v!.ToString()!.Contains("Error processing event") || v!.ToString()!.Contains("projection worker")),
                 It.IsAny<Exception>(),
-                It.IsAny<Func<It.IsAnyType, Exception, string>>()),
+                It.IsAny<Func<It.IsAnyType, Exception?, string>>()),
             Times.AtLeastOnce);
     }
 }
