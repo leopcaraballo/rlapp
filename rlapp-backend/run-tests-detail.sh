@@ -1,4 +1,4 @@
-/home/lcaraballo/Documentos/Sofka Projects/projects/rlapp/rlapp-backend/test-results.lo#!/usr/bin/env bash
+#!/usr/bin/env bash
 # =============================================================================
 # RLAPP Backend — Ejecución detallada de tests (test a test)
 #
