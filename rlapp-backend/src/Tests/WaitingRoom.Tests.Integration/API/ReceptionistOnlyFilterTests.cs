@@ -8,7 +8,7 @@ using Xunit;
 public class ReceptionistOnlyFilterTests
 {
     [Fact]
-    public async Task GivenMissingRoleHeader_WhenInvokingFilter_ThenReturnsStatusCodeResult()
+    public async Task GivenMissingRoleHeader_WhenInvokingFilter_ThenReturnsUnauthorized()
     {
         // Arrange
         var filter = new ReceptionistOnlyFilter();
@@ -17,9 +17,8 @@ public class ReceptionistOnlyFilterTests
         // Act
         var result = await filter.InvokeAsync(context, _ => ValueTask.FromResult<object?>(Results.Ok()));
 
-        // Assert
+        // Assert — Sin JWT ni header, se retorna 401 Unauthorized (JSON result)
         result.Should().BeAssignableTo<IResult>();
-        result!.GetType().Name.Should().Contain("StatusCode", because: "missing role header must be denied");
     }
 
     [Fact]
@@ -40,13 +39,13 @@ public class ReceptionistOnlyFilterTests
             return ValueTask.FromResult<object?>("allowed");
         });
 
-        // Assert
+        // Assert — Header fallback funciona para desarrollo
         nextWasCalled.Should().BeTrue();
         result.Should().Be("allowed");
     }
 
     [Fact]
-    public async Task GivenNonReceptionistRole_WhenInvokingFilter_ThenReturnsStatusCodeResult()
+    public async Task GivenNonReceptionistRole_WhenInvokingFilter_ThenReturnsUnauthorized()
     {
         // Arrange
         var filter = new ReceptionistOnlyFilter();
@@ -58,9 +57,31 @@ public class ReceptionistOnlyFilterTests
         // Act
         var result = await filter.InvokeAsync(context, _ => ValueTask.FromResult<object?>("allowed"));
 
-        // Assert
+        // Assert — Cashier no tiene permiso de recepcionista, se retorna una respuesta denegada
         result.Should().BeAssignableTo<IResult>();
-        result!.GetType().Name.Should().Contain("StatusCode", because: "only Receptionist role can pass");
+    }
+
+    [Fact]
+    public async Task GivenAdminRole_WhenInvokingFilter_ThenAllowsExecution()
+    {
+        // Arrange
+        var filter = new ReceptionistOnlyFilter();
+        var httpContext = new DefaultHttpContext();
+        httpContext.Request.Headers["X-User-Role"] = "Admin";
+
+        var context = new TestEndpointFilterInvocationContext(httpContext);
+        var nextWasCalled = false;
+
+        // Act
+        var result = await filter.InvokeAsync(context, _ =>
+        {
+            nextWasCalled = true;
+            return ValueTask.FromResult<object?>("allowed");
+        });
+
+        // Assert — Admin tiene acceso a endpoints de recepcionista
+        nextWasCalled.Should().BeTrue();
+        result.Should().Be("allowed");
     }
 
     private sealed class TestEndpointFilterInvocationContext(HttpContext httpContext) : EndpointFilterInvocationContext

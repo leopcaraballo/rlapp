@@ -2,6 +2,7 @@ using Scalar.AspNetCore;
 using Microsoft.AspNetCore.OpenApi;
 using Microsoft.OpenApi;
 using Serilog;
+using WaitingRoom.API.Security;
 using WaitingRoom.API.Validation;
 using WaitingRoom.API.Middleware;
 using WaitingRoom.API.Endpoints;
@@ -74,6 +75,14 @@ builder.Configuration.GetSection("RabbitMq").Bind(rabbitMqOptions);
 // ==============================================================================
 
 var services = builder.Services;
+
+// ==============================================================================
+// JWT AUTHENTICATION & AUTHORIZATION
+// ==============================================================================
+
+var jwtOptions = new JwtOptions();
+builder.Configuration.GetSection(JwtOptions.SectionName).Bind(jwtOptions);
+services.AddJwtAuthentication(jwtOptions);
 
 // Infrastructure — Outbox Store
 services.AddSingleton<IOutboxStore>(sp => new PostgresOutboxStore(connectionString));
@@ -221,6 +230,10 @@ app.UseIdempotencyKey();  // CRITICAL: Check and cache responses by idempotency 
 app.UseMiddleware<ExceptionHandlerMiddleware>();
 app.UseCors("FrontendDev");
 
+// Autenticación y autorización JWT
+app.UseAuthentication();
+app.UseAuthorization();
+
 // Prometheus metrics — expone /metrics para scraping
 app.UseHttpMetrics();  // Metricas automaticas de peticiones HTTP
 app.MapMetrics();      // Endpoint GET /metrics
@@ -243,6 +256,45 @@ if (app.Environment.IsDevelopment())
 {
     app.UseHttpsRedirection();
 }
+
+// ==============================================================================
+// AUTHENTICATION ENDPOINT
+// ==============================================================================
+
+app.MapPost("/api/auth/token", (
+    AuthTokenRequest request,
+    JwtTokenGenerator tokenGenerator) =>
+{
+    if (string.IsNullOrWhiteSpace(request.UserId) ||
+        string.IsNullOrWhiteSpace(request.UserName) ||
+        string.IsNullOrWhiteSpace(request.Role))
+    {
+        return Results.BadRequest(new { Error = "UserId, UserName y Role son obligatorios." });
+    }
+
+    var allowedRoles = new[] { "Receptionist", "Cashier", "Doctor", "Admin" };
+    if (!allowedRoles.Any(r => string.Equals(r, request.Role, StringComparison.OrdinalIgnoreCase)))
+    {
+        return Results.BadRequest(new { Error = $"Rol inválido. Roles permitidos: {string.Join(", ", allowedRoles)}" });
+    }
+
+    var token = tokenGenerator.GenerateToken(request.UserId, request.UserName, request.Role);
+
+    return Results.Ok(new
+    {
+        Token = token,
+        ExpiresIn = app.Services.GetRequiredService<JwtOptions>().TokenExpirationMinutes * 60,
+        TokenType = "Bearer"
+    });
+})
+.WithName("GenerateAuthToken")
+.WithTags("Authentication")
+.WithSummary("Generar token JWT")
+.WithDescription("Genera un token JWT para autenticación. En producción, este endpoint debe reemplazarse por un Identity Provider externo.")
+.AllowAnonymous()
+.Accepts<AuthTokenRequest>("application/json")
+.Produces(200)
+.Produces(400);
 
 // ==============================================================================
 // HEALTH CHECKS ENDPOINTS
@@ -447,6 +499,7 @@ commandGroup.MapPost("/api/cashier/call-next", async (
 .WithTags("Cashier")
 .WithSummary("Llamar siguiente paciente a caja")
 .WithDescription("El cajero solicita el siguiente paciente en la cola para proceso de pago. Genera evento PatientCalledToCashier.")
+.AddEndpointFilter<CashierOnlyFilter>()
 .Accepts<CallNextCashierDto>("application/json")
 .Produces(200)
 .Produces(400)
@@ -489,6 +542,7 @@ commandGroup.MapPost("/api/cashier/validate-payment", async (
 .WithTags("Cashier")
 .WithSummary("Validar pago del paciente")
 .WithDescription("Confirma que el paciente ha completado el pago. Genera evento PaymentValidated y avanza el flujo hacia consulta medica.")
+.AddEndpointFilter<CashierOnlyFilter>()
 .Accepts<ValidatePaymentDto>("application/json")
 .Produces(200)
 .Produces(400)
@@ -531,6 +585,7 @@ commandGroup.MapPost("/api/cashier/mark-payment-pending", async (
 .WithTags("Cashier")
 .WithSummary("Marcar pago como pendiente")
 .WithDescription("Indica que el paciente tiene un pago pendiente. El paciente permanece en cola pero no avanza hasta que se resuelva.")
+.AddEndpointFilter<CashierOnlyFilter>()
 .Accepts<MarkPaymentPendingDto>("application/json")
 .Produces(200)
 .Produces(400)
@@ -572,6 +627,7 @@ commandGroup.MapPost("/api/cashier/mark-absent", async (
 .WithTags("Cashier")
 .WithSummary("Marcar paciente ausente en caja")
 .WithDescription("Registra que el paciente no se presento cuando fue llamado a caja. Genera evento de ausencia.")
+.AddEndpointFilter<CashierOnlyFilter>()
 .Accepts<MarkAbsentAtCashierDto>("application/json")
 .Produces(200)
 .Produces(400)
@@ -614,6 +670,7 @@ commandGroup.MapPost("/api/cashier/cancel-payment", async (
 .WithTags("Cashier")
 .WithSummary("Cancelar atencion por politica de pago")
 .WithDescription("Cancela la atencion del paciente por incumplimiento de pago. Genera evento CancelledByPayment.")
+.AddEndpointFilter<CashierOnlyFilter>()
 .Accepts<CancelByPaymentDto>("application/json")
 .Produces(200)
 .Produces(400)
@@ -656,6 +713,7 @@ commandGroup.MapPost("/api/medical/call-next", async (
 .WithTags("Medical")
 .WithSummary("Llamar siguiente paciente para consulta medica")
 .WithDescription("El medico solicita el siguiente paciente que ya completo el pago. Genera evento PatientClaimedForConsultation.")
+.AddEndpointFilter<DoctorOnlyFilter>()
 .Accepts<ClaimNextPatientDto>("application/json")
 .Produces(200)
 .Produces(400)
@@ -697,6 +755,7 @@ commandGroup.MapPost("/api/medical/consulting-room/activate", async (
 .WithTags("Medical")
 .WithSummary("Activar consultorio medico")
 .WithDescription("Marca un consultorio como disponible para recibir pacientes. Genera evento ConsultingRoomActivated.")
+.AddEndpointFilter<DoctorOnlyFilter>()
 .Accepts<ActivateConsultingRoomDto>("application/json")
 .Produces(200)
 .Produces(400)
@@ -738,6 +797,7 @@ commandGroup.MapPost("/api/medical/consulting-room/deactivate", async (
 .WithTags("Medical")
 .WithSummary("Desactivar consultorio medico")
 .WithDescription("Marca un consultorio como no disponible. Los pacientes no seran asignados a este consultorio hasta reactivacion.")
+.AddEndpointFilter<DoctorOnlyFilter>()
 .Accepts<DeactivateConsultingRoomDto>("application/json")
 .Produces(200)
 .Produces(400)
@@ -779,6 +839,7 @@ commandGroup.MapPost("/api/medical/start-consultation", async (
 .WithTags("Medical")
 .WithSummary("Iniciar consulta medica")
 .WithDescription("Registra que el paciente ha ingresado a consulta con el medico. Genera evento ConsultationStarted.")
+.AddEndpointFilter<DoctorOnlyFilter>()
 .Accepts<CallPatientDto>("application/json")
 .Produces(200)
 .Produces(400)
@@ -822,6 +883,7 @@ commandGroup.MapPost("/api/medical/finish-consultation", async (
 .WithTags("Medical")
 .WithSummary("Finalizar consulta medica")
 .WithDescription("Registra la finalizacion de la consulta con resultado y notas. Genera evento AttentionCompleted.")
+.AddEndpointFilter<DoctorOnlyFilter>()
 .Accepts<CompleteAttentionDto>("application/json")
 .Produces(200)
 .Produces(400)
@@ -863,6 +925,7 @@ commandGroup.MapPost("/api/medical/mark-absent", async (
 .WithTags("Medical")
 .WithSummary("Marcar paciente ausente en consulta")
 .WithDescription("Registra que el paciente no se presento a la consulta medica programada. Genera evento de ausencia.")
+.AddEndpointFilter<DoctorOnlyFilter>()
 .Accepts<MarkAbsentAtConsultationDto>("application/json")
 .Produces(200)
 .Produces(400)

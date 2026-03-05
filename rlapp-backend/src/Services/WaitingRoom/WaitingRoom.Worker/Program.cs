@@ -61,7 +61,15 @@ var host = Host.CreateDefaultBuilder(args)
             return new RabbitMqConnectionProvider(opts);
         });
 
-        // Event Publisher (RabbitMQ)
+        // RabbitMQ Resilience Options (configuración de retry + circuit breaker)
+        var resilienceOptions = new RabbitMqResilienceOptions();
+        configuration.GetSection("RabbitMq:Resilience").Bind(resilienceOptions);
+        services.AddSingleton(resilienceOptions);
+
+        // RabbitMQ Resilience Pipeline (Polly v8: retry + circuit breaker)
+        services.AddSingleton<RabbitMqResiliencePipeline>();
+
+        // Event Publisher (RabbitMQ) con resiliencia integrada
         // IMPORTANT: OutboxStore is injected so publisher can mark messages as dispatched/failed
         services.AddSingleton<IEventPublisher>(sp =>
         {
@@ -69,9 +77,12 @@ var host = Host.CreateDefaultBuilder(args)
             var serializer = sp.GetRequiredService<EventSerializer>();
             var connectionProvider = sp.GetRequiredService<IRabbitMqConnectionProvider>();
             var outboxStore = sp.GetRequiredService<IOutboxStore>();
+            var publisherLogger = sp.GetRequiredService<ILogger<RabbitMqEventPublisher>>();
+            var resiliencePipeline = sp.GetRequiredService<RabbitMqResiliencePipeline>();
 
-            // Inject connection provider and outboxStore so publisher can mark messages as dispatched/failed
-            return new RabbitMqEventPublisher(options, serializer, connectionProvider, outboxStore);
+            return new RabbitMqEventPublisher(
+                options, serializer, connectionProvider,
+                publisherLogger, resiliencePipeline, outboxStore);
         });
 
         // Outbox Dispatcher

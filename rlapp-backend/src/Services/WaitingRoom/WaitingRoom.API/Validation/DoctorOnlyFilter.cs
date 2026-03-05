@@ -3,20 +3,15 @@ namespace WaitingRoom.API.Validation;
 using System.Security.Claims;
 
 /// <summary>
-/// Filtro de autorización que verifica rol de Recepcionista.
+/// Filtro de autorización que verifica rol de Doctor.
 ///
 /// Estrategia dual de autenticación:
 /// 1. JWT Bearer token (producción): lee el claim "role" del token
 /// 2. Header X-User-Role (solo desarrollo): fallback cuando no hay JWT
-///
-/// // HUMAN CHECK: El fallback de header DEBE deshabilitarse en producción.
-/// // Configurar la variable de entorno ASPNETCORE_ENVIRONMENT=Production
-/// // para que solo se acepte autenticación JWT.
-/// // El fallback existe únicamente para facilitar pruebas E2E y desarrollo local.
 /// </summary>
-public sealed class ReceptionistOnlyFilter : IEndpointFilter
+public sealed class DoctorOnlyFilter : IEndpointFilter
 {
-    private static readonly string[] AllowedRoles = ["Receptionist", "Admin"];
+    private static readonly string[] AllowedRoles = ["Doctor", "Admin"];
 
     public async ValueTask<object?> InvokeAsync(
         EndpointFilterInvocationContext invocationContext,
@@ -24,7 +19,7 @@ public sealed class ReceptionistOnlyFilter : IEndpointFilter
     {
         var httpContext = invocationContext.HttpContext;
 
-        // Estrategia 1: JWT Bearer — verificar claim de rol
+        // Estrategia 1: JWT Bearer
         if (httpContext.User.Identity?.IsAuthenticated == true)
         {
             var userRole = httpContext.User.FindFirstValue(ClaimTypes.Role)
@@ -37,13 +32,11 @@ public sealed class ReceptionistOnlyFilter : IEndpointFilter
             }
 
             return Results.Json(
-                new { Error = "Acceso denegado. Se requiere rol Receptionist o Admin." },
+                new { Error = "Acceso denegado. Se requiere rol Doctor o Admin." },
                 statusCode: StatusCodes.Status403Forbidden);
         }
 
-        // Estrategia 2: Header fallback — solo para desarrollo
-        // HUMAN CHECK: Verificar que en producción esta rama NO se ejecute.
-        // El middleware UseAuthentication() debe rechazar antes si no hay token.
+        // Estrategia 2: Header fallback (solo desarrollo)
         if (httpContext.Request.Headers.TryGetValue("X-User-Role", out var roleHeader))
         {
             var role = roleHeader.ToString();
