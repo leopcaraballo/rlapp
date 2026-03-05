@@ -16,4 +16,4 @@ Inicia el flujo completo del ecosistema multi-agente.
 
 **Contexto del proyecto:** El proyecto se encuentra en el workspace actual.
 El requerimiento o Historia de Usuario a evaluar debe ser proporcionado por el usuario
-o buscado en `{project-root}/.github/docs/requirements/`.
+o buscado en `{project-root}/docs/requirements/`.

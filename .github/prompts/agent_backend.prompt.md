@@ -3,12 +3,12 @@ description: 'Ejecuta el Backend Agent directamente con el contexto del SPEC exi
 mode: 'agent'
 ---
 
-Ejecuta el Backend Agent usando el SPEC disponible en `.github/docs/output/{HU-ID}/{HU-ID}.step_3.requirement-analysis.md`.
+Ejecuta el Backend Agent usando el SPEC disponible en `docs/output/{HU-ID}/{HU-ID}.step_3.requirement-analysis.md`.
 
 **Instrucciones para @backend-agent:**
 
-1. Cargar `.github/docs/lineamientos/dev-guidelines.md` como primer paso
-2. Leer el contexto del SPEC desde `.github/docs/output/{HU-ID}/{HU-ID}.step_3.requirement-analysis.md`
+1. Cargar `docs/lineamientos/dev-guidelines.md` como primer paso
+2. Leer el contexto del SPEC desde `docs/output/{HU-ID}/{HU-ID}.step_3.requirement-analysis.md`
 3. Ejecutar el flujo completo de implementación backend:
    - Lógica de negocio por HU asignadas al backend
    - Endpoints según contratos del SPEC
@@ -22,4 +22,4 @@ Ejecuta el Backend Agent usando el SPEC disponible en `.github/docs/output/{HU-I
    - `contract-test-generator` si la arquitectura lo requiere
 5. Preparar PR con checklist completo
 
-**Prerequisito:** Debe existir `.github/docs/output/{HU-ID}/{HU-ID}.step_3.requirement-analysis.md`. Si no existe, ejecutar `/spec` primero.
+**Prerequisito:** Debe existir `docs/output/{HU-ID}/{HU-ID}.step_3.requirement-analysis.md`. Si no existe, ejecutar `/spec` primero.

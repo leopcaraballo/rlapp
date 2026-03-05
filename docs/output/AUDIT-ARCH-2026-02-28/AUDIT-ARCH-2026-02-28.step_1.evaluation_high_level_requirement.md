@@ -21,7 +21,7 @@ RESULTADO: ES UN REQUERIMIENTO DE ALTO NIVEL — REQUIERE DESCOMPOSICIÓN
 > - agent_qa
 > - agent_spec
 >
-> Todas las skills disponibles en .github/skills
+> Todas las skills disponibles en skills/
 >
 > La auditoría debe elevar el proyecto a nivel enterprise-grade en:
 >
@@ -913,6 +913,6 @@ FASE 4 (Semana 5) — Consolidación:
 ────════════════════════════════════════════════════════════════
 
 **Documento generado:** AUDIT-ARCH-2026-02-28.step_1.evaluation_high_level_requirement.md
-**Ubicación:** `.github/docs/output/AUDIT-ARCH-2026-02-28/`
+**Ubicación:** `docs/output/AUDIT-ARCH-2026-02-28/`
 **Evaluador:** Evaluador IEEE — Especialista en Estándares IEEE 830 / ISO 29148
 **Fecha:** 28 de febrero de 2026

@@ -3,22 +3,22 @@ description: 'Ejecuta el Frontend Agent directamente con el contexto del SPEC ex
 mode: 'agent'
 ---
 
-Ejecuta el Frontend Agent usando el SPEC disponible en `.github/docs/output/{HU-ID}/{HU-ID}.step_3.requirement-analysis.md`.
+Ejecuta el Frontend Agent usando el SPEC disponible en `docs/output/{HU-ID}/{HU-ID}.step_3.requirement-analysis.md`.
 
 **⚠️ PASO OBLIGATORIO — Antes de cualquier otra acción:**
-1. Lee el archivo `.github/docs/lineamientos/dev-guidelines.md`
+1. Lee el archivo `docs/lineamientos/dev-guidelines.md`
 2. Confirma la carga con el siguiente mensaje exacto:
 ```
 📌 Cargando lineamientos desde:
-   .github/docs/lineamientos/dev-guidelines.md
+   docs/lineamientos/dev-guidelines.md
 ✅ Lineamientos de desarrollo Frontend cargados
 ```
 3. No continúes hasta haber mostrado esa confirmación.
 
 **Instrucciones para @frontend-agent:**
 
-1. Cargar `.github/docs/lineamientos/dev-guidelines.md` como primer paso
-2. Leer el contexto del SPEC desde `.github/docs/output/{HU-ID}/{HU-ID}.step_3.requirement-analysis.md`
+1. Cargar `docs/lineamientos/dev-guidelines.md` como primer paso
+2. Leer el contexto del SPEC desde `docs/output/{HU-ID}/{HU-ID}.step_3.requirement-analysis.md`
 3. Ejecutar el flujo completo de implementación frontend:
    - Componentes reutilizables según design system
    - Conexión con APIs usando contratos exactos del SPEC
@@ -33,4 +33,4 @@ Ejecuta el Frontend Agent usando el SPEC disponible en `.github/docs/output/{HU-
    - `ui-test-generator` para flujos críticos de usuario
 5. Preparar PR con checklist completo
 
-**Prerequisito:** Debe existir `.github/docs/output/{HU-ID}/{HU-ID}.step_3.requirement-analysis.md`. Si no existe, ejecutar `/spec` primero.
+**Prerequisito:** Debe existir `docs/output/{HU-ID}/{HU-ID}.step_3.requirement-analysis.md`. Si no existe, ejecutar `/spec` primero.

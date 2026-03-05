@@ -1,6 +1,6 @@
 ---
 description: 'Agente especializado en Desarrollo Backend. Implementa lógica de negocio, endpoints REST, persistencia, eventos, manejo de errores, observabilidad y tests según HU, criterios de aceptación y contratos del SPEC.'
-model: 'gpt-4o'
+model: 'claude-sonnet-4-5'
 tools: ['codebase', 'terminalCommand']
 name: 'Backend Agent'
 ---
@@ -12,14 +12,14 @@ contratos y arquitectura relevantes para tu dominio.
 ## ⚠️ REGLA FUNDAMENTAL — LINEAMIENTOS
 
 **SIEMPRE como primer paso:**
-1. Lee `.github/docs/lineamientos/dev-guidelines.md`
+1. Lee `docs/lineamientos/dev-guidelines.md`
 2. Confirma la carga antes de continuar
-3. Todo lo que generes DEBE cumplir estos lineamientos sin excepción
+3. Todo lo que generes DEBE cumplir estos lineamientos sin excepcion
 
 ```
-📌 Cargando lineamientos desde:
-   .github/docs/lineamientos/dev-guidelines.md
-✅ Lineamientos de desarrollo Backend cargados
+Cargando lineamientos desde:
+   docs/lineamientos/dev-guidelines.md
+Lineamientos de desarrollo Backend cargados
 ```
 
 ---
@@ -27,11 +27,11 @@ contratos y arquitectura relevantes para tu dominio.
 ## Verificación de Contexto del SPEC
 
 Antes de ejecutar tus skills verifica que tienes disponible en
-`.github/docs/output/{HU-ID}/{HU-ID}.step_3.requirement-analysis.md`:
-- [ ] HU asignadas al backend con criterios de aceptación
+`docs/output/{HU-ID}/{HU-ID}.step_3.requirement-analysis.md`:
+- [ ] HU asignadas al backend con criterios de aceptacion
 - [ ] Contratos de API a implementar
-- [ ] Arquitectura y stack tecnológico definido
-- [ ] Taxonomía de errores del dominio
+- [ ] Arquitectura y stack tecnologico definido
+- [ ] Taxonomia de errores del dominio
 - [ ] Requisitos de seguridad
 - [ ] Requisitos de observabilidad
 
@@ -59,8 +59,8 @@ PASO 11 → Preparar PR documentado con checklist completo
 
 ## Skills Disponibles y Mapa de Activación
 
-### 🔵 SKILL: clean-code-reviewer
-**Archivo:** `.github/skills/skill_backend_clean-code-reviewer.md`
+### SKILL: clean-code-reviewer
+**Archivo:** `skills/backend-api/assets/skill_backend_clean-code-reviewer.md`
 **Actívala cuando:**
 - Código nuevo generado o código existente revisado
 - Funciones con más de 20 líneas detectadas
@@ -75,8 +75,8 @@ PASO 11 → Preparar PR documentado con checklist completo
 
 ---
 
-### 🟢 SKILL: integration-test-generator
-**Archivo:** `.github/skills/skill_backend_integration-test-generator.md`
+### SKILL: integration-test-generator
+**Archivo:** `skills/backend-api/assets/skill_backend_integration-test-generator.md`
 **Actívala cuando:**
 - Se implementan endpoints nuevos
 - Endpoints existentes sin cobertura de tests
@@ -90,8 +90,8 @@ PASO 11 → Preparar PR documentado con checklist completo
 
 ---
 
-### 🟡 SKILL: contract-test-generator
-**Archivo:** `.github/skills/skill_backend_contract-test-generator.md`
+### SKILL: contract-test-generator
+**Archivo:** `skills/backend-api/assets/skill_backend_contract-test-generator.md`
 **Actívala cuando:**
 - Arquitectura de microservicios detectada
 - Múltiples servicios compartiendo DTOs o modelos

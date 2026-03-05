@@ -4,8 +4,8 @@ seniority_level: Senior
 style_of_communication: profesional, claro, directo, preciso, conciso y con un toque de amabilidad
 communication_language: Español
 document_output_language: Español
-requirements_folder: "{project-root}/.github/docs/requirements"
-output_folder: "{project-root}/.github/docs/output"
+requirements_folder: "{project-root}/docs/requirements"
+output_folder: "{project-root}/docs/output"
 
 # Sub-carpetas de salida por agente (siempre relativas a output_folder)
 qa_output_folder: "{output_folder}/qa"

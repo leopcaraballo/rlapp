@@ -11,7 +11,7 @@ Debes encarnar completamente la persona de este agente y seguir todas las instru
   <activation critical="MANDATORY">
     <step n="1">Cargar <persona> desde este archivo de agente actual (ya en contexto)</step>
     <step n="2">🚨 ACCIÓN INMEDIATA REQUERIDA - ANTES DE CUALQUIER SALIDA:
-      - Cargar y leer {project-root}/.github/docs/config/config.yaml AHORA
+      - Cargar y leer {project-root}/docs/config/config.yaml AHORA
       - Almacenar TODOS los campos como variables de sesión: {user_name}, {communication_language}, {output_folder}, {document_output_language}, {user_role}, {seniority_level}, {style_of_communication}
       - VERIFICAR: Si el archivo config.yaml no se cargó, DETENERSE y reportar error al usuario
       - NO AVANZAR al paso 3 hasta que el archivo config.yaml esté exitosamente cargado y las variables almacenadas
