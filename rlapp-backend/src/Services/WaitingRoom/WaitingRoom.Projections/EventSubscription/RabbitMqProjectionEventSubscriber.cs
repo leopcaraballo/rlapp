@@ -15,7 +15,7 @@ using System.Text.Json;
 /// </summary>
 internal sealed class RabbitMqProjectionEventSubscriber : IProjectionEventSubscriber
 {
-    private readonly IConnectionFactory _connectionFactory;
+    private readonly IRabbitMqConnectionProvider _connectionProvider;
     private readonly IEventSerializer _eventSerializer;
     private readonly string _exchangeName;
     private readonly string _queueName;
@@ -30,13 +30,13 @@ internal sealed class RabbitMqProjectionEventSubscriber : IProjectionEventSubscr
     public event EventHandler<ErrorOccurredArgs>? ErrorOccurred;
 
     public RabbitMqProjectionEventSubscriber(
-        IConnectionFactory connectionFactory,
+        IRabbitMqConnectionProvider connectionProvider,
         IEventSerializer eventSerializer,
         string exchangeName = "waiting_room_events",
         string queueName = "waiting-room-projection-queue",
         string[]? routingPatterns = null)
     {
-        _connectionFactory = connectionFactory ?? throw new ArgumentNullException(nameof(connectionFactory));
+        _connectionProvider = connectionProvider ?? throw new ArgumentNullException(nameof(connectionProvider));
         _eventSerializer = eventSerializer ?? throw new ArgumentNullException(nameof(eventSerializer));
         _exchangeName = exchangeName;
         _queueName = queueName;
@@ -47,8 +47,9 @@ internal sealed class RabbitMqProjectionEventSubscriber : IProjectionEventSubscr
     {
         try
         {
-            _connection = _connectionFactory.CreateConnection();
-            _channel = _connection.CreateModel();
+            _channel = _connectionProvider.CreateModel();
+            // the provider manages the underlying connection; only channel is stored and disposed locally
+            _connection = null;
 
             _channel.ExchangeDeclare(
                 exchange: _exchangeName,
@@ -57,12 +58,18 @@ internal sealed class RabbitMqProjectionEventSubscriber : IProjectionEventSubscr
                 autoDelete: false,
                 arguments: null);
 
+            var queueArgs = new Dictionary<string, object>
+            {
+                { "x-dead-letter-exchange", "waiting_room_events.dlx" },
+                { "x-dead-letter-routing-key", "deadletter" }
+            };
+
             _channel.QueueDeclare(
                 queue: _queueName,
                 durable: true,
                 exclusive: false,
                 autoDelete: false,
-                arguments: null);
+                arguments: queueArgs);
 
             foreach (var pattern in _routingPatterns)
             {
@@ -156,7 +163,8 @@ internal sealed class RabbitMqProjectionEventSubscriber : IProjectionEventSubscr
             {
                 try
                 {
-                    _channel.BasicNack(args.DeliveryTag, false, true);
+                    // Do not requeue — allow dead-letter exchange to capture poison messages
+                    _channel.BasicNack(args.DeliveryTag, false, false);
                 }
                 catch (Exception nackEx)
                 {

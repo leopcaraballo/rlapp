@@ -54,16 +54,24 @@ var host = Host.CreateDefaultBuilder(args)
         // Event Serializer
         services.AddSingleton<EventSerializer>();
 
+        // RabbitMQ Connection Provider (singleton)
+        services.AddSingleton<IRabbitMqConnectionProvider>(sp =>
+        {
+            var opts = sp.GetRequiredService<RabbitMqOptions>();
+            return new RabbitMqConnectionProvider(opts);
+        });
+
         // Event Publisher (RabbitMQ)
         // IMPORTANT: OutboxStore is injected so publisher can mark messages as dispatched/failed
         services.AddSingleton<IEventPublisher>(sp =>
         {
             var options = sp.GetRequiredService<RabbitMqOptions>();
             var serializer = sp.GetRequiredService<EventSerializer>();
+            var connectionProvider = sp.GetRequiredService<IRabbitMqConnectionProvider>();
             var outboxStore = sp.GetRequiredService<IOutboxStore>();
 
-            // Inject outboxStore so it can mark messages as dispatched/failed
-            return new RabbitMqEventPublisher(options, serializer, outboxStore);
+            // Inject connection provider and outboxStore so publisher can mark messages as dispatched/failed
+            return new RabbitMqEventPublisher(options, serializer, connectionProvider, outboxStore);
         });
 
         // Outbox Dispatcher
