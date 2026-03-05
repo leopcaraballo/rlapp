@@ -45,7 +45,7 @@ ${testingSkill}
 
 ## Constraints:
 - Follow structure: domain → application → infrastructure
-- Strict DIP: domain does not know MongoDB/NestJS/RabbitMQ
+- Strict DIP: domain does not know PostgreSQL/ASP.NET Core/RabbitMQ.Client
 - Configuration via environment variables
 - Test coverage >85%
 - Follow Conventional Commits

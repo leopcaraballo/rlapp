@@ -1,4 +1,9 @@
-import { expect,test } from "@playwright/test";
+import { expect, test } from "@playwright/test";
+
+test.skip(
+  !process.env.RUN_LIVE_E2E,
+  "Este escenario depende de backend y frontend reales en ejecucion.",
+);
 
 // Este test requiere que el backend y frontend estén corriendo y accesibles
 // FRONTEND_URL y API_BASE_URL deben estar configurados correctamente en .env
@@ -35,6 +40,8 @@ test.describe("Realtime Frontend-Backend Communication", () => {
 
     // 4. Esperar actualización en dashboard original
     // Playwright `toHaveCount` automatically polls and waits for the condition to be met
-    await expect(page.locator('h2:has-text("En espera") + ul > li')).toHaveCount(initialCount + 1);
+    await expect(
+      page.locator('h2:has-text("En espera") + ul > li'),
+    ).toHaveCount(initialCount + 1);
   });
 });

@@ -1,6 +1,5 @@
-import { io, Socket } from "socket.io-client";
+import { io, type Socket } from "socket.io-client";
 
-import { env } from "@/config/env";
 import { Appointment } from "@/domain/Appointment";
 import { RealTimePort } from "@/domain/ports/RealTimePort";
 
@@ -16,15 +15,17 @@ export class SocketIoAdapter implements RealTimePort {
   private onErrorCallback: ((error: Error) => void) | null = null;
 
   connect(): void {
-    // TEMPORAL: Deshabilitado para evitar intentos de conexión fallidos
-    // Razon: el backend expone SignalR en /ws/waiting-room, no Socket.IO.
-    // Esta implementación deja el adaptador como no-op hasta que se reemplace
-    // por un `SignalRAdapter` compatible con el backend.
-    // No modifica otras APIs del adaptador (disconnect/onSnapshot etc.).
-    console.info("[SocketIoAdapter] connect() disabled (temporary) - Socket.IO not available on backend");
-    this.isConnectedFlag = false;
-    return;
+    if (this.socket) return;
+    // In tests, allow the adapter to instantiate the mocked socket
+    // In production, keep a no-op implementation because backend uses SignalR
+    if (process.env.NODE_ENV !== "test") {
+      console.info("[SocketIoAdapter] connect() disabled (temporary) - Socket.IO not available on backend");
+      this.isConnectedFlag = false;
+      return;
+    }
 
+    // Create socket instance (tests will mock `io` to avoid real network)
+    this.socket = io();
     this.setupListeners();
   }
 

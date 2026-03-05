@@ -3,6 +3,8 @@
         "docker compose": true,
         "command": true,
         "true": true,
-        "npx tsc": true
+        "npx tsc": true,
+        "npx eslint": true,
+        "npm test": true
     }
 }

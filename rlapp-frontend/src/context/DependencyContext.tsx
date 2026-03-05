@@ -5,7 +5,6 @@ import { createContext, ReactNode, useContext, useMemo } from "react";
 import { AppointmentRepository } from "@/domain/ports/AppointmentRepository";
 import { RealTimePort } from "@/domain/ports/RealTimePort";
 import { HttpAppointmentAdapter } from "@/infrastructure/adapters/HttpAppointmentAdapter";
-import { SocketIoAdapter } from "@/infrastructure/adapters/SocketIoAdapter";
 import SignalRAdapter from "@/infrastructure/adapters/SignalRAdapter";
 
 interface DependencyContextType {

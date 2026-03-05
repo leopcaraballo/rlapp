@@ -130,10 +130,10 @@ class InMemoryRepositoryFactory implements RepositoryFactory { ... }  // Para te
 
 **Definición:** Garantiza que una clase tenga una única instancia global.
 
-**Aplicación:** NestJS ya implementa Singleton por defecto en sus providers (`@Injectable()` con scope `DEFAULT`). Los services son singletons dentro del módulo.
+**Aplicación:** El contenedor de DI implementa Singleton por defecto para servicios registrados como instancia única.
 
 ```typescript
-// NestJS maneja Singleton implícitamente
+// El contenedor de DI maneja Singleton implícitamente
 @Injectable() // scope: Scope.DEFAULT = Singleton
 export class AppointmentsService { ... }
 ```
@@ -173,7 +173,7 @@ const query = new AppointmentQueryBuilder()
 **Aplicación:**
 
 ```typescript
-// infrastructure/persistence/mongoose-appointment.repository.ts
+// infrastructure/persistence/postgres-appointment.repository.cs
 // Pattern: Adapter — Adapta Mongoose al puerto AppointmentRepository del dominio
 @Injectable()
 export class MongooseAppointmentRepository implements AppointmentRepository {
@@ -207,11 +207,11 @@ export interface AppointmentRepository {
   assignOffice(id: string, officeNumber: number): Promise<Appointment>;
 }
 
-// infrastructure/persistence/mongoose-appointment.repository.ts (Adaptador MongoDB)
+// infrastructure/persistence/postgres-appointment.repository.cs (Adaptador PostgreSQL)
 // infrastructure/persistence/in-memory-appointment.repository.ts (Adaptador para tests)
 ```
 
-**Justificación:** Permite testear la lógica de negocio sin MongoDB, usando un `InMemoryRepository`.
+**Justificación:** Permite testear la lógica de negocio sin PostgreSQL, usando un `InMemoryRepository`.
 
 ### 3.3 Proxy
 
@@ -268,7 +268,7 @@ export class CreateAppointmentUseCase {
 
 **Definición:** Añade funcionalidad a un objeto dinámicamente, sin modificar su clase.
 
-**Aplicación:** NestJS usa decoradores extensivamente (`@Injectable()`, `@Controller()`, `@ApiTags()`). También para validación:
+**Aplicación:** Los frameworks modernos usan anotaciones/decoradores extensivamente para DI, endpoints y validación.
 
 ```typescript
 // Pattern: Decorator — class-validator añade validación vía decoradores
@@ -379,10 +379,10 @@ interface CreateAppointmentCommand {
 
 **Definición:** Pasa la solicitud por una cadena de handlers, donde cada uno decide si la procesa o la pasa al siguiente.
 
-**Aplicación:** NestJS `Pipes`, `Guards`, `Interceptors` implementan este patrón:
+**Aplicación:** Middlewares, filtros e interceptores implementan este patrón:
 
 ```typescript
-// NestJS Pipeline = Chain of Responsibility
+// Pipeline HTTP = Chain of Responsibility
 Request → Guard → Interceptor (pre) → Pipe → Controller → Interceptor (post) → Response
 ```
 
@@ -438,7 +438,7 @@ class Appointment {
 
 **Definición:** Define un objeto que encapsula cómo interactúan un conjunto de objetos, promoviendo bajo acoplamiento.
 
-**Aplicación:** Los NestJS Modules actúan como mediadores, coordinando la inyección de dependencias entre providers.
+**Aplicación:** Los módulos de composición actúan como mediadores, coordinando la inyección de dependencias entre servicios.
 
 ---
 
@@ -450,7 +450,7 @@ class Appointment {
 | **Architecture**   | Event-Driven            | Producer → RabbitMQ → Consumer         | Comunicación asíncrona desacoplada    |
 | **Architecture**   | Microservices           | Producer + Consumer                    | Servicios independientes y escalables |
 | **Creacional**     | Factory                 | `domain/entities/`                     | Validación al crear entidades         |
-| **Creacional**     | Singleton               | NestJS `@Injectable()`                 | Instancia única de servicios          |
+| **Creacional**     | Singleton               | DI container registration              | Instancia única de servicios          |
 | **Creacional**     | Builder                 | Query builders                         | Construcción de consultas complejas   |
 | **Estructural**    | Repository              | `domain/ports/` → `infra/persistence/` | Abstraer persistencia                 |
 | **Estructural**    | Adapter                 | `infrastructure/*/`                    | Conectar tech concreta a puertos      |
@@ -460,7 +460,8 @@ class Appointment {
 | **Comportamiento** | Observer                | WebSocket Gateway                      | Notificaciones realtime               |
 | **Comportamiento** | Strategy                | ack/nack handlers                      | Manejo de errores flexible            |
 | **Comportamiento** | Command                 | Mensajes RabbitMQ                      | Desacoplar emisor de ejecutor         |
-| **Comportamiento** | Chain of Responsibility | NestJS Pipeline                        | Guards → Pipes → Controllers          |
+| **Comportamiento** | Chain of Responsibility | HTTP pipeline                          | Middlewares → Filters → Handlers      |
 | **Comportamiento** | State                   | `AppointmentStatus`                    | Transiciones de estado válidas        |
 | **Comportamiento** | Template Method         | Message processors                     | Flujo base con pasos específicos      |
-| **Comportamiento** | Mediator                | NestJS Module                          | Coordinación de dependencias          |
+| **Comportamiento** | Mediator                | Composition module                     | Coordinación de dependencias          |
+cumplimiento total

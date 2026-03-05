@@ -21,9 +21,9 @@ describe("AppointmentFactory", () => {
   });
 
   it("creates specialized variants honoring overrides", () => {
-    const waiting = AppointmentFactory.createWaiting({ priority: "high" });
+    const waiting = AppointmentFactory.createWaiting({ priority: "High" });
     const called = AppointmentFactory.createCalled({ office: "9" });
-    const completed = AppointmentFactory.createCompleted({ priority: "low" });
+    const completed = AppointmentFactory.createCompleted({ priority: "Low" });
 
     expect(waiting.status).toBe("waiting");
     expect(waiting.priority).toBe("high");
@@ -37,7 +37,7 @@ describe("AppointmentFactory", () => {
   });
 
   it("creates many appointments reusing overrides", () => {
-    const list = AppointmentFactory.createMany(3, { priority: "high" });
+    const list = AppointmentFactory.createMany(3, { priority: "High" });
 
     expect(list).toHaveLength(3);
     list.forEach((item) => {

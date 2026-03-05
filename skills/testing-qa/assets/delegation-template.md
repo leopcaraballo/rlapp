@@ -46,7 +46,7 @@ ${solidSkill}
 
 ## Constraints:
 - Tests must be independent (no dependencies between tests)
-- Use mocks/stubs for external dependencies (MongoDB, RabbitMQ)
+- Use mocks/stubs for external dependencies (PostgreSQL, RabbitMQ)
 - Deterministic tests (no flaky tests)
 - >80% coverage mandatory
 - Follow Conventional Commits
