@@ -20,6 +20,7 @@
     <InternalsVisibleTo Include="WaitingRoom.API" />
     <InternalsVisibleTo Include="WaitingRoom.Worker" />
     <InternalsVisibleTo Include="WaitingRoom.Tests.Integration" />
+    <InternalsVisibleTo Include="DynamicProxyGenAssembly2" />
   </ItemGroup>
 
   <PropertyGroup>
