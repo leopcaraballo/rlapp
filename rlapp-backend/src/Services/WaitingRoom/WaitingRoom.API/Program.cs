@@ -2,6 +2,7 @@ using Scalar.AspNetCore;
 using Microsoft.AspNetCore.OpenApi;
 using Microsoft.OpenApi;
 using Serilog;
+using WaitingRoom.API.Security;
 using WaitingRoom.API.Validation;
 using WaitingRoom.API.Middleware;
 using WaitingRoom.API.Endpoints;
@@ -74,6 +75,14 @@ builder.Configuration.GetSection("RabbitMq").Bind(rabbitMqOptions);
 // ==============================================================================
 
 var services = builder.Services;
+
+// ==============================================================================
+// JWT AUTHENTICATION & AUTHORIZATION
+// ==============================================================================
+
+var jwtOptions = new JwtOptions();
+builder.Configuration.GetSection(JwtOptions.SectionName).Bind(jwtOptions);
+services.AddJwtAuthentication(jwtOptions);
 
 // Infrastructure — Outbox Store
 services.AddSingleton<IOutboxStore>(sp => new PostgresOutboxStore(connectionString));
@@ -221,6 +230,10 @@ app.UseIdempotencyKey();  // CRITICAL: Check and cache responses by idempotency 
 app.UseMiddleware<ExceptionHandlerMiddleware>();
 app.UseCors("FrontendDev");
 
+// Autenticación y autorización JWT
+app.UseAuthentication();
+app.UseAuthorization();
+
 // Prometheus metrics — expone /metrics para scraping
 app.UseHttpMetrics();  // Metricas automaticas de peticiones HTTP
 app.MapMetrics();      // Endpoint GET /metrics
@@ -243,6 +256,45 @@ if (app.Environment.IsDevelopment())
 {
     app.UseHttpsRedirection();
 }
+
+// ==============================================================================
+// AUTHENTICATION ENDPOINT
+// ==============================================================================
+
+app.MapPost("/api/auth/token", (
+    AuthTokenRequest request,
+    JwtTokenGenerator tokenGenerator) =>
+{
+    if (string.IsNullOrWhiteSpace(request.UserId) ||
+        string.IsNullOrWhiteSpace(request.UserName) ||
+        string.IsNullOrWhiteSpace(request.Role))
+    {
+        return Results.BadRequest(new { Error = "UserId, UserName y Role son obligatorios." });
+    }
+
+    var allowedRoles = new[] { "Receptionist", "Cashier", "Doctor", "Admin" };
+    if (!allowedRoles.Any(r => string.Equals(r, request.Role, StringComparison.OrdinalIgnoreCase)))
+    {
+        return Results.BadRequest(new { Error = $"Rol inválido. Roles permitidos: {string.Join(", ", allowedRoles)}" });
+    }
+
+    var token = tokenGenerator.GenerateToken(request.UserId, request.UserName, request.Role);
+
+    return Results.Ok(new
+    {
+        Token = token,
+        ExpiresIn = app.Services.GetRequiredService<JwtOptions>().TokenExpirationMinutes * 60,
+        TokenType = "Bearer"
+    });
+})
+.WithName("GenerateAuthToken")
+.WithTags("Authentication")
+.WithSummary("Generar token JWT")
+.WithDescription("Genera un token JWT para autenticación. En producción, este endpoint debe reemplazarse por un Identity Provider externo.")
+.AllowAnonymous()
+.Accepts<AuthTokenRequest>("application/json")
+.Produces(200)
+.Produces(400);
 
 // ==============================================================================
 // HEALTH CHECKS ENDPOINTS
