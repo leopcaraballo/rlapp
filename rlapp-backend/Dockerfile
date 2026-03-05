@@ -1,5 +1,6 @@
 # Backend multi-service Dockerfile (API / Worker)
 # HUMAN CHECK: uses .NET 10.0 nightly images; align with TargetFramework net10.0
+# Hardened: non-root user, HEALTHCHECK, minimal attack surface
 
 # ---------- Build stage ----------
 FROM mcr.microsoft.com/dotnet/nightly/sdk:10.0 AS build
@@ -20,8 +21,13 @@ RUN dotnet publish ${PROJECT} -c Release -o /app/publish --no-restore
 FROM mcr.microsoft.com/dotnet/nightly/aspnet:10.0 AS final
 WORKDIR /app
 
-# Copy published output
-COPY --from=build /app/publish .
+# SECURITY: Create non-root user for runtime execution
+# HUMAN CHECK: Verify that the application does not require root privileges at runtime
+RUN groupadd --gid 1001 appgroup \
+    && useradd --uid 1001 --gid appgroup --shell /bin/false --create-home appuser
+
+# Copy published output with correct ownership
+COPY --from=build --chown=appuser:appgroup /app/publish .
 
 # Configure runtime
 ARG APP_DLL
@@ -29,12 +35,23 @@ ENV ASPNETCORE_URLS=http://+:8080
 # Pass the build ARG into an ENV so it exists at runtime
 ENV APP_DLL=${APP_DLL}
 
-# Instalar curl para el healthcheck (imagen basada en Debian)
+# Install curl for healthcheck (Debian-based image)
 RUN apt-get update \
     && apt-get install -y --no-install-recommends curl \
     && rm -rf /var/lib/apt/lists/*
 
+# SECURITY: Ensure /tmp is writable for the non-root user (needed for ASP.NET temp files)
+RUN mkdir -p /tmp && chown appuser:appgroup /tmp
+
 EXPOSE 8080
+
+# SECURITY: Switch to non-root user
+USER appuser
+
+# HEALTHCHECK: Built-in container health verification
+# HUMAN CHECK: Adjust interval/timeout based on production SLA requirements
+HEALTHCHECK --interval=15s --timeout=5s --start-period=30s --retries=3 \
+    CMD curl -f http://localhost:8080/health/live || exit 1
 
 # HUMAN CHECK: env vars are expanded at runtime; use shell to evaluate $APP_DLL
 ENTRYPOINT ["sh", "-c", "dotnet /app/$APP_DLL"]
