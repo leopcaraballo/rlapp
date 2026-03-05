@@ -43,7 +43,19 @@ internal sealed class ProjectionWorker : BackgroundService
         try
         {
             // Wire up event handlers
-            _subscriber.EventReceived += (sender, args) => OnEventReceived(args, stoppingToken);
+            // Use fire-and-forget with explicit continuation to observe and log faults.
+            _subscriber.EventReceived += (sender, args) =>
+            {
+                // Start processing and ensure any faults are observed and logged
+                _ = OnEventReceived(args, stoppingToken)
+                    .ContinueWith(t =>
+                    {
+                        if (t.IsFaulted)
+                        {
+                            _logger.LogError(t.Exception, "Error processing event {EventType} in projection worker (unobserved)", args.Event.GetType().Name);
+                        }
+                    }, TaskContinuationOptions.OnlyOnFaulted);
+            };
             _subscriber.ErrorOccurred += (sender, args) => OnErrorOccurred(args);
 
             // Start subscriber
@@ -71,7 +83,7 @@ internal sealed class ProjectionWorker : BackgroundService
         }
     }
 
-    private async void OnEventReceived(
+    internal async Task OnEventReceived(
         EventReceivedArgs args,
         CancellationToken cancellation)
     {
@@ -83,7 +95,7 @@ internal sealed class ProjectionWorker : BackgroundService
                 args.RoutingKey);
 
             // Process event through projection
-            await _processor.ProcessEventAsync(args.Event, cancellation);
+            await _processor.ProcessEventAsync(args.Event, cancellation).ConfigureAwait(false);
         }
         catch (Exception ex)
         {
