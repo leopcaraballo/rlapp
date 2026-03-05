@@ -11,14 +11,17 @@ internal sealed class RabbitMqEventPublisher : IEventPublisher
     private readonly RabbitMqOptions _options;
     private readonly EventSerializer _serializer;
     private readonly IOutboxStore? _outboxStore;
+    private readonly IRabbitMqConnectionProvider _connectionProvider;
 
     public RabbitMqEventPublisher(
         RabbitMqOptions options,
         EventSerializer serializer,
+        IRabbitMqConnectionProvider connectionProvider,
         IOutboxStore? outboxStore = null)
     {
         _options = options ?? throw new ArgumentNullException(nameof(options));
         _serializer = serializer ?? throw new ArgumentNullException(nameof(serializer));
+        _connectionProvider = connectionProvider ?? throw new ArgumentNullException(nameof(connectionProvider));
         _outboxStore = outboxStore;
     }
 
@@ -38,21 +41,11 @@ internal sealed class RabbitMqEventPublisher : IEventPublisher
 
         cancellationToken.ThrowIfCancellationRequested();
 
-        var factory = new ConnectionFactory
-        {
-            HostName = _options.HostName,
-            Port = _options.Port,
-            UserName = _options.UserName,
-            Password = _options.Password,
-            VirtualHost = _options.VirtualHost
-        };
-
         var eventIds = eventList.Select(e => Guid.Parse(e.Metadata.EventId)).ToList();
 
         try
         {
-            using var connection = factory.CreateConnection();
-            using var channel = connection.CreateModel();
+            using var channel = _connectionProvider.CreateModel();
 
             channel.ExchangeDeclare(
                 exchange: _options.ExchangeName,
