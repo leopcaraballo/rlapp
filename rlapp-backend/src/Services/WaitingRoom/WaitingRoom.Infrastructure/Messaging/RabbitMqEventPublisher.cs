@@ -156,10 +156,18 @@ internal sealed class RabbitMqEventPublisher : IEventPublisher
             properties.ContentType = "application/json";
             properties.DeliveryMode = 2; // Persistent
 
-            // Schema version metadata for event evolution
-            properties.Headers ??= new Dictionary<string, object>();
-            properties.Headers["schema_version"] = "1.0";
-            properties.Headers["source_service"] = "WaitingRoom";
+            // Schema version metadata for event evolution (EventSchemaRegistry)
+            var schemaVersion = EventSchemaRegistry.GetVersion(@event.EventName);
+            properties.Headers = new Dictionary<string, object>
+            {
+                ["schema_version"] = schemaVersion,
+                ["x-schema-version"] = schemaVersion,
+                ["x-event-name"] = @event.EventName,
+                ["x-aggregate-id"] = @event.Metadata.AggregateId,
+                ["x-causation-id"] = @event.Metadata.CausationId,
+                ["x-idempotency-key"] = @event.Metadata.IdempotencyKey,
+                ["source_service"] = "WaitingRoom"
+            };
 
             var timestamp = new DateTimeOffset(@event.Metadata.OccurredAt).ToUnixTimeSeconds();
             properties.Timestamp = new AmqpTimestamp(timestamp);
