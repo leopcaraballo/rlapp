@@ -6,6 +6,7 @@ using RabbitMQ.Client.Events;
 using System;
 using System.Text;
 using System.Text.Json;
+using WaitingRoom.Infrastructure.Messaging;
 
 /// <summary>
 /// RabbitMQ implementation of IProjectionEventSubscriber.
