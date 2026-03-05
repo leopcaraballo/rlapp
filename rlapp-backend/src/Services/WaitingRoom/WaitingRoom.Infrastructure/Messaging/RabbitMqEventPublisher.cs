@@ -2,22 +2,26 @@ namespace WaitingRoom.Infrastructure.Messaging;
 
 using System.Text;
 using BuildingBlocks.EventSourcing;
+using Microsoft.Extensions.Logging;
+using Polly.CircuitBreaker;
 using RabbitMQ.Client;
 using RabbitMQ.Client.Exceptions;
 using WaitingRoom.Application.Ports;
 using WaitingRoom.Infrastructure.Serialization;
 
 /// <summary>
-/// RabbitMQ event publisher with retry logic and connection resilience.
+/// Publicador de eventos de dominio hacia RabbitMQ con resiliencia integrada.
 ///
-/// Features:
-/// - Publish with configurable retry attempts and exponential backoff
-/// - Persistent messages (delivery mode 2) for durability
-/// - Outbox integration for at-least-once delivery guarantee
-/// - Schema version metadata on every published message
+/// Estrategia de resiliencia:
+/// - Retry con backoff exponencial + jitter (Polly v8)
+/// - Circuit Breaker para protección contra cascadas de fallos
+/// - Integración con Outbox Pattern para garantía de entrega
+/// - Schema version metadata en cada mensaje publicado
 ///
-/// // HUMAN CHECK: verify retry logic for poison messages — evaluate whether
-/// failed publishes should dead-letter or silently mark as failed in outbox
+/// // HUMAN CHECK: Si el Circuit Breaker se abre con frecuencia en producción,
+/// // revisar la salud de RabbitMQ y ajustar RabbitMqResilienceOptions.
+/// // Monitorear métricas de Prometheus: rabbitmq_publish_retries_total,
+/// // rabbitmq_circuit_breaker_state.
 /// </summary>
 internal sealed class RabbitMqEventPublisher : IEventPublisher
 {
@@ -25,6 +29,8 @@ internal sealed class RabbitMqEventPublisher : IEventPublisher
     private readonly EventSerializer _serializer;
     private readonly IOutboxStore? _outboxStore;
     private readonly IRabbitMqConnectionProvider _connectionProvider;
+    private readonly RabbitMqResiliencePipeline? _resiliencePipeline;
+    private readonly ILogger<RabbitMqEventPublisher> _logger;
 
     /// <summary>
     /// Maximum publish retry attempts before propagating the exception.
@@ -40,11 +46,15 @@ internal sealed class RabbitMqEventPublisher : IEventPublisher
         RabbitMqOptions options,
         EventSerializer serializer,
         IRabbitMqConnectionProvider connectionProvider,
+        ILogger<RabbitMqEventPublisher> logger,
+        RabbitMqResiliencePipeline? resiliencePipeline = null,
         IOutboxStore? outboxStore = null)
     {
         _options = options ?? throw new ArgumentNullException(nameof(options));
         _serializer = serializer ?? throw new ArgumentNullException(nameof(serializer));
         _connectionProvider = connectionProvider ?? throw new ArgumentNullException(nameof(connectionProvider));
+        _logger = logger ?? throw new ArgumentNullException(nameof(logger));
+        _resiliencePipeline = resiliencePipeline;
         _outboxStore = outboxStore;
     }
 
@@ -68,10 +78,37 @@ internal sealed class RabbitMqEventPublisher : IEventPublisher
 
         try
         {
-            await PublishWithRetryAsync(eventList, cancellationToken);
+            if (_resiliencePipeline != null)
+            {
+                await _resiliencePipeline.Pipeline.ExecuteAsync(
+                    async token => { await PublishToRabbitMqAsync(eventList, token); },
+                    cancellationToken);
+            }
+            else
+            {
+                await PublishToRabbitMqAsync(eventList, cancellationToken);
+            }
 
             if (_outboxStore != null)
                 await _outboxStore.MarkDispatchedAsync(eventIds, cancellationToken);
+        }
+        catch (BrokenCircuitException ex)
+        {
+            _logger.LogError(
+                ex,
+                "Circuit Breaker abierto — publicación de {Count} eventos diferida al Outbox",
+                eventList.Count);
+
+            if (_outboxStore != null)
+            {
+                await _outboxStore.MarkFailedAsync(
+                    eventIds,
+                    $"Circuit Breaker abierto: {ex.Message}",
+                    retryAfter: TimeSpan.FromSeconds(60),
+                    cancellationToken: cancellationToken);
+            }
+
+            throw;
         }
         catch (Exception ex)
         {
@@ -89,48 +126,16 @@ internal sealed class RabbitMqEventPublisher : IEventPublisher
     }
 
     /// <summary>
-    /// Publishes events with retry logic and exponential backoff.
-    /// Handles transient RabbitMQ failures (broker unreachable, channel closed).
-    ///
-    /// // HUMAN CHECK: verify exponential backoff parameters under high-throughput scenarios
+    /// Operación de publicación pura hacia RabbitMQ (sin resiliencia).
+    /// Extraída para que el pipeline de Polly envuelva únicamente la operación de I/O.
+    /// Incluye schema version metadata para compatibilidad evolutiva.
     /// </summary>
-    private async Task PublishWithRetryAsync(
+    private Task PublishToRabbitMqAsync(
         List<DomainEvent> eventList,
         CancellationToken cancellationToken)
     {
-        Exception? lastException = null;
+        cancellationToken.ThrowIfCancellationRequested();
 
-        for (var attempt = 0; attempt < MaxPublishRetries; attempt++)
-        {
-            try
-            {
-                cancellationToken.ThrowIfCancellationRequested();
-                PublishBatch(eventList);
-                return; // Success
-            }
-            catch (BrokerUnreachableException ex) when (attempt < MaxPublishRetries - 1)
-            {
-                lastException = ex;
-                var delay = BaseRetryDelayMs * (int)Math.Pow(2, attempt);
-                await Task.Delay(delay, cancellationToken);
-            }
-            catch (AlreadyClosedException ex) when (attempt < MaxPublishRetries - 1)
-            {
-                lastException = ex;
-                var delay = BaseRetryDelayMs * (int)Math.Pow(2, attempt);
-                await Task.Delay(delay, cancellationToken);
-            }
-        }
-
-        throw lastException ?? new InvalidOperationException("Publish failed after retries");
-    }
-
-    /// <summary>
-    /// Publishes a batch of events to RabbitMQ in a single channel.
-    /// Each event includes schema_version metadata for forward compatibility.
-    /// </summary>
-    private void PublishBatch(List<DomainEvent> eventList)
-    {
         using var channel = _connectionProvider.CreateModel();
 
         channel.ExchangeDeclare(
@@ -165,5 +170,12 @@ internal sealed class RabbitMqEventPublisher : IEventPublisher
                 basicProperties: properties,
                 body: body);
         }
+
+        _logger.LogDebug(
+            "Publicados {Count} eventos al exchange {Exchange}",
+            eventList.Count,
+            _options.ExchangeName);
+
+        return Task.CompletedTask;
     }
 }
