@@ -1,0 +1,36 @@
+<!-- ==========================================================================
+  RLAPP — Configuracion de ejecucion de tests con cobertura
+  ==========================================================================
+  HUMAN CHECK: Ajustar los umbrales de cobertura segun la madurez del proyecto.
+               El umbral minimo recomendado es 80% para produccion clinica.
+  ========================================================================== -->
+<RunSettings>
+  <DataCollectionRunSettings>
+    <DataCollectors>
+      <DataCollector friendlyName="XPlat Code Coverage">
+        <Configuration>
+          <Format>cobertura,opencover</Format>
+          <ExcludeByFile>**/Program.cs,**/Migrations/**</ExcludeByFile>
+          <ExcludeByAttribute>
+            Obsolete,
+            GeneratedCodeAttribute,
+            CompilerGeneratedAttribute,
+            ExcludeFromCodeCoverageAttribute
+          </ExcludeByAttribute>
+          <SingleHit>false</SingleHit>
+          <UseSourceLink>true</UseSourceLink>
+          <IncludeTestAssembly>false</IncludeTestAssembly>
+          <SkipAutoProps>true</SkipAutoProps>
+          <DeterministicReport>true</DeterministicReport>
+        </Configuration>
+      </DataCollector>
+    </DataCollectors>
+  </DataCollectionRunSettings>
+
+  <!-- Umbrales de cobertura por proyecto -->
+  <TestRunParameters>
+    <Parameter name="CoverageThreshold.Line" value="80" />
+    <Parameter name="CoverageThreshold.Branch" value="70" />
+    <Parameter name="CoverageThreshold.Method" value="85" />
+  </TestRunParameters>
+</RunSettings>
