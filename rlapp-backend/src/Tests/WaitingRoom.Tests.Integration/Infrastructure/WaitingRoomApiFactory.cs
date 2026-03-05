@@ -1,6 +1,7 @@
 namespace WaitingRoom.Tests.Integration.Infrastructure;
 
 using BuildingBlocks.Observability;
+using Microsoft.AspNetCore.Authentication;
 using Microsoft.AspNetCore.Hosting;
 using Microsoft.AspNetCore.Mvc.Testing;
 using Microsoft.Extensions.DependencyInjection;
@@ -18,6 +19,7 @@ using WaitingRoom.Tests.Integration.Fakes;
 /// - IPatientIdentityRegistry → InMemoryPatientIdentityRegistry
 /// - IEventPublisher → NoOpEventPublisher
 /// - IEventLagTracker → NoOpEventLagTracker
+/// - Authentication → TestAuthHandler (reemplaza JWT Bearer)
 /// </summary>
 public sealed class WaitingRoomApiFactory : WebApplicationFactory<global::Program>
 {
@@ -43,6 +45,20 @@ public sealed class WaitingRoomApiFactory : WebApplicationFactory<global::Progra
             services.AddSingleton<IPatientIdentityRegistry, InMemoryPatientIdentityRegistry>();
             services.AddSingleton<IEventPublisher, NoOpEventPublisher>();
             services.AddSingleton<IEventLagTracker, NoOpEventLagTracker>();
+
+            // Reemplazar JWT Bearer con TestAuthHandler para tests de integracion.
+            // TestAuthHandler lee el header X-User-Role y genera claims equivalentes
+            // a un token JWT, permitiendo que los endpoint filters usen Strategy 1 (JWT).
+            // Se sobreescriben DefaultAuthenticateScheme y DefaultChallengeScheme
+            // porque Program.cs los establece explicitamente para JWT Bearer.
+            services.AddAuthentication(options =>
+                {
+                    options.DefaultScheme = TestAuthHandler.SchemeName;
+                    options.DefaultAuthenticateScheme = TestAuthHandler.SchemeName;
+                    options.DefaultChallengeScheme = TestAuthHandler.SchemeName;
+                })
+                .AddScheme<AuthenticationSchemeOptions, TestAuthHandler>(
+                    TestAuthHandler.SchemeName, _ => { });
         });
     }
 

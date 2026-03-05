@@ -77,7 +77,8 @@ public sealed class FullClinicalFlowHttpTests : IClassFixture<WaitingRoomApiFact
         };
 
         var activateResponse = await SendPostAsync(
-            "/api/medical/consulting-room/activate", activateDto);
+            "/api/medical/consulting-room/activate", activateDto,
+            additionalHeaders: new Dictionary<string, string> { ["X-User-Role"] = "Doctor" });
 
         activateResponse.StatusCode.Should().Be(HttpStatusCode.OK);
         var activateResult = await DeserializeAsync(activateResponse);
@@ -92,7 +93,8 @@ public sealed class FullClinicalFlowHttpTests : IClassFixture<WaitingRoomApiFact
         };
 
         var cashierCallResponse = await SendPostAsync(
-            "/api/cashier/call-next", cashierCallDto);
+            "/api/cashier/call-next", cashierCallDto,
+            additionalHeaders: new Dictionary<string, string> { ["X-User-Role"] = "Cashier" });
 
         cashierCallResponse.StatusCode.Should().Be(HttpStatusCode.OK);
         var cashierCallResult = await DeserializeAsync(cashierCallResponse);
@@ -110,7 +112,8 @@ public sealed class FullClinicalFlowHttpTests : IClassFixture<WaitingRoomApiFact
         };
 
         var paymentResponse = await SendPostAsync(
-            "/api/cashier/validate-payment", paymentDto);
+            "/api/cashier/validate-payment", paymentDto,
+            additionalHeaders: new Dictionary<string, string> { ["X-User-Role"] = "Cashier" });
 
         paymentResponse.StatusCode.Should().Be(HttpStatusCode.OK);
         var paymentResult = await DeserializeAsync(paymentResponse);
@@ -125,7 +128,8 @@ public sealed class FullClinicalFlowHttpTests : IClassFixture<WaitingRoomApiFact
         };
 
         var claimResponse = await SendPostAsync(
-            "/api/medical/call-next", claimDto);
+            "/api/medical/call-next", claimDto,
+            additionalHeaders: new Dictionary<string, string> { ["X-User-Role"] = "Doctor" });
 
         claimResponse.StatusCode.Should().Be(HttpStatusCode.OK);
         var claimResult = await DeserializeAsync(claimResponse);
@@ -142,7 +146,8 @@ public sealed class FullClinicalFlowHttpTests : IClassFixture<WaitingRoomApiFact
         };
 
         var startResponse = await SendPostAsync(
-            "/api/medical/start-consultation", startDto);
+            "/api/medical/start-consultation", startDto,
+            additionalHeaders: new Dictionary<string, string> { ["X-User-Role"] = "Doctor" });
 
         startResponse.StatusCode.Should().Be(HttpStatusCode.OK);
         var startResult = await DeserializeAsync(startResponse);
@@ -159,7 +164,8 @@ public sealed class FullClinicalFlowHttpTests : IClassFixture<WaitingRoomApiFact
         };
 
         var completeResponse = await SendPostAsync(
-            "/api/medical/finish-consultation", completeDto);
+            "/api/medical/finish-consultation", completeDto,
+            additionalHeaders: new Dictionary<string, string> { ["X-User-Role"] = "Doctor" });
 
         completeResponse.StatusCode.Should().Be(HttpStatusCode.OK);
         var completeResult = await DeserializeAsync(completeResponse);
@@ -263,7 +269,8 @@ public sealed class FullClinicalFlowHttpTests : IClassFixture<WaitingRoomApiFact
         // Llamar en caja
         var callResponse = await SendPostAsync(
             "/api/cashier/call-next",
-            new CallNextCashierDto { QueueId = queueId, Actor = "cashier-02" });
+            new CallNextCashierDto { QueueId = queueId, Actor = "cashier-02" },
+            additionalHeaders: new Dictionary<string, string> { ["X-User-Role"] = "Cashier" });
 
         var callResult = await DeserializeAsync(callResponse);
         var patientId = callResult.GetProperty("patientId").GetString()!;
@@ -277,7 +284,8 @@ public sealed class FullClinicalFlowHttpTests : IClassFixture<WaitingRoomApiFact
         };
 
         var absentResponse = await SendPostAsync(
-            "/api/cashier/mark-absent", absentDto);
+            "/api/cashier/mark-absent", absentDto,
+            additionalHeaders: new Dictionary<string, string> { ["X-User-Role"] = "Cashier" });
 
         absentResponse.StatusCode.Should().Be(HttpStatusCode.OK);
         var absentResult = await DeserializeAsync(absentResponse);
@@ -311,7 +319,8 @@ public sealed class FullClinicalFlowHttpTests : IClassFixture<WaitingRoomApiFact
         var callResult = await DeserializeAsync(
             await SendPostAsync(
                 "/api/cashier/call-next",
-                new CallNextCashierDto { QueueId = queueId, Actor = "cashier-03" }));
+                new CallNextCashierDto { QueueId = queueId, Actor = "cashier-03" },
+                additionalHeaders: new Dictionary<string, string> { ["X-User-Role"] = "Cashier" }));
 
         var patientId = callResult.GetProperty("patientId").GetString()!;
 
@@ -324,7 +333,8 @@ public sealed class FullClinicalFlowHttpTests : IClassFixture<WaitingRoomApiFact
                 PatientId = patientId,
                 Actor = "cashier-03",
                 Reason = "Paciente solicita cancelacion"
-            });
+            },
+            additionalHeaders: new Dictionary<string, string> { ["X-User-Role"] = "Cashier" });
 
         // El dominio rechaza la cancelacion porque no se han cumplido 3 intentos de pago
         cancelResponse.StatusCode.Should().Be(HttpStatusCode.BadRequest,
@@ -355,7 +365,8 @@ public sealed class FullClinicalFlowHttpTests : IClassFixture<WaitingRoomApiFact
         var callResult = await DeserializeAsync(
             await SendPostAsync(
                 "/api/cashier/call-next",
-                new CallNextCashierDto { QueueId = queueId, Actor = "cashier-04" }));
+                new CallNextCashierDto { QueueId = queueId, Actor = "cashier-04" },
+                additionalHeaders: new Dictionary<string, string> { ["X-User-Role"] = "Cashier" }));
 
         var patientId = callResult.GetProperty("patientId").GetString()!;
 
@@ -368,7 +379,8 @@ public sealed class FullClinicalFlowHttpTests : IClassFixture<WaitingRoomApiFact
                 PatientId = patientId,
                 Actor = "cashier-04",
                 Reason = "Falta documento de aseguradora"
-            });
+            },
+            additionalHeaders: new Dictionary<string, string> { ["X-User-Role"] = "Cashier" });
 
         pendingResponse.StatusCode.Should().Be(HttpStatusCode.OK);
         var pendingResult = await DeserializeAsync(pendingResponse);
@@ -405,13 +417,15 @@ public sealed class FullClinicalFlowHttpTests : IClassFixture<WaitingRoomApiFact
                 QueueId = queueId,
                 ConsultingRoomId = "CONS-MED-01",
                 Actor = "coordinator-02"
-            });
+            },
+            additionalHeaders: new Dictionary<string, string> { ["X-User-Role"] = "Doctor" });
 
         // Caja: llamar + validar pago
         var cashierResult = await DeserializeAsync(
             await SendPostAsync(
                 "/api/cashier/call-next",
-                new CallNextCashierDto { QueueId = queueId, Actor = "cashier-05" }));
+                new CallNextCashierDto { QueueId = queueId, Actor = "cashier-05" },
+                additionalHeaders: new Dictionary<string, string> { ["X-User-Role"] = "Cashier" }));
 
         var patientId = cashierResult.GetProperty("patientId").GetString()!;
 
@@ -423,7 +437,8 @@ public sealed class FullClinicalFlowHttpTests : IClassFixture<WaitingRoomApiFact
                 PatientId = patientId,
                 Actor = "cashier-05",
                 PaymentReference = "PAY-MED-001"
-            });
+            },
+            additionalHeaders: new Dictionary<string, string> { ["X-User-Role"] = "Cashier" });
 
         // Reclamar paciente (estado: LlamadoConsulta)
         var claimResult = await DeserializeAsync(
@@ -447,7 +462,8 @@ public sealed class FullClinicalFlowHttpTests : IClassFixture<WaitingRoomApiFact
                 QueueId = queueId,
                 PatientId = claimedPatientId,
                 Actor = "doctor-02"
-            });
+            },
+            additionalHeaders: new Dictionary<string, string> { ["X-User-Role"] = "Doctor" });
 
         absentResponse.StatusCode.Should().Be(HttpStatusCode.OK);
         var absentResult = await DeserializeAsync(absentResponse);
@@ -484,7 +500,8 @@ public sealed class FullClinicalFlowHttpTests : IClassFixture<WaitingRoomApiFact
                 QueueId = queueId,
                 ConsultingRoomId = "CONS-DEACT-01",
                 Actor = "coordinator-03"
-            });
+            },
+            additionalHeaders: new Dictionary<string, string> { ["X-User-Role"] = "Doctor" });
 
         activateResponse.StatusCode.Should().Be(HttpStatusCode.OK);
 
@@ -496,7 +513,8 @@ public sealed class FullClinicalFlowHttpTests : IClassFixture<WaitingRoomApiFact
                 QueueId = queueId,
                 ConsultingRoomId = "CONS-DEACT-01",
                 Actor = "coordinator-03"
-            });
+            },
+            additionalHeaders: new Dictionary<string, string> { ["X-User-Role"] = "Doctor" });
 
         deactivateResponse.StatusCode.Should().Be(HttpStatusCode.OK);
         var result = await DeserializeAsync(deactivateResponse);
@@ -533,13 +551,15 @@ public sealed class FullClinicalFlowHttpTests : IClassFixture<WaitingRoomApiFact
                 QueueId = queueId,
                 ConsultingRoomId = "CONS-ALT-01",
                 Actor = "coordinator-alt"
-            });
+            },
+            additionalHeaders: new Dictionary<string, string> { ["X-User-Role"] = "Doctor" });
 
         // Caja
         var cashierResult = await DeserializeAsync(
             await SendPostAsync(
                 "/api/cashier/call-next",
-                new CallNextCashierDto { QueueId = queueId, Actor = "cashier-alt" }));
+                new CallNextCashierDto { QueueId = queueId, Actor = "cashier-alt" },
+                additionalHeaders: new Dictionary<string, string> { ["X-User-Role"] = "Cashier" }));
         var patientId = cashierResult.GetProperty("patientId").GetString()!;
 
         await SendPostAsync(
@@ -549,7 +569,8 @@ public sealed class FullClinicalFlowHttpTests : IClassFixture<WaitingRoomApiFact
                 QueueId = queueId,
                 PatientId = patientId,
                 Actor = "cashier-alt"
-            });
+            },
+            additionalHeaders: new Dictionary<string, string> { ["X-User-Role"] = "Cashier" });
 
         // Usar endpoints de waiting-room (no medical)
         var claimResult = await DeserializeAsync(

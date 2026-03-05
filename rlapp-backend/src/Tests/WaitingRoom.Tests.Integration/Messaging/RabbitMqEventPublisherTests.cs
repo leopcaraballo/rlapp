@@ -4,6 +4,7 @@ using System.Text;
 using Xunit;
 using Moq;
 using FluentAssertions;
+using Microsoft.Extensions.Logging;
 using RabbitMQ.Client;
 using WaitingRoom.Infrastructure.Messaging;
 using WaitingRoom.Infrastructure.Serialization;
@@ -24,6 +25,7 @@ public sealed class RabbitMqEventPublisherTests
     private readonly Mock<IModel> _channelMock;
     private readonly Mock<IBasicProperties> _propertiesMock;
     private readonly Mock<IOutboxStore> _outboxStoreMock;
+    private readonly Mock<ILogger<RabbitMqEventPublisher>> _loggerMock;
     private readonly EventSerializer _serializer;
     private readonly RabbitMqOptions _options;
 
@@ -33,6 +35,7 @@ public sealed class RabbitMqEventPublisherTests
         _channelMock = new Mock<IModel>();
         _propertiesMock = new Mock<IBasicProperties>();
         _outboxStoreMock = new Mock<IOutboxStore>();
+        _loggerMock = new Mock<ILogger<RabbitMqEventPublisher>>();
         _serializer = new EventSerializer(EventTypeRegistry.CreateDefault());
         _options = new RabbitMqOptions
         {
@@ -53,7 +56,8 @@ public sealed class RabbitMqEventPublisherTests
     public async Task PublishAsync_ConEventoUnico_DeclaraExchangeYPublicaMensaje()
     {
         var publisher = new RabbitMqEventPublisher(
-            _options, _serializer, _connectionProviderMock.Object, _outboxStoreMock.Object);
+            _options, _serializer, _connectionProviderMock.Object, _loggerMock.Object,
+            outboxStore: _outboxStoreMock.Object);
         var evt = CreateEvent();
 
         await publisher.PublishAsync(evt);
@@ -72,7 +76,8 @@ public sealed class RabbitMqEventPublisherTests
     public async Task PublishAsync_ConMultiplesEventos_PublicaTodos()
     {
         var publisher = new RabbitMqEventPublisher(
-            _options, _serializer, _connectionProviderMock.Object, _outboxStoreMock.Object);
+            _options, _serializer, _connectionProviderMock.Object, _loggerMock.Object,
+            outboxStore: _outboxStoreMock.Object);
         var events = new List<DomainEvent> { CreateEvent(), CreateEvent(), CreateEvent() };
 
         await publisher.PublishAsync(events);
@@ -86,7 +91,8 @@ public sealed class RabbitMqEventPublisherTests
     public async Task PublishAsync_Exitoso_MarcaOutboxComoDispachado()
     {
         var publisher = new RabbitMqEventPublisher(
-            _options, _serializer, _connectionProviderMock.Object, _outboxStoreMock.Object);
+            _options, _serializer, _connectionProviderMock.Object, _loggerMock.Object,
+            outboxStore: _outboxStoreMock.Object);
         _outboxStoreMock.Setup(o => o.MarkDispatchedAsync(
             It.IsAny<IReadOnlyList<Guid>>(), It.IsAny<CancellationToken>())).Returns(Task.CompletedTask);
 
@@ -101,7 +107,8 @@ public sealed class RabbitMqEventPublisherTests
     public async Task PublishAsync_SinOutboxStore_NoLanzaExcepcion()
     {
         var publisher = new RabbitMqEventPublisher(
-            _options, _serializer, _connectionProviderMock.Object, outboxStore: null);
+            _options, _serializer, _connectionProviderMock.Object, _loggerMock.Object,
+            outboxStore: null);
 
         var act = () => publisher.PublishAsync(CreateEvent());
 
@@ -120,7 +127,8 @@ public sealed class RabbitMqEventPublisherTests
             It.IsAny<TimeSpan>(), It.IsAny<CancellationToken>())).Returns(Task.CompletedTask);
 
         var publisher = new RabbitMqEventPublisher(
-            _options, _serializer, _connectionProviderMock.Object, _outboxStoreMock.Object);
+            _options, _serializer, _connectionProviderMock.Object, _loggerMock.Object,
+            outboxStore: _outboxStoreMock.Object);
 
         await Assert.ThrowsAsync<Exception>(() => publisher.PublishAsync(CreateEvent()));
 
@@ -134,7 +142,7 @@ public sealed class RabbitMqEventPublisherTests
     public async Task PublishAsync_ListaVacia_NoPublicaNada()
     {
         var publisher = new RabbitMqEventPublisher(
-            _options, _serializer, _connectionProviderMock.Object);
+            _options, _serializer, _connectionProviderMock.Object, _loggerMock.Object);
 
         await publisher.PublishAsync(Array.Empty<DomainEvent>());
 
@@ -147,7 +155,7 @@ public sealed class RabbitMqEventPublisherTests
     public async Task PublishAsync_EstablecePropertiesCorrectas()
     {
         var publisher = new RabbitMqEventPublisher(
-            _options, _serializer, _connectionProviderMock.Object);
+            _options, _serializer, _connectionProviderMock.Object, _loggerMock.Object);
         var evt = CreateEvent();
 
         await publisher.PublishAsync(evt);
@@ -163,7 +171,7 @@ public sealed class RabbitMqEventPublisherTests
     public async Task PublishAsync_EventosNulos_LanzaArgumentNullException()
     {
         var publisher = new RabbitMqEventPublisher(
-            _options, _serializer, _connectionProviderMock.Object);
+            _options, _serializer, _connectionProviderMock.Object, _loggerMock.Object);
 
         await Assert.ThrowsAsync<ArgumentNullException>(
             () => publisher.PublishAsync((IEnumerable<DomainEvent>)null!));
@@ -172,14 +180,14 @@ public sealed class RabbitMqEventPublisherTests
     [Fact]
     public void Constructor_OptionsNulas_LanzaArgumentNullException()
     {
-        var act = () => new RabbitMqEventPublisher(null!, _serializer, _connectionProviderMock.Object);
+        var act = () => new RabbitMqEventPublisher(null!, _serializer, _connectionProviderMock.Object, _loggerMock.Object);
         act.Should().Throw<ArgumentNullException>().WithParameterName("options");
     }
 
     [Fact]
     public void Constructor_SerializerNulo_LanzaArgumentNullException()
     {
-        var act = () => new RabbitMqEventPublisher(_options, null!, _connectionProviderMock.Object);
+        var act = () => new RabbitMqEventPublisher(_options, null!, _connectionProviderMock.Object, _loggerMock.Object);
         act.Should().Throw<ArgumentNullException>().WithParameterName("serializer");
     }
 

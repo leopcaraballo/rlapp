@@ -101,10 +101,14 @@ public sealed class EndpointValidationHttpTests : IClassFixture<WaitingRoomApiFa
     // Role-based access (ReceptionistOnlyFilter)
     // ============================================================
 
+    /// <summary>
+    /// Verifica que los endpoints de recepcion retornan 401 Unauthorized
+    /// cuando no se proporciona autenticacion (sin header X-User-Role).
+    /// </summary>
     [Theory]
     [InlineData("/api/waiting-room/check-in")]
     [InlineData("/api/reception/register")]
-    public async Task ReceptionEndpoints_WithoutReceptionistRole_ReturnForbidden(string endpoint)
+    public async Task ReceptionEndpoints_WithoutAuthentication_ReturnUnauthorized(string endpoint)
     {
         var dto = new CheckInPatientDto
         {
@@ -121,20 +125,23 @@ public sealed class EndpointValidationHttpTests : IClassFixture<WaitingRoomApiFa
             Headers =
             {
                 { "Idempotency-Key", Guid.NewGuid().ToString("D") }
-                // Sin X-User-Role header
+                // Sin X-User-Role header — no autenticado
             }
         };
 
         var response = await _client.SendAsync(request);
 
-        response.StatusCode.Should().Be(HttpStatusCode.Forbidden,
-            "Los endpoints de recepcion requieren el header X-User-Role: Receptionist");
+        response.StatusCode.Should().Be(HttpStatusCode.Unauthorized,
+            "Los endpoints de recepcion requieren autenticacion con un rol valido");
     }
 
+    /// <summary>
+    /// Verifica que el endpoint de check-in rechaza roles no autorizados con 403.
+    /// Nota: Admin SI tiene acceso (politica ReceptionistOnly permite Receptionist + Admin).
+    /// </summary>
     [Theory]
     [InlineData("Doctor")]
     [InlineData("Cashier")]
-    [InlineData("Admin")]
     [InlineData("InvalidRole")]
     public async Task CheckInEndpoint_WithWrongRole_ReturnsForbidden(string wrongRole)
     {
@@ -276,10 +283,11 @@ public sealed class EndpointValidationHttpTests : IClassFixture<WaitingRoomApiFa
         var queueId = (await DeserializeAsync(checkInResponse))
             .GetProperty("queueId").GetString()!;
 
-        // Llamar en caja
-        var cashierResponse = await SendPostAsync(
+        // Llamar en caja con rol de Cashier
+        var cashierResponse = await SendPostWithRoleAsync(
             "/api/cashier/call-next",
-            new CallNextCashierDto { QueueId = queueId, Actor = "cashier-resp" });
+            new CallNextCashierDto { QueueId = queueId, Actor = "cashier-resp" },
+            "Cashier");
 
         cashierResponse.StatusCode.Should().Be(HttpStatusCode.OK);
         var result = await DeserializeAsync(cashierResponse);
