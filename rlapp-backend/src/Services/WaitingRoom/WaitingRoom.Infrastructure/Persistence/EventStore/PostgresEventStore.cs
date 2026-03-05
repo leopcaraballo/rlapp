@@ -44,10 +44,6 @@ internal sealed class PostgresEventStore : IEventStore
         await connection.ExecuteAsync(new CommandDefinition(
             EventStoreSchema.CreateOutboxTableSql,
             cancellationToken: cancellationToken));
-
-        await connection.ExecuteAsync(new CommandDefinition(
-            EventStoreSchema.CreatePatientsTableSql,
-            cancellationToken: cancellationToken));
     }
 
     public async Task<IEnumerable<DomainEvent>> GetEventsAsync(

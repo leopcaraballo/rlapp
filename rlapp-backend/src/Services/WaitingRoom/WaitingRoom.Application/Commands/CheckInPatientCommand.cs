@@ -21,10 +21,9 @@ using BuildingBlocks.EventSourcing;
 public sealed record CheckInPatientCommand
 {
     /// <summary>
-    /// Optional waiting queue identifier.
-    /// When omitted, backend generates it.
+    /// Unique identifier for the waiting queue.
     /// </summary>
-    public string? QueueId { get; init; }
+    public required string QueueId { get; init; }
 
     /// <summary>
     /// Unique identifier for the patient.

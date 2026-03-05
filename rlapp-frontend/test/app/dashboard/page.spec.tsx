@@ -9,32 +9,32 @@ import { render, screen, waitFor } from "@testing-library/react";
 
 import CompletedHistoryDashboard from "@/app/dashboard/page";
 
-// Mock del hook que usa RealtimeAppointments
-jest.mock("@/hooks/useQueueAsAppointments", () => ({
-  useQueueAsAppointments: jest.fn(() => ({
+// Mock del hook personalizado
+jest.mock("@/hooks/useAppointmentsWebSocket", () => ({
+  useAppointmentsWebSocket: jest.fn(() => ({
     appointments: [
       {
         id: "apt-wait-001",
         fullName: "Test Waiting",
         status: "waiting",
         office: null,
-        priority: "Medium",
+        priority: "medium",
         timestamp: Date.now() - 300000,
       },
       {
         id: "apt-called-001",
         fullName: "Test Called",
         status: "called",
-        office: "2",
-        priority: "High",
+        office: 2,
+        priority: "high",
         timestamp: Date.now() - 200000,
       },
       {
         id: "apt-completed-001",
         fullName: "Test Completed",
         status: "completed",
-        office: "1",
-        priority: "Low",
+        office: 1,
+        priority: "low",
         timestamp: Date.now() - 500000,
         completedAt: Date.now() - 100000,
       },
@@ -42,8 +42,8 @@ jest.mock("@/hooks/useQueueAsAppointments", () => ({
         id: "apt-completed-002",
         fullName: "Another Completed",
         status: "completed",
-        office: "3",
-        priority: "Medium",
+        office: 3,
+        priority: "medium",
         timestamp: Date.now() - 600000,
         completedAt: Date.now() - 50000,
       },
@@ -175,8 +175,8 @@ describe("CompletedHistoryDashboard (Dashboard Page)", () => {
   describe("Error Handling", () => {
     it("should display error message when connection fails", async () => {
       jest.resetModules();
-      jest.mock("@/hooks/useQueueAsAppointments", () => ({
-        useQueueAsAppointments: jest.fn(() => ({
+      jest.mock("@/hooks/useAppointmentsWebSocket", () => ({
+        useAppointmentsWebSocket: jest.fn(() => ({
           appointments: [],
           error: "Connection failed",
           connected: false,
@@ -186,9 +186,9 @@ describe("CompletedHistoryDashboard (Dashboard Page)", () => {
       }));
 
       const {
-        useQueueAsAppointments,
-      } = require("@/hooks/useQueueAsAppointments");
-      useQueueAsAppointments.mockReturnValue({
+        useAppointmentsWebSocket,
+      } = require("@/hooks/useAppointmentsWebSocket");
+      useAppointmentsWebSocket.mockReturnValue({
         appointments: [],
         error: "Connection failed",
         connected: false,
@@ -205,8 +205,8 @@ describe("CompletedHistoryDashboard (Dashboard Page)", () => {
 
     it("should display loading state while connecting", async () => {
       jest.resetModules();
-      jest.mock("@/hooks/useQueueAsAppointments", () => ({
-        useQueueAsAppointments: jest.fn(() => ({
+      jest.mock("@/hooks/useAppointmentsWebSocket", () => ({
+        useAppointmentsWebSocket: jest.fn(() => ({
           appointments: [],
           error: null,
           connected: false,
@@ -216,9 +216,9 @@ describe("CompletedHistoryDashboard (Dashboard Page)", () => {
       }));
 
       const {
-        useQueueAsAppointments,
-      } = require("@/hooks/useQueueAsAppointments");
-      useQueueAsAppointments.mockReturnValue({
+        useAppointmentsWebSocket,
+      } = require("@/hooks/useAppointmentsWebSocket");
+      useAppointmentsWebSocket.mockReturnValue({
         appointments: [],
         error: null,
         connected: false,

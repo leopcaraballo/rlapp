@@ -33,7 +33,6 @@ const eslintConfig = defineConfig([
     },
     rules: {
       ...tsPlugin.configs.recommended.rules,
-      "@typescript-eslint/no-unused-vars": ["error", { "argsIgnorePattern": "^_" }],
       "simple-import-sort/imports": "error",
       "simple-import-sort/exports": "error",
     },

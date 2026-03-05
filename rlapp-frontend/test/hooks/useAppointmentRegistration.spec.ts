@@ -39,7 +39,7 @@ describe("useAppointmentRegistration", () => {
       const mockData: CreateAppointmentDTO = {
         idCard: "123456789",
         fullName: "John Doe",
-        priority: "Medium",
+        priority: "medium",
       };
 
       mockRepository.createAppointment.mockResolvedValue({
@@ -62,7 +62,7 @@ describe("useAppointmentRegistration", () => {
       const mockData: CreateAppointmentDTO = {
         idCard: "123456789",
         fullName: "Jane Doe",
-        priority: "High",
+        priority: "high",
       };
 
       mockRepository.createAppointment.mockResolvedValue({
@@ -84,7 +84,7 @@ describe("useAppointmentRegistration", () => {
       const mockData: CreateAppointmentDTO = {
         idCard: "987654321",
         fullName: "Alice Smith",
-        priority: "Low",
+        priority: "low",
       };
 
       mockRepository.createAppointment.mockResolvedValue({
@@ -114,7 +114,7 @@ describe("useAppointmentRegistration", () => {
       const mockData: CreateAppointmentDTO = {
         idCard: "111111111",
         fullName: "Bob Johnson",
-        priority: "Medium",
+        priority: "medium",
       };
 
       mockRepository.createAppointment.mockRejectedValue(
@@ -138,7 +138,7 @@ describe("useAppointmentRegistration", () => {
       const mockData: CreateAppointmentDTO = {
         idCard: "222222222",
         fullName: "Charlie Brown",
-        priority: "High",
+        priority: "high",
       };
 
       mockRepository.createAppointment.mockRejectedValue(new Error("TIMEOUT"));
@@ -158,7 +158,7 @@ describe("useAppointmentRegistration", () => {
       const mockData: CreateAppointmentDTO = {
         idCard: "333333333",
         fullName: "Diana Prince",
-        priority: "Low",
+        priority: "low",
       };
 
       mockRepository.createAppointment.mockRejectedValue(
@@ -180,7 +180,7 @@ describe("useAppointmentRegistration", () => {
       const mockData: CreateAppointmentDTO = {
         idCard: "444444444",
         fullName: "Eve Wilson",
-        priority: "Medium",
+        priority: "medium",
       };
 
       mockRepository.createAppointment.mockRejectedValue(
@@ -202,7 +202,7 @@ describe("useAppointmentRegistration", () => {
       const mockData: CreateAppointmentDTO = {
         idCard: "555555555",
         fullName: "Frank Miller",
-        priority: "High",
+        priority: "high",
       };
 
       mockRepository.createAppointment.mockRejectedValue(
@@ -224,7 +224,7 @@ describe("useAppointmentRegistration", () => {
       const mockData: CreateAppointmentDTO = {
         idCard: "666666666",
         fullName: "Grace Hopper",
-        priority: "Low",
+        priority: "low",
       };
 
       const error: any = new Error("TIMEOUT");
@@ -245,7 +245,7 @@ describe("useAppointmentRegistration", () => {
       const mockData: CreateAppointmentDTO = {
         idCard: "777777777",
         fullName: "Henry Ford",
-        priority: "Medium",
+        priority: "medium",
       };
 
       // First call: error
@@ -283,7 +283,7 @@ describe("useAppointmentRegistration", () => {
       const mockData: CreateAppointmentDTO = {
         idCard: "888888888",
         fullName: "Iris West",
-        priority: "High",
+        priority: "high",
       };
 
       mockRepository.createAppointment.mockImplementation(
@@ -319,7 +319,7 @@ describe("useAppointmentRegistration", () => {
       const mockData: CreateAppointmentDTO = {
         idCard: "999999999",
         fullName: "Jack Ryan",
-        priority: "Low",
+        priority: "low",
       };
 
       mockRepository.createAppointment.mockResolvedValue({
@@ -348,11 +348,11 @@ describe("useAppointmentRegistration", () => {
       const mockData: CreateAppointmentDTO = {
         idCard: "101010101",
         fullName: "Karen White",
-        priority: "Medium",
+        priority: "medium",
       };
 
-      let resolveRegister: (value: any) => void;
-      const registerPromise = new Promise<import("@/domain/CreateAppointment").CreateAppointmentResponse>((resolve) => {
+      let resolveRegister: any;
+      const registerPromise = new Promise((resolve) => {
         resolveRegister = resolve;
       });
 
@@ -380,7 +380,7 @@ describe("useAppointmentRegistration", () => {
       const mockData: CreateAppointmentDTO = {
         idCard: "121212121",
         fullName: "Leo Sun",
-        priority: "High",
+        priority: "high",
       };
 
       // First: error
@@ -418,7 +418,7 @@ describe("useAppointmentRegistration", () => {
       const mockData: CreateAppointmentDTO = {
         idCard: "131313131",
         fullName: "Mary Johnson",
-        priority: "Low",
+        priority: "low",
       };
 
       mockRepository.createAppointment.mockImplementation(
@@ -458,7 +458,7 @@ describe("useAppointmentRegistration", () => {
 
     it("should reset in-flight flag on mount/remount", () => {
       // eslint-disable-next-line @typescript-eslint/no-unused-vars
-      const { unmount, rerender } = renderHook(() =>
+      const { unmount, _rerender } = renderHook(() =>
         useAppointmentRegistration(),
       );
 

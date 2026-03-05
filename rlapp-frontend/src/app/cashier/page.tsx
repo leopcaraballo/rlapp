@@ -1,265 +1,119 @@
 "use client";
-import { useSearchParams } from "next/navigation";
 import React, { useEffect, useState } from "react";
-
-import { env } from "@/config/env";
+import { useSearchParams } from "next/navigation";
+import {
+  callNextCashier,
+  validatePayment,
+  markPaymentPending,
+  markAbsentAtCashier,
+  cancelByPayment,
+} from "../../services/api/waitingRoom";
+import styles from "./page.module.css";
+import Alert from "@/components/Alert";
 import { useAlert } from "@/context/AlertContext";
-import { useCashierStation } from "@/hooks/useCashierStation";
-import { useWaitingRoom } from "@/hooks/useWaitingRoom";
-import type { PatientInQueueDto } from "@/services/api/types";
-import sharedStyles from "@/styles/page.module.css";
+import { useForm } from "react-hook-form";
+import { zodResolver } from "@hookform/resolvers/zod";
+import * as z from "zod";
 
-import localStyles from "./page.module.css";
+const CashierSchema = z.object({
+  queueId: z.string().min(1, "La cola es obligatoria"),
+  patientId: z.string().min(1, "El patientId es obligatorio"),
+});
 
-/** Prioridad → etiqueta legible en español. */
-const PRIORITY_LABEL: Record<string, string> = {
-  Urgent: "Urgente",
-  High: "Alta",
-  Medium: "Normal",
-  Low: "Baja",
-};
-
-/** Prioridad → clase CSS del badge. */
-const PRIORITY_CLASS: Record<string, string> = {
-  Urgent: "priorityUrgent",
-  High: "priorityHigh",
-  Medium: "priorityMedium",
-  Low: "priorityLow",
-};
+type CashierForm = z.infer<typeof CashierSchema>;
 
 export default function CashierPage() {
   const search = useSearchParams();
-  const queueId = search?.get("queue") ?? env.DEFAULT_QUEUE_ID;
+  const [busy, setBusy] = useState(false);
   const alert = useAlert();
-  const cashier = useCashierStation();
-  const { queueState, nextTurn, refresh } = useWaitingRoom(queueId);
 
-  // Paciente seleccionado de la lista
-  const [selected, setSelected] = useState<PatientInQueueDto | null>(null);
+  const {
+    register,
+    handleSubmit,
+    setValue,
+    formState: { errors },
+  } = useForm<CashierForm>({
+    resolver: zodResolver(CashierSchema),
+    defaultValues: { queueId: "default-queue", patientId: "" },
+  });
 
-  // Propagar errores del hook al sistema de alertas
   useEffect(() => {
-    if (cashier.error) {
-      alert.showError(cashier.error);
-      cashier.clearError();
-    }
-  }, [cashier.error, alert, cashier]);
+    const q = search?.get("queue");
+    if (q) setValue("queueId", q);
+  }, [search, setValue]);
 
-  // // HUMAN CHECK: Auto-selecciona el paciente devuelto por nextTurn cuando su
-  // estado es "cashier-called". Esto evita que el cajero tenga que buscar
-  // manualmente al paciente recién llamado, ya que la proyección lo elimina
-  // de la lista de espera al llamarlo. Comportamiento esperado: solo existe
-  // un nextTurn a la vez por cola.
-  useEffect(() => {
-    if (
-      nextTurn &&
-      nextTurn.status === "cashier-called" &&
-      (selected === null || selected.patientId !== nextTurn.patientId)
-    ) {
-      setSelected({
-        patientId: nextTurn.patientId,
-        patientName: nextTurn.patientName,
-        priority: nextTurn.priority,
-        checkInTime: nextTurn.calledAt ?? new Date().toISOString(),
-        waitTimeMinutes: 0,
-      });
-    }
-  }, [nextTurn, selected]);
-
-  /** Seleccionar paciente de la lista de espera. */
-  function selectPatient(patient: PatientInQueueDto) {
-    setSelected(patient);
-  }
-
-  /** Llamar al siguiente paciente de la cola. */
   async function doCallNext() {
-    await cashier.callNext(queueId);
-    refresh();
-  }
-
-  /** Ejecuta la acción y refresca la lista para reflejar el cambio. */
-  async function executeAction(
-    action: "validate" | "pending" | "absent" | "cancel",
-  ) {
-    if (!selected) {
-      alert.showError("Seleccione un paciente de la lista primero.");
-      return;
+    setBusy(true);
+    // clear handled by provider
+    try {
+      await callNextCashier({ queueId: (document.querySelector('input[name="queueId"]') as HTMLInputElement)?.value || "default-queue", actor: "cashier" });
+    } catch (err) {
+      alert.showError((err as any)?.message ?? "Error al llamar siguiente");
+    } finally {
+      setBusy(false);
     }
-
-    const cmd = { queueId, patientId: selected.patientId };
-
-    if (action === "validate") await cashier.validate(cmd);
-    else if (action === "pending") await cashier.markPending(cmd);
-    else if (action === "absent") await cashier.markAbsent(cmd);
-    else if (action === "cancel") await cashier.cancel(cmd);
-
-    // Limpiar selección y refrescar la cola
-    setSelected(null);
-    refresh();
   }
 
-  const patients = queueState?.patientsInQueue ?? [];
-  // Turno activo: paciente llamado a caja pero aún pendiente de acción
-  const activeTurn = nextTurn?.status === "cashier-called" ? nextTurn : null;
+  async function onValidate(data: CashierForm) {
+    setBusy(true);
+    try {
+      await validatePayment({ queueId: data.queueId, patientId: data.patientId, actor: "cashier" });
+    } catch (err) {
+      alert.showError((err as any)?.message ?? "Error al validar pago");
+    } finally {
+      setBusy(false);
+    }
+  }
+
+  async function onAction(action: "pending" | "absent" | "cancel", data: CashierForm) {
+    setBusy(true);
+    try {
+      if (action === "pending") await markPaymentPending({ queueId: data.queueId, patientId: data.patientId, actor: "cashier" });
+      if (action === "absent") await markAbsentAtCashier({ queueId: data.queueId, patientId: data.patientId, actor: "cashier" });
+      if (action === "cancel") await cancelByPayment({ queueId: data.queueId, patientId: data.patientId, actor: "cashier" });
+    } catch (err) {
+      alert.showError((err as any)?.message ?? "Error en la acción");
+    } finally {
+      setBusy(false);
+    }
+  }
 
   return (
-    <main className={localStyles.splitLayout}>
-      {/* ── Panel izquierdo: lista de espera ── */}
-      <section className={localStyles.listPanel}>
-        <header className={localStyles.listHeader}>
-          <h2 className={localStyles.listTitle}>
-            Pacientes en espera
-            <span className={localStyles.countBadge}>{patients.length}</span>
-          </h2>
-          <button
-            type="button"
-            onClick={() => void doCallNext()}
-            disabled={cashier.busy}
-            className={localStyles.callNextBtn}
-          >
-            Llamar siguiente
+    <main className={styles.container}>
+      <h2>Caja</h2>
+      <form onSubmit={handleSubmit(onValidate)} className={styles.form} noValidate>
+        <label>
+          Cola
+          <input {...register("queueId")} name="queueId" className={styles.input} />
+        </label>
+        {errors.queueId && <div style={{ color: "#b00020" }}>{errors.queueId.message}</div>}
+
+        <button type="button" onClick={doCallNext} disabled={busy}>
+          Llamar siguiente
+        </button>
+
+        <label>
+          PatientId
+          <input {...register("patientId")} name="patientId" className={styles.input} />
+        </label>
+        {errors.patientId && <div style={{ color: "#b00020" }}>{errors.patientId.message}</div>}
+
+        {/* Alerts rendered globally by AlertProvider */}
+        <div className={styles.row}>
+          <button type="submit" disabled={busy}>
+            Validar pago
           </button>
-        </header>
-
-        {/* Turno activo — paciente llamado a caja y pendiente de pago */}
-        {activeTurn && (
-          <div className={localStyles.activeTurnCard}>
-            <span className={localStyles.activeTurnLabel}>
-              Turno activo en caja
-            </span>
-            <span className={localStyles.activeTurnName}>
-              {activeTurn.patientName}
-            </span>
-            <span className={localStyles.activeTurnId}>
-              {activeTurn.patientId}
-            </span>
-          </div>
-        )}
-
-        {patients.length === 0 ? (
-          <div className={localStyles.emptyState}>
-            <span className={localStyles.emptyIcon}>🪑</span>
-            <p>No hay pacientes en la cola.</p>
-          </div>
-        ) : (
-          <ul className={localStyles.patientList}>
-            {patients.map((p) => {
-              const isSelected = selected?.patientId === p.patientId;
-              return (
-                <li key={p.patientId}>
-                  <button
-                    type="button"
-                    className={`${localStyles.patientItem} ${isSelected ? localStyles.patientItemSelected : ""}`}
-                    onClick={() => selectPatient(p)}
-                  >
-                    <div className={localStyles.patientInfo}>
-                      <span className={localStyles.patientName}>
-                        {p.patientName}
-                      </span>
-                      <span className={localStyles.patientId}>
-                        {p.patientId}
-                      </span>
-                    </div>
-                    <div className={localStyles.patientMeta}>
-                      <span
-                        className={`${localStyles.priorityBadge} ${localStyles[PRIORITY_CLASS[p.priority] ?? "priorityMedium"]}`}
-                      >
-                        {PRIORITY_LABEL[p.priority] ?? p.priority}
-                      </span>
-                      <span className={localStyles.waitTime}>
-                        {p.waitTimeMinutes} min
-                      </span>
-                    </div>
-                  </button>
-                </li>
-              );
-            })}
-          </ul>
-        )}
-      </section>
-
-      {/* ── Panel derecho: acciones sobre el paciente seleccionado ── */}
-      <section className={localStyles.actionPanel}>
-        <h2 className={sharedStyles.title}>Caja</h2>
-        <p className={localStyles.queueLabel}>
-          Cola: <strong>{queueId}</strong>
-        </p>
-
-        {selected ? (
-          <div className={localStyles.selectedCard}>
-            <div className={localStyles.selectedHeader}>
-              <span className={localStyles.selectedName}>
-                {selected.patientName}
-              </span>
-              <span
-                className={`${localStyles.priorityBadge} ${localStyles[PRIORITY_CLASS[selected.priority] ?? "priorityMedium"]}`}
-              >
-                {PRIORITY_LABEL[selected.priority] ?? selected.priority}
-              </span>
-            </div>
-            <div className={localStyles.selectedDetails}>
-              <div className={localStyles.detailRow}>
-                <span className={localStyles.detailLabel}>ID</span>
-                <span className={localStyles.detailValue}>
-                  {selected.patientId}
-                </span>
-              </div>
-              <div className={localStyles.detailRow}>
-                <span className={localStyles.detailLabel}>Espera</span>
-                <span className={localStyles.detailValue}>
-                  {selected.waitTimeMinutes} min
-                </span>
-              </div>
-              <div className={localStyles.detailRow}>
-                <span className={localStyles.detailLabel}>Check-in</span>
-                <span className={localStyles.detailValue}>
-                  {new Date(selected.checkInTime).toLocaleTimeString()}
-                </span>
-              </div>
-            </div>
-
-            <div className={localStyles.actionButtons}>
-              <button
-                type="button"
-                onClick={() => void executeAction("validate")}
-                disabled={cashier.busy}
-                className={localStyles.btnValidate}
-              >
-                Validar pago
-              </button>
-              <button
-                type="button"
-                onClick={() => void executeAction("pending")}
-                disabled={cashier.busy}
-                className={localStyles.btnPending}
-              >
-                Marcar pendiente
-              </button>
-              <button
-                type="button"
-                onClick={() => void executeAction("absent")}
-                disabled={cashier.busy}
-                className={localStyles.btnAbsent}
-              >
-                Marcar ausente
-              </button>
-              <button
-                type="button"
-                onClick={() => void executeAction("cancel")}
-                disabled={cashier.busy}
-                className={localStyles.btnCancel}
-              >
-                Anular pago
-              </button>
-            </div>
-          </div>
-        ) : (
-          <div className={localStyles.noSelection}>
-            <span className={localStyles.noSelectionIcon}>👈</span>
-            <p>Seleccione un paciente de la lista para realizar acciones.</p>
-          </div>
-        )}
-      </section>
+          <button type="button" onClick={handleSubmit((d) => onAction("pending", d))} disabled={busy}>
+            Marcar pendiente
+          </button>
+          <button type="button" onClick={handleSubmit((d) => onAction("absent", d))} disabled={busy}>
+            Marcar ausente
+          </button>
+          <button type="button" onClick={handleSubmit((d) => onAction("cancel", d))} disabled={busy}>
+            Anular pago
+          </button>
+        </div>
+      </form>
     </main>
   );
 }

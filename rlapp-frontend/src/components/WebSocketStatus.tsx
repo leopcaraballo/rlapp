@@ -18,7 +18,7 @@ import styles from "./WebSocketStatus.module.css";
  * <WebSocketStatus status={connected ? 'connected' : 'disconnected'} variant="inline" />
  * ```
  */
-export type ConnectionStatus = "connected" | "connecting" | "disconnected";
+type ConnectionStatus = "connected" | "connecting" | "disconnected";
 type BadgeVariant = "inline" | "block";
 
 interface WebSocketStatusProps {
@@ -48,7 +48,7 @@ export default function WebSocketStatus({
   status,
   variant = "inline",
 }: WebSocketStatusProps) {
-  const config = StatusConfig[status] ?? StatusConfig.disconnected;
+  const config = StatusConfig[status];
   const isBlock = variant === "block";
 
   return (

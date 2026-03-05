@@ -10,11 +10,11 @@ export class AppointmentFactory {
       id: `apt-${Math.random().toString(36).substr(2, 9)}`,
       idCard: 12345678,
       fullName: "Test Patient",
-      priority: "Medium",
+      priority: "medium",
       status: "waiting",
       office: null,
       timestamp,
-      completedAt: undefined,
+      completedAt: null,
       ...overrides,
     };
   }

@@ -5,7 +5,6 @@ using WaitingRoom.Application.Commands;
 using WaitingRoom.Application.Exceptions;
 using WaitingRoom.Application.Ports;
 using WaitingRoom.Domain.Commands;
-using WaitingRoom.Domain.Exceptions;
 
 public sealed class ClaimNextPatientCommandHandler
 {
@@ -23,21 +22,12 @@ public sealed class ClaimNextPatientCommandHandler
         _clock = clock ?? throw new ArgumentNullException(nameof(clock));
     }
 
-    public async Task<(int EventCount, string PatientId, string StationId)> HandleAsync(
+    public async Task<(int EventCount, string PatientId)> HandleAsync(
         ClaimNextPatientCommand command,
         CancellationToken cancellationToken = default)
     {
         var queue = await _eventStore.LoadAsync(command.QueueId, cancellationToken)
             ?? throw new AggregateNotFoundException(command.QueueId);
-
-        // Si no se indica consultorio, se auto-asigna el primero disponible (activo)
-        var resolvedStationId = command.StationId;
-        if (string.IsNullOrWhiteSpace(resolvedStationId))
-        {
-            resolvedStationId = queue.ActiveConsultingRooms.FirstOrDefault()
-                ?? throw new DomainException(
-                    "No hay consultorios activos disponibles. Active al menos un consultorio antes de llamar al siguiente paciente.");
-        }
 
         var metadata = EventMetadata.CreateNew(
             aggregateId: command.QueueId,
@@ -48,7 +38,7 @@ public sealed class ClaimNextPatientCommandHandler
         {
             ClaimedAt = _clock.UtcNow,
             Metadata = metadata,
-            StationId = resolvedStationId
+            StationId = command.StationId
         };
 
         var patientId = queue.ClaimNextPatient(request);
@@ -59,6 +49,6 @@ public sealed class ClaimNextPatientCommandHandler
         if (eventsToPublish.Count > 0)
             await _eventPublisher.PublishAsync(eventsToPublish, cancellationToken);
 
-        return (eventsToPublish.Count, patientId, resolvedStationId);
+        return (eventsToPublish.Count, patientId);
     }
 }
