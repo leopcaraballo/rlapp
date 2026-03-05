@@ -1,6 +1,7 @@
 namespace WaitingRoom.Projections.EventSubscription;
 
 using BuildingBlocks.Messaging;
+using WaitingRoom.Infrastructure.Messaging;
 using RabbitMQ.Client;
 using RabbitMQ.Client.Events;
 using System;
