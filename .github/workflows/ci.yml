@@ -190,13 +190,13 @@ jobs:
           
           # Wait for API to be healthy
           echo "Waiting for API..."
-          timeout 60 bash -c 'while [[ "$(curl -s -o /dev/null -w ''%{http_code}'' http://localhost:5000/health)" != "200" ]]; do sleep 2; done' || (docker compose logs api && exit 1)
+          timeout 60 bash -c 'while [[ "$(curl -s -o /dev/null -w ''%{http_code}'' http://localhost:5000/health/ready)" != "200" ]]; do sleep 2; done' || (docker compose logs api && exit 1)
         
       - name: Run Black Box HTTP Tests
         run: |
           echo "Executing Black-box tests..."
           # Make a simple curl to the test URL logic to ensure it serves the api contract
-          curl -s http://localhost:5000/health | grep "Healthy"
+          curl -s http://localhost:5000/health/ready | grep "Healthy"
           # Or call swagger json
           curl -s http://localhost:5000/swagger/v1/swagger.json | grep "openapi"
 
