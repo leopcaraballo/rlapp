@@ -21,6 +21,11 @@ RUN dotnet publish ${PROJECT} -c Release -o /app/publish --no-restore
 FROM mcr.microsoft.com/dotnet/nightly/aspnet:10.0 AS final
 WORKDIR /app
 
+# HUMAN CHECK: mantener metadatos actualizados para trazabilidad de imagen en CI/CD
+LABEL org.opencontainers.image.title="rlapp-backend" \
+    org.opencontainers.image.description="RLAPP backend service (API/Worker runtime image)" \
+    org.opencontainers.image.vendor="RLAPP Team"
+
 # SECURITY: Create non-root user for runtime execution
 # HUMAN CHECK: Verify that the application does not require root privileges at runtime
 RUN groupadd --gid 1001 appgroup \
