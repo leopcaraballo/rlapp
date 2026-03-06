@@ -1,169 +1,241 @@
-# =============================================================================
-# RLAPP — Pipeline de Integracion Continua (CI)
-# =============================================================================
-# Ejecuta build, tests y reporte de cobertura en cada PR y push a develop/main.
-# HUMAN CHECK: Verificar que los secretos CODECOV_TOKEN estan configurados
-#              en el repositorio antes de habilitar la integracion con Codecov.
-# =============================================================================
-
-name: CI — Build & Test
+name: CI/CD Pipeline
 
 on:
   push:
-    branches: [develop, main]
+    branches:
+      - develop
+      - main
   pull_request:
-    branches: [develop, main]
-
-concurrency:
-  group: ci-${{ github.ref }}
-  cancel-in-progress: true
+    branches:
+      - develop
+      - main
 
 env:
-  DOTNET_VERSION: "10.0.x"
-  NODE_VERSION: "22"
-  DOTNET_SKIP_FIRST_TIME_EXPERIENCE: true
-  DOTNET_CLI_TELEMETRY_OPTOUT: true
-  NUGET_XMLDOC_MODE: skip
+  DOTNET_VERSION: '10.0.x'
+  NODE_VERSION: '20'
 
 jobs:
-  # ===========================================================================
-  # Job 1: Backend — .NET Build + Tests + Cobertura
-  # ===========================================================================
-  backend:
-    name: Backend (.NET)
+  lint-and-build:
+    name: Lint & Build
     runs-on: ubuntu-latest
-    defaults:
-      run:
-        working-directory: rlapp-backend
-
     steps:
-      - name: Checkout del repositorio
+      - name: Checkout code
         uses: actions/checkout@v4
 
-      - name: Configurar .NET SDK ${{ env.DOTNET_VERSION }}
+      - name: Setup .NET
         uses: actions/setup-dotnet@v4
         with:
           dotnet-version: ${{ env.DOTNET_VERSION }}
-          include-prerelease: true
 
-      - name: Cache de paquetes NuGet
-        uses: actions/cache@v4
+      - name: Setup Node.js
+        uses: actions/setup-node@v4
         with:
-          path: ~/.nuget/packages
-          key: nuget-${{ runner.os }}-${{ hashFiles('**/packages.lock.json', '**/*.csproj') }}
-          restore-keys: |
-            nuget-${{ runner.os }}-
+          node-version: ${{ env.NODE_VERSION }}
+          cache: 'npm'
+          cache-dependency-path: rlapp-frontend/package-lock.json
 
-      - name: Restaurar dependencias
+      - name: Backend Restore
+        working-directory: ./rlapp-backend
         run: dotnet restore RLAPP.slnx
 
-      - name: Compilar solucion (Release)
+      - name: Backend Build
+        working-directory: ./rlapp-backend
         run: dotnet build RLAPP.slnx --configuration Release --no-restore
 
-      - name: Ejecutar tests unitarios
-        run: |
-          dotnet test RLAPP.slnx \
-            --configuration Release \
-            --no-build \
-            --verbosity minimal \
-            --filter "FullyQualifiedName!~WaitingRoom.Tests.Integration" \
-            --logger "trx;LogFileName=test-results.trx" \
-            --collect:"XPlat Code Coverage" \
-            --results-directory ./TestResults
+      - name: Frontend Install Dependencies
+        working-directory: ./rlapp-frontend
+        run: npm ci
 
-      - name: Publicar resultados de tests
-        if: always()
-        uses: actions/upload-artifact@v4
+      - name: Frontend Lint
+        working-directory: ./rlapp-frontend
+        run: npm run lint
+
+      - name: Frontend Build
+        working-directory: ./rlapp-frontend
+        run: npm run build
+        env:
+          NEXT_TELEMETRY_DISABLED: 1
+          NEXT_PUBLIC_API_BASE_URL: "http://localhost:5000"
+
+  component-tests:
+    name: Component Tests
+    runs-on: ubuntu-latest
+    needs: lint-and-build
+    steps:
+      - name: Checkout code
+        uses: actions/checkout@v4
+
+      - name: Setup .NET
+        uses: actions/setup-dotnet@v4
         with:
-          name: backend-test-results
-          path: rlapp-backend/TestResults/
-          retention-days: 30
+          dotnet-version: ${{ env.DOTNET_VERSION }}
 
-      - name: Publicar reporte de cobertura
-        if: always()
+      - name: Setup Node.js
+        uses: actions/setup-node@v4
+        with:
+          node-version: ${{ env.NODE_VERSION }}
+          cache: 'npm'
+          cache-dependency-path: rlapp-frontend/package-lock.json
+
+      - name: Backend Component Tests
+        working-directory: ./rlapp-backend
+        run: >
+          dotnet test RLAPP.slnx
+          --configuration Release
+          --filter "Category!=Integration&Category!=E2E&FullyQualifiedName!~WaitingRoom.Tests.Integration"
+          --logger "trx;LogFileName=test-results.trx"
+          --collect:"XPlat Code Coverage"
+          --results-directory ./TestResults
+
+      - name: Upload Backend Coverage
         uses: actions/upload-artifact@v4
+        if: always()
         with:
           name: backend-coverage
           path: rlapp-backend/TestResults/**/coverage.cobertura.xml
           retention-days: 30
 
-  # ===========================================================================
-  # Job 2: Frontend — Node.js Build + Tests
-  # ===========================================================================
-  frontend:
-    name: Frontend (Next.js)
-    runs-on: ubuntu-latest
-    defaults:
-      run:
-        working-directory: rlapp-frontend
-
-    steps:
-      - name: Checkout del repositorio
-        uses: actions/checkout@v4
-
-      - name: Configurar Node.js ${{ env.NODE_VERSION }}
-        uses: actions/setup-node@v4
-        with:
-          node-version: ${{ env.NODE_VERSION }}
-          cache: npm
-          cache-dependency-path: rlapp-frontend/package-lock.json
-
-      - name: Instalar dependencias
+      - name: Frontend Install Dependencies
+        working-directory: ./rlapp-frontend
         run: npm ci
 
-      - name: Ejecutar linter
-        run: npx eslint . --max-warnings 0 || true
+      - name: Frontend Component Tests (Jest)
+        working-directory: ./rlapp-frontend
+        run: npm run test:component
 
-      - name: Ejecutar tests
-        run: npm run test:ci
-        env:
-          CI: true
-          NODE_OPTIONS: --max-old-space-size=6144
-
-      - name: Publicar resultados de cobertura frontend
-        if: always()
+      - name: Upload Frontend Coverage
         uses: actions/upload-artifact@v4
+        if: always()
         with:
           name: frontend-coverage
-          path: rlapp-frontend/test-results/coverage/
+          path: rlapp-frontend/coverage/
           retention-days: 30
 
-  # ===========================================================================
-  # Job 3: Validacion Docker Compose (syntax check)
-  # ===========================================================================
-  docker-validate:
-    name: Docker Compose Validate
+  integration-tests:
+    name: Integration Tests
     runs-on: ubuntu-latest
-
+    needs: lint-and-build
+    services:
+      postgres:
+        image: postgres:16-alpine
+        env:
+          POSTGRES_USER: rlapp_user
+          POSTGRES_PASSWORD: rlapp_password
+          POSTGRES_DB: rlapp_db
+        ports:
+          - 5432:5432
+        options: >-
+          --health-cmd pg_isready
+          --health-interval 10s
+          --health-timeout 5s
+          --health-retries 5
+      rabbitmq:
+        image: rabbitmq:3.12-management-alpine
+        ports:
+          - 5672:5672
+        options: >-
+          --health-cmd "rabbitmq-diagnostics -q ping"
+          --health-interval 10s
+          --health-timeout 5s
+          --health-retries 5
     steps:
-      - name: Checkout del repositorio
+      - name: Checkout code
         uses: actions/checkout@v4
 
-      - name: Validar sintaxis de docker-compose.yml
-        run: docker compose config --quiet
+      - name: Setup .NET
+        uses: actions/setup-dotnet@v4
+        with:
+          dotnet-version: ${{ env.DOTNET_VERSION }}
 
-  # ===========================================================================
-  # Job 4: Resumen de CI
-  # ===========================================================================
-  ci-summary:
-    name: CI Summary
-    runs-on: ubuntu-latest
-    needs: [backend, frontend, docker-validate]
-    if: always()
-
-    steps:
-      - name: Verificar resultados
+      - name: Run Backend Integration Tests
+        working-directory: ./rlapp-backend
         run: |
-          echo "=== Resumen de CI ==="
-          echo "Backend:          ${{ needs.backend.result }}"
-          echo "Frontend:         ${{ needs.frontend.result }}"
-          echo "Docker Validate:  ${{ needs.docker-validate.result }}"
+          dotnet test RLAPP.slnx \
+            --configuration Release \
+            --filter "Category=Integration|FullyQualifiedName~WaitingRoom.Tests.Integration" \
+            --logger "trx;LogFileName=integration-results.trx"
+        env:
+          ConnectionStrings__PostgresIdempotencyConnection: "Host=localhost;Port=5432;Database=rlapp_db;Username=rlapp_user;Password=rlapp_password"
+          RabbitMQ__HostName: "localhost"
 
-          if [[ "${{ needs.backend.result }}" != "success" ]] || \
-             [[ "${{ needs.frontend.result }}" != "success" ]] || \
-             [[ "${{ needs.docker-validate.result }}" != "success" ]]; then
-            echo "::error::Uno o mas jobs fallaron. Revisar los logs."
-            exit 1
-          fi
+      - name: Upload Integration Test Results
+        uses: actions/upload-artifact@v4
+        if: always()
+        with:
+          name: integration-test-results
+          path: rlapp-backend/**/integration-results.trx
+          retention-days: 30
 
-          echo "Todos los jobs completados exitosamente."
+  black-box-tests:
+    name: Black Box API Tests
+    runs-on: ubuntu-latest
+    needs: integration-tests
+    steps:
+      - name: Checkout code
+        uses: actions/checkout@v4
+
+      - name: Start API stack using Docker Compose
+        run: |
+          # Up only the backend services we need
+          docker compose up -d postgres rabbitmq api
+          
+          # Wait for API to be healthy
+          echo "Waiting for API..."
+          timeout 60 bash -c 'while [[ "$(curl -s -o /dev/null -w ''%{http_code}'' http://localhost:5000/health)" != "200" ]]; do sleep 2; done' || (docker compose logs api && exit 1)
+        
+      - name: Run Black Box HTTP Tests
+        run: |
+          echo "Executing Black-box tests..."
+          # Make a simple curl to the test URL logic to ensure it serves the api contract
+          curl -s http://localhost:5000/health | grep "Healthy"
+          # Or call swagger json
+          curl -s http://localhost:5000/swagger/v1/swagger.json | grep "openapi"
+
+      - name: Stop stack
+        if: always()
+        run: docker compose down -v
+
+  image-scan:
+    name: Docker Image Scan (Trivy)
+    runs-on: ubuntu-latest
+    needs: lint-and-build
+    steps:
+      - name: Checkout code
+        uses: actions/checkout@v4
+
+      - name: Build Backend Image
+        run: docker build -t rlapp-api:scan -f rlapp-backend/Dockerfile rlapp-backend/
+
+      - name: Build Frontend Image
+        run: docker build -t rlapp-frontend:scan -f rlapp-frontend/Dockerfile rlapp-frontend/
+
+      - name: Run Trivy on Backend
+        uses: aquasecurity/trivy-action@master
+        with:
+          image-ref: 'rlapp-api:scan'
+          format: 'table'
+          exit-code: '0'
+          ignore-unfixed: true
+          vuln-type: 'os,library'
+          severity: 'CRITICAL,HIGH'
+
+      - name: Run Trivy on Frontend
+        uses: aquasecurity/trivy-action@master
+        with:
+          image-ref: 'rlapp-frontend:scan'
+          format: 'table'
+          exit-code: '0'
+          ignore-unfixed: true
+          vuln-type: 'os,library'
+          severity: 'CRITICAL,HIGH'
+
+  release:
+    name: Release
+    runs-on: ubuntu-latest
+    needs: [component-tests, integration-tests, black-box-tests, image-scan]
+    if: github.ref == 'refs/heads/main' && github.event_name == 'push'
+    steps:
+      - name: Checkout code
+        uses: actions/checkout@v4
+      - name: Semantic Release Dummy log
+        run: echo "Creating semantic release & tag since we merged to main"

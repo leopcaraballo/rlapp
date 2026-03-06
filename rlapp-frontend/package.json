@@ -12,6 +12,7 @@
     "test:cov": "jest --coverage",
     "test:report": "jest --coverage --json --outputFile=test-results/jest-results.json",
     "test:ci": "jest --coverage --ci --reporters=default --forceExit --runInBand",
+    "test:component": "jest --coverage --ci --reporters=default --forceExit --runInBand --testPathIgnorePatterns='e2e'",
     "test:e2e": "playwright test",
     "test:e2e:headed": "playwright test --headed"
   },
