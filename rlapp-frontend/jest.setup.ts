@@ -28,19 +28,19 @@ if (!globalThis.TransformStream) {
     globalThis as typeof globalThis & {
       TransformStream: typeof TransformStream;
     }
-  ).TransformStream = TransformStream;
+  ).TransformStream = TransformStream as any;
 }
 
 if (!globalThis.WritableStream) {
   (
     globalThis as typeof globalThis & { WritableStream: typeof WritableStream }
-  ).WritableStream = WritableStream;
+  ).WritableStream = WritableStream as any;
 }
 
 if (!globalThis.ReadableStream) {
   (
     globalThis as typeof globalThis & { ReadableStream: typeof ReadableStream }
-  ).ReadableStream = ReadableStream;
+  ).ReadableStream = ReadableStream as any;
 }
 
 if (!globalThis.BroadcastChannel) {
@@ -88,7 +88,7 @@ if (!globalThis.BroadcastChannel) {
     globalThis as typeof globalThis & {
       BroadcastChannel: typeof NodeBroadcastChannel;
     }
-  ).BroadcastChannel = NodeBroadcastChannel;
+  ).BroadcastChannel = NodeBroadcastChannel as any;
 }
 
 const {
