@@ -31,6 +31,9 @@ ARTIFACTS
 ✓ backend-coverage
 ```
 
+> **[ACCIÓN HUMANA] Guarda tu captura como `docs/evidencia/screenshots/resumen_pipeline.png`**
+> ![Resumen Pipeline](./screenshots/resumen_pipeline.png)
+
 **1.2. Detalle de los Tests de Backend (.NET)**
 > *[Acciones Automáticas: Todos los tests de Componentes e Integración en xUnit finalizaron en "Passed"]*
 ```yaml
@@ -39,6 +42,9 @@ Step: Run Component Tests (xUnit)
 Result: Passed
 Output: Test Run Successful.
 ```
+
+> **[ACCIÓN HUMANA] Guarda tu captura como `docs/evidencia/screenshots/test_backend.png`**
+> ![Test Backend](./screenshots/test_backend.png)
 
 **1.3. Detalle de los Tests de Frontend (Jest/React)**
 > *[Acciones Automáticas: Las suites locales usando Jest + RTL finalizaron con un coverage superior al 80%]*
@@ -49,11 +55,17 @@ Result: Passed
 Output: Test Suites: 100% Passed.
 ```
 
+> **[ACCIÓN HUMANA] Guarda tu captura como `docs/evidencia/screenshots/test_frontend.png`**
+> ![Test Frontend](./screenshots/test_frontend.png)
+
 ## 2. Artefactos Generados
 Todos los reportes de calidad, cobertura de código (Frontend / Backend) e Integración fueron extraídos con éxito al finalizar los flujos.
 - `frontend-coverage` (Linter / Jest HTML)
 - `backend-coverage` (Trx / HTML)
 - `integration-test-results`
+
+> **[ACCIÓN HUMANA] Guarda tu captura de los artefactos descargables como `docs/evidencia/screenshots/artefactos.png`**
+> ![Artefactos Generados](./screenshots/artefactos.png)
 
 
 ---
