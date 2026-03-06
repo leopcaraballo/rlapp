@@ -37,8 +37,7 @@ RLAPP es un sistema de gestion de sala de espera medica con arquitectura Hexagon
 
 ### 1.5 Fuera de alcance
 
-- Pruebas de rendimiento bajo carga sostenida (se planifica para el Sprint 4).
-- Pruebas de penetracion (se delegan a herramienta automatizada Trivy/Scout).
+- Pruebas de penetracion manual (se complementan con tests de seguridad automatizados SEC-AUTH, SEC-INJ, SEC-PRIV).
 - Pruebas de usabilidad con usuarios finales.
 
 ### 1.6 Equipo y responsables
@@ -55,15 +54,26 @@ RLAPP es un sistema de gestion de sala de espera medica con arquitectura Hexagon
 | Jhorman | Components, Hooks, Services, Application, Infrastructure, Repositories, Security (frontend), E2E Playwright | Nivel 1 (componente frontend), Nivel 3 (E2E frontend) |
 | Leopoldo | Domain Aggregates, Value Objects, Events, Application Handlers, Projections, Integration (infra real), Caja Negra via API | Nivel 1 (unitario/componente backend), Nivel 2 (integracion), Nivel 3 (Caja Negra API) |
 
-
 ### 1.7 Estrategia de inmutabilidad y empaquetamiento Docker
+
 Con el fin de garantizar la separación de conceptos y la inmutabilidad en el ciclo de vida de los despliegues, la arquitectura opta por definir los de `Dockerfile` de forma independiente dentro de los módulos `rlapp-backend/` y `rlapp-frontend/`. Esto garantiza que los test de integración y los escaneos de vulnerabilidades identifiquen de manera segregada las brechas en la imagen `.NET` o la de `Next.js` sin fricción. Aunque el pipeline lo centraliza todo desde `.github/workflows/ci.yml` ejecutando comandos ubicados en los subdirectorios, en términos de monorepositorios profesionales, mantener el `Dockerfile` junto al código asegura la cohesividad por componente en lugar de recurrir a un hiper-dockerfile complejo en la raíz.
 
 ## 2. Estrategia multinivel (piramide de pruebas)
 
 La estrategia sigue la piramide de pruebas adaptada al contexto de Event Sourcing + CQRS del proyecto.
 
-### 2.1 Nivel 1: pruebas unitarias y de componente (Caja Blanca)
+```
+              /    E2E (HTTP)     \          <- 37 pruebas (FullClinicalFlow + EndpointValidation)
+             / QA Extendidas      \         <- 146 pruebas (Security, Performance, Contract, Validation, Regression)
+            / Smoke + Sanity       \        <- 14 pruebas (puerta rapida de calidad)
+           /  Integracion           \       <- 80 pruebas (RabbitMQ, Serialization, Pipeline, API fakes)
+          /   Aplicacion             \      <- 12 pruebas (CommandHandlers, Validators)
+         /    Dominio (Unit)          \     <- 189 pruebas (Aggregates, ValueObjects, Events)
+        /     Proyecciones             \    <- 11 pruebas (Worker, Subscriber, ProjectionStore)
+       /________________________________\
+```
+
+**Total backend:** 489 pruebas (189 Domain + 12 Application + 11 Projections + 277 Integration).
 
 **Objetivo:** Validacion granular de logica de negocio aislada.
 
@@ -365,21 +375,39 @@ El agregado `WaitingQueue` gestiona el ciclo de vida del paciente mediante trans
 | Concurrencia | `ConcurrencyStressTests.cs` | Event store | Check-in concurrente |
 | Pipeline E2E | `EventDrivenPipelineE2ETests.cs` | PostgreSQL + RabbitMQ | Flujo completo |
 
-#### 5.1.5 Caja Negra via API (pendiente de implementacion)
+#### 5.1.5 QA Ecosystem: Smoke, Sanity y Regression (Caja Negra funcional)
 
-| Suite | Herramienta | Que valida | Casos de prueba |
+| Suite | Archivo | Tests | Que valida |
 | --- | --- | --- | --- |
-| Check-in Black-Box | curl / HttpClient externo | Contrato HTTP puro | CP-01 a CP-08, CP-31 a CP-37 |
-| Validacion Black-Box | curl / HttpClient externo | Value Objects via API | CP-09 a CP-19 |
-| Limites Black-Box | curl / HttpClient externo | Fronteras de valores | CP-20 a CP-30 |
+| Smoke | `Functional/SmokeTests.cs` | SMK001-SMK008 (8) | Health endpoints, registro de endpoints, OpenAPI, headers de seguridad, 404 |
+| Sanity | `Functional/SanityTests.cs` | SAN001-SAN006 (6) | Check-in basico, llamada a caja, pago, idempotencia, autenticacion, correlation-id |
+| Regression | `Functional/RegressionTests.cs` | REG001-REG006 (6) | Regresiones S-05/S-06, idempotency-key obligatorio, case-insensitivity, capacidad, alias |
 
-#### 5.1.6 Resumen de cobertura de Leopoldo
+#### 5.1.6 QA Ecosystem: Security (Caja Negra no funcional)
+
+| Suite | Archivo | Tests | Que valida |
+| --- | --- | --- | --- |
+| Auth Bypass | `NonFunctional/Security/AuthenticationBypassTests.cs` | SEC-AUTH-001 a 006 | 16 endpoints sin autenticacion, roles vacios, roles inventados, headers multiples, fuga de info |
+| Input Injection | `NonFunctional/Security/InputInjectionTests.cs` | SEC-INJ-001 a 008 | SQL injection, XSS, command injection, path traversal, JSON malformado, payload excesivo |
+| Privilege Escalation | `NonFunctional/Security/PrivilegeEscalationTests.cs` | SEC-PRIV-001 a 007 | Matriz RBAC completa (Receptionist, Cashier, Doctor, Admin), bypass por case sensitivity |
+
+#### 5.1.7 QA Ecosystem: Performance, Contract y Validation (Caja Negra no funcional)
+
+| Suite | Archivo | Tests | Que valida |
+| --- | --- | --- | --- |
+| Performance | `NonFunctional/Performance/ApiResponseTimeTests.cs` | PERF001-006 (6) | Tiempos <1000ms, health <500ms, concurrencia 10/50, flujo E2E <5s, throughput >5 req/s |
+| Contract | `Contract/ApiContractTests.cs` | CTR001-007 (7) | Estructura JSON response, campos de error, 401 sin datos sensibles, correlation-id echo, content-type |
+| Validation | `Validation/DataValidationTests.cs` | VAL001-012 (46 con Theory) | Campos vacios, prioridad invalida/valida, BVA ConsultationType, PatientId limites, Unicode, duplicados |
+
+#### 5.1.8 Resumen de cobertura de Leopoldo (actualizado)
 
 | Nivel | Suites | Archivos de test | Tecnicas principales |
 | --- | --- | --- | --- |
 | Nivel 1: unitario/componente | Dominio, Aplicacion, Proyecciones, API con fakes | 17+ | Caja Blanca (sentencias, ramas, condiciones) |
 | Nivel 2: integracion | PostgreSQL, RabbitMQ, Outbox, E2E pipeline | 5 | Caja Blanca + infra real |
-| Nivel 3: Caja Negra | Check-in, Validacion, Limites via HTTP | 3 suites (pendiente) | Particion de equivalencia, valores limite, tablas de decision |
+| Nivel 3: Caja Negra funcional | Smoke, Sanity, Regression | 3 suites (20 tests) | Verificacion rapida, regresion |
+| Nivel 3: Caja Negra seguridad | Auth Bypass, Injection, Privilege Escalation | 3 suites (81+ tests) | OWASP Top 10, RBAC |
+| Nivel 3: Caja Negra calidad | Performance, Contract, Validation | 3 suites (59 tests) | Tiempos de respuesta, contratos API, BVA |
 
 ### 5.2 Jhorman: suites frontend + E2E + CI/CD
 
@@ -419,40 +447,52 @@ Ambos servicios estan doquerizados con Docker Compose para garantizar ambientes 
 - **Frontend:** Dockerfile con `node:20-slim` (pendiente: multi-stage produccion).
 - **Servicios auxiliares:** PostgreSQL 16 + RabbitMQ 3.x via `docker-compose.yml`.
 
-### 6.2 Pipeline CI/CD propuesto
+### 6.2 Pipeline CI/CD (actualizado)
 
 ```plaintext
 Trigger: push a develop, PR a develop y main
 
 Jobs (en orden de dependencia):
 
-1. lint-and-build ─────────────────────────────────────────┐
-   Backend: dotnet build                                    │
-   Frontend: npm ci + npm run lint + npm run build          │
-                                                            │
-2. component-tests (depende de 1) ─────────────────────────┤
-   Backend: dotnet test --filter "Category!=Integration"    │
-   Frontend: jest --ci --coverage                           │
-                                                            │
-3. integration-tests (depende de 1) ───────────────────────┤
-   services: postgres:16 + rabbitmq:3.12                    │
-   Backend: dotnet test --filter "Category=Integration"     │
-                                                            │
-4. black-box-tests (depende de 3) ─────────────────────────┤
-   Levantar API en contenedor con docker compose            │
-   Ejecutar requests HTTP contra API real                   │
-                                                            │
-5. image-scan (depende de 1) ──────────────────────────────┤
-   docker build backend + frontend                          │
-   Trivy / Docker Scout contra ambas imagenes               │
-                                                            │
-6. release (solo en merge a main, depende de 1-5) ─────────┘
+1. lint-and-build ──────────────────────────────────────────────────┐
+   Backend: dotnet build                                             │
+   Frontend: npm ci + npm run lint + npm run build                   │
+                                                                     │
+2. component-tests (depende de 1) ──────────────────────────────────┤
+   Backend: dotnet test --filter "Category!=Integration"             │
+   Frontend: jest --ci --coverage                                    │
+                                                                     │
+3. smoke-sanity-tests (depende de 1) ───────────────────────────────┤
+   Smoke: --filter "Category=Smoke" (8 tests, <5s)                  │
+   Sanity: --filter "Category=Sanity" (6 tests, <5s)                │
+   [Puerta rapida: si falla, no se ejecutan integration ni QA]       │
+                                                                     │
+4. integration-tests (depende de 1 + 3) ────────────────────────────┤
+   services: postgres:16 + rabbitmq:3.12                             │
+   Backend: dotnet test --filter "Category=Integration|..."          │
+                                                                     │
+5. qa-extended-tests (depende de 1 + 3) ────────────────────────────┤
+   Security: --filter "Category=Security" (81 tests)                 │
+   Contract: --filter "Category=Contract" (7 tests)                  │
+   Validation: --filter "Category=Validation" (46 tests)             │
+   Performance: --filter "Category=Performance" (6 tests)            │
+   Regression: --filter "Category=Regression" (6 tests)              │
+                                                                     │
+6. black-box-tests (depende de 4 + 5) ─────────────────────────────┤
+   Levantar API en contenedor con docker compose                     │
+   Ejecutar requests HTTP contra API real                            │
+                                                                     │
+7. image-scan (depende de 1) ───────────────────────────────────────┤
+   docker build backend + frontend                                   │
+   Trivy contra ambas imagenes                                       │
+                                                                     │
+8. release (solo en merge a main, depende de 2-7) ─────────────────┘
    Crear tag semantico + GitHub Release
 ```
 
 ### 6.3 Shift-left quality
 
-- Branch protection en `main`: required status checks (`lint-and-build`, `component-tests`, `integration-tests`, `black-box-tests`, `image-scan`).
+- Branch protection en `main`: required status checks (`lint-and-build`, `component-tests`, `smoke-sanity-tests`, `integration-tests`, `qa-extended-tests`, `black-box-tests`, `image-scan`).
 - Bloqueo de merge si cualquier job falla.
 - Reportes de cobertura publicados como artifacts en cada PR.
 
@@ -484,11 +524,15 @@ Jobs (en orden de dependencia):
 
 | Metrica | Objetivo | Actual |
 | --- | --- | --- |
-| Cobertura de lineas backend | >= 80% | Sin reporte |
-| Tests unitarios/componente backend | >= 20 test cases | 9 archivos (estimado 30+) |
-| Tests de integracion backend | >= 8 test cases | 8 archivos |
-| Tests de Caja Negra backend | >= 3 escenarios | 0 (pendiente) |
-| Tasa de falsos positivos backend | < 5% | Sin medicion |
+| Cobertura de lineas backend | >= 80% | Sin reporte formal |
+| Tests unitarios/componente backend | >= 20 test cases | 212 (189 Domain + 12 Application + 11 Projections) |
+| Tests de integracion backend | >= 8 test cases | 277 (incluyendo QA Ecosystem) |
+| Tests de Caja Negra backend (Smoke/Sanity) | >= 10 escenarios | 14 (8 Smoke + 6 Sanity) |
+| Tests de seguridad | >= 20 escenarios | 81+ (Auth Bypass + Injection + Privilege Escalation) |
+| Tests de rendimiento | >= 5 escenarios | 6 (tiempos, concurrencia, throughput) |
+| Tests de contrato/validacion | >= 15 escenarios | 53 (7 Contract + 46 Validation) |
+| Tests de regresion | >= 5 escenarios | 6 (regresiones criticas documentadas) |
+| Tasa de falsos positivos backend | < 5% | 0% (489/489 pasando) |
 
 ### 8.2 Metricas de Jhorman (frontend + CI/CD)
 
@@ -508,9 +552,11 @@ Jobs (en orden de dependencia):
 
 | Job del pipeline | Niveles de prueba | Tecnicas | Archivos | Responsable |
 | --- | --- | --- | --- | --- |
-| `component-tests` (backend) | Nivel 1: unitario/componente | Caja Blanca | `Tests.Domain`, `Tests.Application`, `Tests.Projections`, `Tests.Integration/API` | Leopoldo |
+| `component-tests` (backend) | Nivel 1: unitario/componente | Caja Blanca | `Tests.Domain`, `Tests.Application`, `Tests.Projections` | Leopoldo |
 | `component-tests` (frontend) | Nivel 1: unitario/componente | Caja Blanca | `test/` (excluye `test/e2e/`) | Jhorman |
+| `smoke-sanity-tests` | Nivel 3: puerta rapida | Caja Negra funcional | `Functional/SmokeTests.cs`, `Functional/SanityTests.cs` | Leopoldo |
 | `integration-tests` | Nivel 2: integracion | Caja Blanca + infra real | `Tests.Integration/Infrastructure`, `Tests.Integration/Worker`, `Tests.Integration/EndToEnd` | Leopoldo |
+| `qa-extended-tests` | Nivel 3: QA extendida | Caja Negra (Security, Performance, Contract, Validation, Regression) | 8 archivos en subcarpetas de `Tests.Integration/` | Leopoldo |
 | `black-box-tests` | Nivel 3: sistema | Caja Negra | Script curl o HttpClient externo | Leopoldo |
 | `image-scan` | Seguridad | Escaneo vulnerabilidades | Dockerfiles | Jhorman |
 | `lint-and-build` | Compilacion + lint | Analisis estatico | Backend + Frontend | Jhorman (config) |
@@ -525,7 +571,10 @@ Jobs (en orden de dependencia):
 | Casos de prueba CP-01 a CP-45 | Si, basados en dominio real | Pendiente validacion de datos representantes | Pendiente |
 | Tests de dominio (sec. 5.1.1) | Si, catalogo de suites | Pendiente verificar nombres de test exactos | Pendiente |
 | Tests de integracion (sec. 5.1.4) | Si, mapeo infra requerida | Pendiente confirmar conexiones reales | Pendiente |
-| Prueba Caja Negra (sec. 5.1.5) | Si, 3 suites propuestas | Pendiente implementacion y validacion | Pendiente |
+| QA Ecosystem: Smoke + Sanity (sec. 5.1.5) | Si, 14 tests implementados y verificados | 14/14 pasando en ejecucion local | Ninguna |
+| QA Ecosystem: Security (sec. 5.1.6) | Si, 81+ tests implementados | Todos pasando en ejecucion local | CTR004 corregido (token en mensaje no es fuga) |
+| QA Ecosystem: Performance + Contract + Validation (sec. 5.1.7) | Si, 59 tests implementados | Todos pasando en ejecucion local | Ninguna |
+| QA Ecosystem: Regression (sec. 5.1.5) | Si, 6 tests implementados | Todos pasando en ejecucion local | Ninguna |
 | Argumentacion P4 y P5 | Si, con contexto del proyecto | Pendiente reescritura con experiencia real | Pendiente |
 
 ### 10.2 Jhorman (frontend + CI/CD)

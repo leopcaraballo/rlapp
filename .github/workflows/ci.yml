@@ -11,8 +11,8 @@ on:
       - main
 
 env:
-  DOTNET_VERSION: '10.0.x'
-  NODE_VERSION: '20'
+  DOTNET_VERSION: "10.0.x"
+  NODE_VERSION: "20"
 
 jobs:
   lint-and-build:
@@ -31,7 +31,7 @@ jobs:
         uses: actions/setup-node@v4
         with:
           node-version: ${{ env.NODE_VERSION }}
-          cache: 'npm'
+          cache: "npm"
           cache-dependency-path: apps/frontend/package-lock.json
 
       - name: Backend Restore
@@ -57,8 +57,11 @@ jobs:
           NEXT_TELEMETRY_DISABLED: 1
           NEXT_PUBLIC_API_BASE_URL: "http://localhost:5000"
 
+  # ================================================================
+  # COMPONENT TESTS (Unit: Domain, Application, Projections)
+  # ================================================================
   component-tests:
-    name: Component Tests
+    name: Component Tests (Unit)
     runs-on: ubuntu-latest
     needs: lint-and-build
     steps:
@@ -74,10 +77,10 @@ jobs:
         uses: actions/setup-node@v4
         with:
           node-version: ${{ env.NODE_VERSION }}
-          cache: 'npm'
+          cache: "npm"
           cache-dependency-path: apps/frontend/package-lock.json
 
-      - name: Backend Component Tests
+      - name: Backend Component Tests (Domain + Application + Projections)
         working-directory: ./apps/backend
         run: >
           dotnet test RLAPP.slnx
@@ -111,10 +114,57 @@ jobs:
           path: apps/frontend/test-results/coverage/
           retention-days: 30
 
+  # ================================================================
+  # SMOKE & SANITY TESTS (Fast gate — in-memory, no infra required)
+  # ================================================================
+  smoke-sanity-tests:
+    name: Smoke & Sanity Tests
+    runs-on: ubuntu-latest
+    needs: lint-and-build
+    steps:
+      - name: Checkout code
+        uses: actions/checkout@v4
+
+      - name: Setup .NET
+        uses: actions/setup-dotnet@v4
+        with:
+          dotnet-version: ${{ env.DOTNET_VERSION }}
+
+      - name: Run Smoke Tests
+        working-directory: ./apps/backend
+        run: >
+          dotnet test
+          src/Tests/WaitingRoom.Tests.Integration/WaitingRoom.Tests.Integration.csproj
+          --configuration Release
+          --filter "Category=Smoke"
+          --logger "trx;LogFileName=smoke-results.trx"
+          --results-directory ./TestResults
+
+      - name: Run Sanity Tests
+        working-directory: ./apps/backend
+        run: >
+          dotnet test
+          src/Tests/WaitingRoom.Tests.Integration/WaitingRoom.Tests.Integration.csproj
+          --configuration Release
+          --filter "Category=Sanity"
+          --logger "trx;LogFileName=sanity-results.trx"
+          --results-directory ./TestResults
+
+      - name: Upload Smoke & Sanity Results
+        uses: actions/upload-artifact@v4
+        if: always()
+        with:
+          name: smoke-sanity-results
+          path: apps/backend/TestResults/*.trx
+          retention-days: 30
+
+  # ================================================================
+  # INTEGRATION TESTS (Full integration — requires PostgreSQL + RabbitMQ)
+  # ================================================================
   integration-tests:
     name: Integration Tests
     runs-on: ubuntu-latest
-    needs: lint-and-build
+    needs: [lint-and-build, smoke-sanity-tests]
     services:
       postgres:
         image: postgres:16-alpine
@@ -175,10 +225,87 @@ jobs:
           path: apps/backend/**/integration-results.trx
           retention-days: 30
 
+  # ================================================================
+  # QA EXTENDED TESTS (Security, Performance, Contract, Validation, Regression)
+  # ================================================================
+  qa-extended-tests:
+    name: QA Extended Tests
+    runs-on: ubuntu-latest
+    needs: [lint-and-build, smoke-sanity-tests]
+    steps:
+      - name: Checkout code
+        uses: actions/checkout@v4
+
+      - name: Setup .NET
+        uses: actions/setup-dotnet@v4
+        with:
+          dotnet-version: ${{ env.DOTNET_VERSION }}
+
+      - name: Run Security Tests
+        working-directory: ./apps/backend
+        run: >
+          dotnet test
+          src/Tests/WaitingRoom.Tests.Integration/WaitingRoom.Tests.Integration.csproj
+          --configuration Release
+          --filter "Category=Security"
+          --logger "trx;LogFileName=security-results.trx"
+          --results-directory ./TestResults
+
+      - name: Run Contract Tests
+        working-directory: ./apps/backend
+        run: >
+          dotnet test
+          src/Tests/WaitingRoom.Tests.Integration/WaitingRoom.Tests.Integration.csproj
+          --configuration Release
+          --filter "Category=Contract"
+          --logger "trx;LogFileName=contract-results.trx"
+          --results-directory ./TestResults
+
+      - name: Run Validation Tests
+        working-directory: ./apps/backend
+        run: >
+          dotnet test
+          src/Tests/WaitingRoom.Tests.Integration/WaitingRoom.Tests.Integration.csproj
+          --configuration Release
+          --filter "Category=Validation"
+          --logger "trx;LogFileName=validation-results.trx"
+          --results-directory ./TestResults
+
+      - name: Run Performance Tests
+        working-directory: ./apps/backend
+        run: >
+          dotnet test
+          src/Tests/WaitingRoom.Tests.Integration/WaitingRoom.Tests.Integration.csproj
+          --configuration Release
+          --filter "Category=Performance"
+          --logger "trx;LogFileName=performance-results.trx"
+          --results-directory ./TestResults
+
+      - name: Run Regression Tests
+        working-directory: ./apps/backend
+        run: >
+          dotnet test
+          src/Tests/WaitingRoom.Tests.Integration/WaitingRoom.Tests.Integration.csproj
+          --configuration Release
+          --filter "Category=Regression"
+          --logger "trx;LogFileName=regression-results.trx"
+          --results-directory ./TestResults
+
+      - name: Upload QA Extended Results
+        uses: actions/upload-artifact@v4
+        if: always()
+        with:
+          name: qa-extended-results
+          path: apps/backend/TestResults/*.trx
+          retention-days: 30
+
+  # ================================================================
+  # BLACK BOX API TESTS (Full Docker Compose stack)
+  # ================================================================
   black-box-tests:
     name: Black Box API Tests
     runs-on: ubuntu-latest
-    needs: integration-tests
+    needs: [integration-tests, qa-extended-tests]
     steps:
       - name: Checkout code
         uses: actions/checkout@v4
@@ -187,11 +314,11 @@ jobs:
         run: |
           # Up only the backend services we need
           docker compose up -d postgres rabbitmq api
-          
+
           # Wait for API to be healthy
           echo "Waiting for API..."
           timeout 60 bash -c 'while [[ "$(curl -s -o /dev/null -w ''%{http_code}'' http://localhost:5000/health/ready)" != "200" ]]; do sleep 2; done' || (docker compose logs api && exit 1)
-        
+
       - name: Run Black Box HTTP Tests
         run: |
           echo "Executing Black-box tests..."
@@ -221,27 +348,34 @@ jobs:
       - name: Run Trivy on Backend
         uses: aquasecurity/trivy-action@master
         with:
-          image-ref: 'rlapp-api:scan'
-          format: 'table'
-          exit-code: '0'
+          image-ref: "rlapp-api:scan"
+          format: "table"
+          exit-code: "0"
           ignore-unfixed: true
-          vuln-type: 'os,library'
-          severity: 'CRITICAL,HIGH'
+          vuln-type: "os,library"
+          severity: "CRITICAL,HIGH"
 
       - name: Run Trivy on Frontend
         uses: aquasecurity/trivy-action@master
         with:
-          image-ref: 'rlapp-frontend:scan'
-          format: 'table'
-          exit-code: '0'
+          image-ref: "rlapp-frontend:scan"
+          format: "table"
+          exit-code: "0"
           ignore-unfixed: true
-          vuln-type: 'os,library'
-          severity: 'CRITICAL,HIGH'
+          vuln-type: "os,library"
+          severity: "CRITICAL,HIGH"
 
   release:
     name: Release
     runs-on: ubuntu-latest
-    needs: [component-tests, integration-tests, black-box-tests, image-scan]
+    needs:
+      [
+        component-tests,
+        integration-tests,
+        qa-extended-tests,
+        black-box-tests,
+        image-scan,
+      ]
     if: github.ref == 'refs/heads/main' && github.event_name == 'push'
     steps:
       - name: Checkout code
