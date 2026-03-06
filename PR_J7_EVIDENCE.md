@@ -13,7 +13,8 @@ Este Pull Request cierra formalmente la **Tarea J7** y subsana el requisito **E0
 - [x] Repositorio preparado en `docs/evidencia/` para las métricas.
 - [x] Respaldo argumentativo para la matriz Docker asegurado en el Plan de Pruebas.
 - [x] Ramificación inmaculada desde `develop`.
-- [ ] `Acción Humana:` Reemplazo de los Placeholders por las URLs y capturas reales del Action.
+- [x] Sustitución de los Placeholders por las URLs de las ejecuciones reales del GitHub Action.
+- [ ] `Acción Humana:` (Opcional) Adjuntar directamente las capturas de imagen finales (PNG/JPG) en los espacios del archivo.
 
 ## 🔗 Referencias
 - *Cubre: Requisito 4.4 de la rúbrica de entrega.*

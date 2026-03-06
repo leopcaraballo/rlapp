@@ -5,8 +5,10 @@ Este documento recopila las pruebas de finalización y éxito de los flujos de i
 ## 1. Ejecución del Pipeline Principal (Frontend & Backend)
 
 ### URL del Run de GitHub Actions
-> **[Reemplazar con enlace directo al Run exitoso en GitHub Actions]**
-> Ejemplo: `https://github.com/leopcaraballo/rlapp/actions/runs/123456789`
+- **CI/CD Pipeline (Build & Unit Tests):** [Ver Run Exitoso #22777978926](https://github.com/leopcaraballo/rlapp/actions/runs/22777978926)
+- **E2E — Integration Tests:** [Ver Run Exitoso #22777978895](https://github.com/leopcaraballo/rlapp/actions/runs/22777978895)
+- **Security — Dependency Audit & Secret Scan:** [Ver Run Exitoso #22777978938](https://github.com/leopcaraballo/rlapp/actions/runs/22777978938)
+- **Automatic Dependency Submission:** [Ver Run Exitoso #22778345435](https://github.com/leopcaraballo/rlapp/actions/runs/22778345435)
 
 ### Capturas de Pantalla
 
