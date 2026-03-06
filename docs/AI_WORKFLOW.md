@@ -801,3 +801,20 @@ Razón: Estos tests son intensivos y validan escenarios ya verificados mediante 
 
 - `ae51592` — ci(tests): move db schema init to integration-tests job
 - `5a89330` — ci(tests): resolve DB mismatch, pointing integrations to rlapp_waitingroom_test using matched roles
+
+### Tarea J5: Redactar TEST_PLAN.md
+
+**Contexto:** El usuario solicitó proseguir a la Tarea J5, la cual exige la redacción y revisión final del documento estratégico general de pruebas del proyecto (`TEST_PLAN.md`). Este plan documenta la estrategia multinivel.
+
+**Pasos Ejecutados:**
+1. **Auditoría de Requerimientos:** Inspeccioné el archivo `TEST_PLAN.md` creado previamente para validar el cumplimiento de los estándares fijados en la tarea J5 del `PLAN_EQUIPO.md`.
+2. **Validación de Criterios:** 
+   - Se corroboró la explicación detallada de los 7 principios de ISTQB aterrizados a las reglas de Event Sourcing y CQRS.
+   - Constatación del desglose de Caja Blanca y Caja Negra para ambos roles (front/backend).
+   - Verificación de la inclusión del esquema de CI/CD Pipeline.
+   - Evaluación e integridad del registro HITL.
+3. **Cierre de Tarea:** Se confirmaron todos los ítems como completos. No fue necesario sobreescribir apartados, garantizando la calidad del entregable listo para revisión de Pull Request en la rama orientada al J5.
+
+**Archivos Auditados:**
+- `/TEST_PLAN.md` (Verificación de completitud y estilo)
+
