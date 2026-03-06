@@ -1,31 +1,50 @@
-# =============================================================================
-# Frontend — Desarrollo (dev mode con hot reload)
-# El puerto 3000 dentro del contenedor coincide con el mapeo en docker-compose.yml
-# Hardened: HEALTHCHECK directive, minimal packages
-# =============================================================================
-FROM node:20-slim
+# Etapa 1: Base image
+FROM node:20-alpine AS base
+# Instalar libc compatibilidad requerida por algunos paquetes en Alpine
+RUN apk add --no-cache libc6-compat
 
+# Etapa 2: Dependencias
+FROM base AS deps
+WORKDIR /app
+COPY package.json package-lock.json ./
+RUN npm ci
+
+# Etapa 3: Constructor
+FROM base AS builder
+WORKDIR /app
+COPY --from=deps /app/node_modules ./node_modules
+COPY . .
+# Configurar telemetría como deshabilitada
+ENV NEXT_TELEMETRY_DISABLED=1
+RUN npm run build
+
+# Etapa 4: Runtime final (Producción, Rootless)
+FROM base AS runner
 WORKDIR /app
 
-# Install wget for healthcheck (node:20-slim doesn't include curl or wget)
-RUN apt-get update && apt-get install -y --no-install-recommends wget \
-    && rm -rf /var/lib/apt/lists/*
+ENV NODE_ENV=production
+ENV NEXT_TELEMETRY_DISABLED=1
 
-COPY package*.json ./
+# Crear usuario y grupo no-root por seguridad (Principio de mínimo privilegio)
+RUN addgroup --system --gid 1001 nodejs \
+    && adduser --system --uid 1001 nextjs
 
-# legacy-peer-deps avoids strict peer resolution errors in dev
-RUN npm install --legacy-peer-deps
+# Configurar carpetas estáticas y permisos standalone
+COPY --from=builder /app/public ./public
 
-COPY . .
+# Configurar permisos al copiar el standalone
+RUN mkdir .next \
+    && chown nextjs:nodejs .next
 
-# Internal port for Next.js dev server
+# Copiar el output de standalone y estáticos en base a la optimización de Next.js
+COPY --from=builder --chown=nextjs:nodejs /app/.next/standalone ./
+COPY --from=builder --chown=nextjs:nodejs /app/.next/static ./.next/static
+
+USER nextjs
+
 EXPOSE 3000
+ENV PORT=3000
+ENV HOSTNAME="0.0.0.0"
 
-# HEALTHCHECK: Built-in container health verification
-# HUMAN CHECK: Adjust interval for dev vs production environments
-HEALTHCHECK --interval=20s --timeout=10s --start-period=45s --retries=5 \
-    CMD wget -q --spider http://localhost:3000/ || exit 1
-
-# docker-compose.yml overrides this CMD with the same flags;
-# kept here as a coherent fallback.
-CMD ["npm", "run", "dev", "--", "-p", "3000", "-H", "0.0.0.0"]
+# server.js es generado por next build en el output standalone
+CMD ["node", "server.js"]
