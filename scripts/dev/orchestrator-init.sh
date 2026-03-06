@@ -44,14 +44,11 @@ if [ ! -d "$SOURCE_DIR" ]; then
 fi
 
 COPY_ITEMS=(
-  "docs/agent-context"
-  "docs/ORCHESTRATION_BLUEPRINT.md"
-  "skills"
-  "scripts/sync.sh"
+  "docs/decisions"
+  "tools/automation/skills"
   "AI_WORKFLOW.md"
   "DEBT_REPORT.md"
   ".github/copilot-instructions.md"
-  "GEMINI.md"
 )
 
 mkdir -p "$TARGET_DIR"

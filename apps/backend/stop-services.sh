@@ -12,7 +12,7 @@ set -euo pipefail
 # --- Rutas ----------------------------------------------------------------
 SCRIPT_DIR="$(cd "$(dirname "${BASH_SOURCE[0]}")" && pwd)"
 PROJECT_ROOT="$SCRIPT_DIR"
-REPO_ROOT="$(cd "$PROJECT_ROOT/.." && pwd)"
+REPO_ROOT="$(cd "$PROJECT_ROOT/../.." && pwd)"
 COMPOSE_FILE="$REPO_ROOT/docker-compose.yml"
 PID_FILE="/tmp/rlapp-local-pids"
 

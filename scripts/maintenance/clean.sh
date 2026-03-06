@@ -2,4 +2,4 @@
 set -euo pipefail
 
 ROOT_DIR="$(cd "$(dirname "${BASH_SOURCE[0]}")" && pwd)"
-exec "$ROOT_DIR/rlapp.sh" clean "$@"
+exec "$ROOT_DIR/../dev/rlapp.sh" clean "$@"

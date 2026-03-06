@@ -2,7 +2,8 @@
 set -euo pipefail
 
 ROOT_DIR="$(cd "$(dirname "${BASH_SOURCE[0]}")" && pwd)"
-COMPOSE_FILE="$ROOT_DIR/docker-compose.yml"
+REPO_ROOT="$(cd "$ROOT_DIR/../.." && pwd)"
+COMPOSE_FILE="$REPO_ROOT/docker-compose.yml"
 
 if [[ ! -f "$COMPOSE_FILE" ]]; then
   echo "ERROR: No se encontró docker-compose.yml en la raíz del repositorio."

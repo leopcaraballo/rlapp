@@ -10,7 +10,7 @@ set -euo pipefail
 #   --clean     Eliminar contenedores, volumenes e imagenes antes de iniciar
 # ==============================================================================
 
-ROOT_DIR=$(cd "$(dirname "${BASH_SOURCE[0]}")/.." && pwd)
+ROOT_DIR=$(cd "$(dirname "${BASH_SOURCE[0]}")/../../" && pwd)
 COMPOSE_FILE="$ROOT_DIR/docker-compose.yml"
 
 # Colores

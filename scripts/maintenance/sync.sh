@@ -13,9 +13,9 @@
 
 set -euo pipefail
 
-REPO_ROOT="$(cd "$(dirname "$0")/.." && pwd)"
-AGENT_FILE="$REPO_ROOT/docs/agent-context/SKILL_REGISTRY.md"
-SKILLS_DIR="$REPO_ROOT/skills"
+REPO_ROOT="$(cd "$(dirname "$0")/../.." && pwd)"
+AGENT_FILE="$REPO_ROOT/docs/decisions/SKILL_REGISTRY.md"
+SKILLS_DIR="$REPO_ROOT/tools/automation/skills"
 
 echo "🔄 Syncing Skill References..."
 echo "   Agent: $AGENT_FILE"
