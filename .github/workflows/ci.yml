@@ -119,9 +119,9 @@ jobs:
       postgres:
         image: postgres:16-alpine
         env:
-          POSTGRES_USER: rlapp_user
-          POSTGRES_PASSWORD: rlapp_password
-          POSTGRES_DB: rlapp_db
+          POSTGRES_USER: rlapp
+          POSTGRES_PASSWORD: rlapp_secure_password
+          POSTGRES_DB: postgres
         ports:
           - 5432:5432
         options: >-
@@ -151,8 +151,8 @@ jobs:
         run: |
           sudo apt-get update && sudo apt-get install -y postgresql-client
           echo "Waiting for Postgres..."
-          timeout 60 bash -c 'until pg_isready -h localhost -p 5432; do sleep 1; done'
-          PGPASSWORD=rlapp_password psql "host=localhost port=5432 dbname=rlapp_db user=rlapp_user" -f rlapp-backend/infrastructure/postgres/init.sql
+          timeout 60 bash -c 'until pg_isready -h localhost -p 5432 -U rlapp; do sleep 1; done'
+          PGPASSWORD=rlapp_secure_password psql "host=localhost port=5432 dbname=postgres user=rlapp" -f rlapp-backend/infrastructure/postgres/init.sql
 
       - name: Run Backend Integration Tests
         working-directory: ./rlapp-backend
@@ -162,9 +162,9 @@ jobs:
             --filter "Category=Integration|FullyQualifiedName~WaitingRoom.Tests.Integration" \
             --logger "trx;LogFileName=integration-results.trx"
         env:
-          ConnectionStrings__PostgresIdempotencyConnection: "Host=localhost;Port=5432;Database=rlapp_db;Username=rlapp_user;Password=rlapp_password"
-          POSTGRES_CONNECTION_STRING: "Host=localhost;Port=5432;Database=rlapp_db;Username=rlapp_user;Password=rlapp_password"
-          RLAPP_INTEGRATION_EVENTSTORE_CONNECTION: "Host=localhost;Port=5432;Database=rlapp_db;Username=rlapp_user;Password=rlapp_password"
+          ConnectionStrings__PostgresIdempotencyConnection: "Host=localhost;Port=5432;Database=rlapp_waitingroom_test;Username=rlapp;Password=rlapp_secure_password"
+          POSTGRES_CONNECTION_STRING: "Host=localhost;Port=5432;Database=rlapp_waitingroom_test;Username=rlapp;Password=rlapp_secure_password"
+          RLAPP_INTEGRATION_EVENTSTORE_CONNECTION: "Host=localhost;Port=5432;Database=rlapp_waitingroom_test;Username=rlapp;Password=rlapp_secure_password"
           RabbitMQ__HostName: "localhost"
 
       - name: Upload Integration Test Results
