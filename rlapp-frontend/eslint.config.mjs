@@ -11,6 +11,7 @@ const eslintConfig = defineConfig([
       "out/**",
       "build/**",
       "coverage/**",
+      "test-results/**",
       "node_modules/**",
       ".git/**",
       "dist/**",

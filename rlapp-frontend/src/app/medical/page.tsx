@@ -60,7 +60,7 @@ export default function MedicalPage() {
   useEffect(() => {
     const claimedId = medical.lastResult?.patientId;
     if (claimedId) setValue("patientId", claimedId);
-    // eslint-disable-next-line react-hooks/exhaustive-deps -- setValue es estable en react-hook-form; incluirlo causa loop infinito en React 19
+    // setValue es estable en react-hook-form; incluirlo causa loop infinito en React 19
   }, [medical.lastResult]);
 
   // Propagar errores de los hooks al sistema de alertas

@@ -771,3 +771,33 @@ Razón: Estos tests son intensivos y validan escenarios ya verificados mediante 
 - `bf70af7` — fix(security): agregar DoctorOnlyFilter a endpoints desprotegidos (S-05, S-06)
 - `878e984` — test(domain): agregar pruebas BVA y EP sistemáticas (T-01, T-02)
 - `3425bf4` — docs: eliminar documentación de auditoría redundante
+
+## 9.17 Ajuste y Estabilización de Pipeline CI/CD Multinivel
+
+- **Fecha:** 2026-03-06
+- **Tarea:** Resolución de error `42P01: relation "waiting_room_events" does not exist` al ejecutarse la etapa de Integration Tests en CI/CD de GitHub Actions.
+- **Tipo de Tarea:** DevOps / CI-CD configuration
+- **Modelo Utilizado (AO):** Gemini 3.1 Pro (Preview)
+- **Skills utilizados:** docker-infra, testing-qa, conventional-commits
+
+### Hallazgos y Diagnóstico
+
+- Los tests de integración reportaban consistentemente que la tabla de eventos no existía en el pipeline.
+- Inicialmente se intentó parchear inyectando el script de DDL (`init.sql`) en el job `lint-and-build`, sin tener en cuenta el nivel de aislamiento de los runners en GitHub Actions (las máquinas virtuales de cada step nacen y mueren sin compartir estado a menos que se use caché).
+- Además, existía un desajuste de credenciales: mientras `docker-compose.yml` local requería el usuario `POSTGRES_USER: rlapp`, el CI inyectaba `POSTGRES_USER: rlapp_user`, lo que causaba advertencias en los scripts de migración debido al rol inexistente; y el schema por defecto creaba las tablas en `rlapp_waitingroom_test`, pero el pipeline CI conectaba las variables sobre `rlapp_db`.
+
+### Resolución y Cambios Efectuados
+
+1. **Aislamiento del runner (Job Scope):** Se reubicó el paso "Initialize Postgres schema" para que se ejecute obligatoriamente dentro del ecosistema del runner provisionado por el job `integration-tests`.
+2. **Cohesión de Roles SQL:** Se reescribió `ci.yml` para coincidir el `POSTGRES_USER` a `rlapp` y apuntar directamente `POSTGRES_DB` a `postgres`, permitiendo que el script SQL original cree exitosamente `rlapp_waitingroom`, `rlapp_waitingroom_test` y `rlapp_waitingroom_read` sin causar advertencias de rol u object-exists.
+3. **Variables de Entorno .NET:** Se recalibraron los Secretos ENV (`ConnectionStrings__PostgresIdempotencyConnection`, `POSTGRES_CONNECTION_STRING` y `RLAPP_INTEGRATION_EVENTSTORE_CONNECTION`) para que la suite de `WaitingRoom.Tests.Integration` establezca la conexión sobre la base de datos de tests real (`rlapp_waitingroom_test`) en lugar del default en blanco.
+
+### Impacto en CI
+
+- El Pull Request / Branch `feature/j3-github-actions-ci-cd` arroja exitosamente test runs en código de salida limpio (Exit Code 0).
+- Checkmarks completamente validados localmente y remoto.
+
+### Commits
+
+- `ae51592` — ci(tests): move db schema init to integration-tests job
+- `5a89330` — ci(tests): resolve DB mismatch, pointing integrations to rlapp_waitingroom_test using matched roles
