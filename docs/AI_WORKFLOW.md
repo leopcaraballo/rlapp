@@ -818,3 +818,15 @@ Razón: Estos tests son intensivos y validan escenarios ya verificados mediante 
 **Archivos Auditados:**
 - `/TEST_PLAN.md` (Verificación de completitud y estilo)
 
+
+### Tarea J6: Configurar GitFlow y release
+
+**Contexto:** El usuario solicitó proseguir con las configuraciones relativas al ciclo de vida del versionado semántico según lo exigido por el plan. Se requirió crear la plantilla formal para el Pull Request de liberación (v1.0.0).
+
+**Pasos Ejecutados:**
+1. **Creación de Entregable:** Se redactó `PR_RELEASE_V1.0.0.md` en la raíz del repositorio siguiendo la rúbrica descrita en el plan de equipo.
+2. **Registro de Features Funcionales:** La plantilla agrupa las implementaciones de endurecimiento de Dockerfiles, despliegue del CI multinivel, pruebas de Caja Blanca, Caja Negra e informe profesional (`TEST_PLAN.md`).
+3. **Instrucciones de Versionado:** Se incorporaron en la plantilla los pasos comandos para el manejo de los TAGS desde consola post-merge a `main` para culminar la técnica GitFlow.
+
+**Artefactos Creados:**
+- `/PR_RELEASE_V1.0.0.md`
