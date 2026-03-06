@@ -31,6 +31,8 @@ export default function MedicalPage() {
   const rooms = useConsultingRooms();
   const busy = medical.busy || rooms.busy;
 
+  const initialQueueId = search?.get("queue") || env.DEFAULT_QUEUE_ID;
+
   const {
     register,
     handleSubmit,
@@ -40,17 +42,12 @@ export default function MedicalPage() {
   } = useForm<MedicalForm>({
     resolver: zodResolver(MedicalSchema),
     defaultValues: {
-      queueId: env.DEFAULT_QUEUE_ID,
+      queueId: initialQueueId,
       stationId: "",
       patientId: "",
       outcome: null,
     },
   });
-
-  useEffect(() => {
-    const q = search?.get("queue");
-    if (q) setValue("queueId", q);
-  }, [search, setValue]);
 
   const watchedQueueId = watch("queueId");
   const { nextTurn, refresh } = useWaitingRoom(
@@ -63,7 +60,8 @@ export default function MedicalPage() {
   useEffect(() => {
     const claimedId = medical.lastResult?.patientId;
     if (claimedId) setValue("patientId", claimedId);
-  }, [medical.lastResult, setValue]);
+    // eslint-disable-next-line react-hooks/exhaustive-deps -- setValue es estable en react-hook-form; incluirlo causa loop infinito en React 19
+  }, [medical.lastResult]);
 
   // Propagar errores de los hooks al sistema de alertas
   useEffect(() => {
@@ -113,7 +111,7 @@ export default function MedicalPage() {
     void medical.complete({
       queueId: data.queueId,
       patientId: data.patientId,
-      outcome: data.outcome ?? null,
+      outcome: data.outcome || null,
     });
     setTimeout(() => refresh(), 500);
   }

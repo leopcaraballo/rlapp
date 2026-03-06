@@ -48,6 +48,18 @@ jest.mock("@/hooks/useConsultingRooms", () => ({
   useConsultingRooms: () => roomsMock,
 }));
 
+jest.mock("@/hooks/useWaitingRoom", () => ({
+  useWaitingRoom: () => ({
+    queueState: { patientsInQueue: [], currentCount: 0, maxCapacity: 10, availableSpots: 10 },
+    nextTurn: null,
+    refresh: jest.fn(),
+    monitor: null,
+    history: [],
+    connectionState: "online",
+    lastUpdated: null,
+  }),
+}));
+
 import MedicalPage from "@/app/medical/page";
 
 // ── tipos de prueba ──────────────────────────────────────────────────────────
@@ -99,7 +111,7 @@ describe("MedicalPage — RED", () => {
 
     await waitFor(() => {
       expect(medicalMock.claim).toHaveBeenCalledWith(
-        expect.objectContaining({ queueId: "QUEUE-MED", stationId: "CONS-01" }),
+        expect.objectContaining({ queueId: "QUEUE-MED", stationId: null }),
       );
     });
   });
