@@ -10,6 +10,8 @@ const createJestConfig = nextJest({
 const config: Config = {
   setupFilesAfterEnv: ["<rootDir>/jest.setup.ts"],
   testEnvironment: "jest-environment-jsdom",
+  maxWorkers: "50%",
+  workerIdleMemoryLimit: "256MB",
   collectCoverageFrom: ["<rootDir>/src/**/*.{ts,tsx}"],
   coveragePathIgnorePatterns: ["/node_modules/"],
   /**
