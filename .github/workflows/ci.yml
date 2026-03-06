@@ -18,20 +18,6 @@ jobs:
   lint-and-build:
     name: Lint & Build
     runs-on: ubuntu-latest
-    services:
-      postgres:
-        image: postgres:16-alpine
-        env:
-          POSTGRES_USER: rlapp_user
-          POSTGRES_PASSWORD: rlapp_password
-          POSTGRES_DB: rlapp_db
-        ports:
-          - 5432:5432
-        options: >-
-          --health-cmd pg_isready
-          --health-interval 10s
-          --health-timeout 5s
-          --health-retries 5
     steps:
       - name: Checkout code
         uses: actions/checkout@v4
@@ -40,13 +26,6 @@ jobs:
         uses: actions/setup-dotnet@v4
         with:
           dotnet-version: ${{ env.DOTNET_VERSION }}
-
-      - name: Initialize Postgres schema
-        run: |
-          sudo apt-get update && sudo apt-get install -y postgresql-client
-          echo "Waiting for Postgres..."
-          timeout 60 bash -c 'until pg_isready -h localhost -p 5432; do sleep 1; done'
-          PGPASSWORD=rlapp_password psql "host=localhost port=5432 dbname=rlapp_db user=rlapp_user" -f rlapp-backend/infrastructure/postgres/init.sql
 
       - name: Setup Node.js
         uses: actions/setup-node@v4
@@ -167,6 +146,13 @@ jobs:
         uses: actions/setup-dotnet@v4
         with:
           dotnet-version: ${{ env.DOTNET_VERSION }}
+
+      - name: Initialize Postgres schema
+        run: |
+          sudo apt-get update && sudo apt-get install -y postgresql-client
+          echo "Waiting for Postgres..."
+          timeout 60 bash -c 'until pg_isready -h localhost -p 5432; do sleep 1; done'
+          PGPASSWORD=rlapp_password psql "host=localhost port=5432 dbname=rlapp_db user=rlapp_user" -f rlapp-backend/infrastructure/postgres/init.sql
 
       - name: Run Backend Integration Tests
         working-directory: ./rlapp-backend
