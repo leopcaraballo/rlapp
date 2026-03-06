@@ -449,7 +449,8 @@ public sealed class FullClinicalFlowHttpTests : IClassFixture<WaitingRoomApiFact
                     QueueId = queueId,
                     Actor = "doctor-02",
                     StationId = "CONS-MED-01"
-                }));
+                },
+                additionalHeaders: new Dictionary<string, string> { ["X-User-Role"] = "Doctor" }));
 
         var claimedPatientId = claimResult.GetProperty("patientId").GetString()!;
 
@@ -581,7 +582,8 @@ public sealed class FullClinicalFlowHttpTests : IClassFixture<WaitingRoomApiFact
                     QueueId = queueId,
                     Actor = "doctor-alt",
                     StationId = "CONS-ALT-01"
-                }));
+                },
+                additionalHeaders: new Dictionary<string, string> { ["X-User-Role"] = "Doctor" }));
 
         var claimedId = claimResult.GetProperty("patientId").GetString()!;
 
@@ -592,7 +594,8 @@ public sealed class FullClinicalFlowHttpTests : IClassFixture<WaitingRoomApiFact
                 QueueId = queueId,
                 PatientId = claimedId,
                 Actor = "nurse-alt"
-            });
+            },
+            additionalHeaders: new Dictionary<string, string> { ["X-User-Role"] = "Doctor" });
         callResponse.StatusCode.Should().Be(HttpStatusCode.OK);
 
         var completeResponse = await SendPostAsync(
@@ -603,7 +606,8 @@ public sealed class FullClinicalFlowHttpTests : IClassFixture<WaitingRoomApiFact
                 PatientId = claimedId,
                 Actor = "doctor-alt",
                 Outcome = "Alta medica"
-            });
+            },
+            additionalHeaders: new Dictionary<string, string> { ["X-User-Role"] = "Doctor" });
 
         completeResponse.StatusCode.Should().Be(HttpStatusCode.OK);
         var completeResult = await DeserializeAsync(completeResponse);
