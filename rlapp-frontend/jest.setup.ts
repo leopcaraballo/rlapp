@@ -5,7 +5,7 @@ import { ReadableStream, TransformStream, WritableStream } from "stream/web";
 import { EventEmitter } from "events";
 
 // Setup environment variables for tests
-process.env.NEXT_PUBLIC_API_BASE_URL ??= "http://localhost:3000/api";
+process.env.NEXT_PUBLIC_API_BASE_URL ??= "http://localhost:3000";
 process.env.NEXT_PUBLIC_DEFAULT_QUEUE_ID ??= "QUEUE-01";
 
 if (!globalThis.TextEncoder) {
@@ -94,6 +94,14 @@ const {
   server: import("msw/node").SetupServerApi;
 } = require("@test/mocks/server");
 
-beforeAll(() => server.listen({ onUnhandledRequest: "warn" }));
+beforeAll(() =>
+  server.listen({
+    onUnhandledRequest(request, print) {
+      // Ignorar conexiones WebSocket (SignalR) que MSW no puede interceptar en Node
+      if (request.url.includes("/ws/")) return;
+      print.warning();
+    },
+  }),
+);
 afterEach(() => server.resetHandlers());
 afterAll(() => server.close());
