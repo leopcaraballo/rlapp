@@ -106,9 +106,8 @@ jobs:
           done
 
       - name: Aplicar migraciones de base de datos
-        working-directory: apps/backend
         run: |
-          PGPASSWORD=rlapp_pass psql -h localhost -U rlapp_user -d rlapp_waitingroom -f infrastructure/postgres/init.sql || true
+          PGPASSWORD=rlapp_pass psql -h localhost -U rlapp_user -d rlapp_waitingroom -f infrastructure/database/postgres/init.sql || true
         env:
           PGPASSWORD: rlapp_pass
 
