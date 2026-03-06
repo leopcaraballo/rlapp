@@ -23,12 +23,21 @@ export default function LoginPage() {
   const search = useSearchParams();
   const { signIn } = useAuth();
   const [role, setRole] = useState<UserRole>("patient");
+  const [idCard, setIdCard] = useState("");
   const [ttl, setTtl] = useState(120);
+  const [error, setError] = useState<string | null>(null);
 
   const next = useMemo(() => search?.get("next"), [search]);
 
   function onSubmit(e: React.FormEvent) {
     e.preventDefault();
+    setError(null);
+
+    if (idCard.length < 6) {
+      setError("El número de identificación debe tener al menos 6 dígitos.");
+      return;
+    }
+
     const ttlMinutes = Number.isFinite(ttl) && ttl > 0 ? ttl : 120;
     signIn(role, ttlMinutes);
     const fallback = getDefaultRoute(role, env.DEFAULT_QUEUE_ID);
@@ -42,6 +51,23 @@ export default function LoginPage() {
         <p className={styles.subtitle}>
           Seleccione el rol operativo para continuar.
         </p>
+
+        <label className={styles.label} htmlFor="idCard">
+          Identificación
+        </label>
+        <input
+          id="idCard"
+          type="text"
+          placeholder="Número de Identificación"
+          className={styles.input}
+          value={idCard}
+          onChange={(e) => {
+            const val = e.target.value.replace(/\D/g, "");
+            if (val.length <= 12) setIdCard(val);
+          }}
+          maxLength={12}
+          inputMode="numeric"
+        />
 
         <label className={styles.label} htmlFor="role">
           Rol
@@ -75,6 +101,8 @@ export default function LoginPage() {
         <button type="submit" className={styles.submit}>
           Ingresar
         </button>
+
+        {error && <p className={styles.error}>{error}</p>}
       </form>
     </main>
   );
