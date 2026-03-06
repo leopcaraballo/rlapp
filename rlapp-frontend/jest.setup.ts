@@ -94,14 +94,6 @@ const {
   server: import("msw/node").SetupServerApi;
 } = require("@test/mocks/server");
 
-beforeAll(() =>
-  server.listen({
-    onUnhandledRequest(request, print) {
-      // Ignorar conexiones WebSocket (SignalR) que MSW no puede interceptar en Node
-      if (request.url.includes("/ws/")) return;
-      print.warning();
-    },
-  }),
-);
+beforeAll(() => server.listen({ onUnhandledRequest: "warn" }));
 afterEach(() => server.resetHandlers());
 afterAll(() => server.close());
