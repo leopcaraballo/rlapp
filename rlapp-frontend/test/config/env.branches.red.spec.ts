@@ -36,13 +36,13 @@ describe("config/env — RED (v0: sin optional() ni fallbacks)", () => {
 
   // Comportamientos NUEVOS → fallan contra v0 → evidencia RED
 
-  // eslint-disable-next-line jest/no-disabled-tests
+   
   it.failing("WS_URL es null (no undefined) cuando NEXT_PUBLIC_WS_URL no está definida — rama optional() ausente en v0", () => {
     // v0 retorna undefined → la comparación estricta con null falla
     expect(env.WS_URL).toBeNull();
   });
 
-  // eslint-disable-next-line jest/no-disabled-tests
+   
   it.failing("DEFAULT_QUEUE_ID usa fallback 'QUEUE-01' cuando variable no está definida — fallback ausente en v0", () => {
     // v0 retorna undefined → toBe("QUEUE-01") falla
     expect(env.DEFAULT_QUEUE_ID).toBe("QUEUE-01");

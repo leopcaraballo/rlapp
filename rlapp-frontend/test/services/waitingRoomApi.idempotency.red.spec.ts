@@ -59,7 +59,7 @@ describe("waitingRoom commandHeaders — RED (v0: X-Idempotency-Key con prefijo 
   });
 
   // Comportamiento POST-PR#51 → falla contra v0 → evidencia RED
-  // eslint-disable-next-line jest/no-disabled-tests
+   
   it.failing("incluye 'Idempotency-Key' (sin prefijo X-) — renombrado en PR#51, ausente en v0", async () => {
     mockFetchOk();
     await rebuildProjectionV0("q1");

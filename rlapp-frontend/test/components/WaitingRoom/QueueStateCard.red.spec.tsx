@@ -56,25 +56,25 @@ describe("QueueStateCard — RED (v0: sin null guard, sin isAtCapacity formatead
   });
 
   // Comportamientos NUEVOS → fallan contra v0 → evidencia RED
-  // eslint-disable-next-line jest/no-disabled-tests
+   
   it.failing("muestra 'No hay datos.' cuando queueState es null (falta guarda en v0)", () => {
     render(<QueueStateCard queueState={null} />);
     expect(screen.getByText("No hay datos.")).toBeTruthy();
   });
 
-  // eslint-disable-next-line jest/no-disabled-tests
+   
   it.failing("muestra 'No' cuando isAtCapacity es false (v0 no formateaba booleano)", () => {
     render(<QueueStateCard queueState={{ ...BASE, isAtCapacity: false }} />);
     expect(screen.getByText("No")).toBeTruthy();
   });
 
-  // eslint-disable-next-line jest/no-disabled-tests
+   
   it.failing("muestra 'Sí' cuando isAtCapacity es true (v0 no formateaba booleano)", () => {
     render(<QueueStateCard queueState={{ ...BASE, isAtCapacity: true }} />);
     expect(screen.getByText("Sí")).toBeTruthy();
   });
 
-  // eslint-disable-next-line jest/no-disabled-tests
+   
   it.failing("lista nombres de pacientes en cola (v0 no renderizaba patientsInQueue)", () => {
     const state: QueueStateView = {
       ...BASE,

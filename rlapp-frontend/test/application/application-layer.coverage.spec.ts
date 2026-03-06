@@ -3,11 +3,11 @@
  * Cubre: CashierUseCases, MedicalUseCases, ConsultingRoomUseCases,
  *        CheckInPatientUseCase y PatientState (dominio).
  */
-import { cancelByPayment, callNextAtCashier, markAbsentAtCashier, markPaymentPending, validatePayment } from "@/application/cashier/CashierUseCases";
+import { callNextAtCashier, cancelByPayment, markAbsentAtCashier, markPaymentPending, validatePayment } from "@/application/cashier/CashierUseCases";
 import { activateConsultingRoom, deactivateConsultingRoom } from "@/application/consulting-rooms/ConsultingRoomUseCases";
 import { callPatient, claimNextPatient, completeAttention, markAbsentAtMedical } from "@/application/medical/MedicalUseCases";
 import { checkInPatient } from "@/application/reception/CheckInPatientUseCase";
-import { PATIENT_STATE_LABELS, isTerminalState } from "@/domain/patient/PatientState";
+import { isTerminalState,PATIENT_STATE_LABELS } from "@/domain/patient/PatientState";
 import type { ICommandGateway } from "@/domain/ports/ICommandGateway";
 
 // ---------------------------------------------------------------------------

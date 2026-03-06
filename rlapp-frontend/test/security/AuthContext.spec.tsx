@@ -4,7 +4,6 @@ import { act, render, screen, waitFor } from "@testing-library/react";
 import React from "react";
 
 import { AuthProvider, useAuth } from "@/context/AuthContext";
-import type { UserRole } from "@/security/auth";
 import * as authModule from "@/security/auth";
 import {
   AUTH_CHANGED_EVENT,
@@ -525,11 +524,11 @@ describe("AuthContext.tsx — Authentication Provider and Hook", () => {
     it("should set ready=false initially before loading session", async () => {
       // Note: In fast tests, ready may be set to true immediately
       // This test ensures the loading state exists during mount
-      let renderCount = 0;
+      let _renderCount = 0;
 
       const CounterComponent = () => {
         const auth = useAuth();
-        renderCount++;
+        _renderCount++;
         if (!auth.ready) {
           return <div>Loading...</div>;
         }

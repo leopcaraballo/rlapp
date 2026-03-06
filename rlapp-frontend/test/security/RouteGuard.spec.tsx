@@ -4,10 +4,8 @@ import { render, screen, waitFor } from "@testing-library/react";
 import { usePathname, useRouter } from "next/navigation";
 import React from "react";
 
-import { env } from "@/config/env";
 import { AuthProvider } from "@/context/AuthContext";
 import * as authModule from "@/security/auth";
-import * as routeAccessModule from "@/security/routeAccess";
 import RouteGuard from "@/security/RouteGuard";
 
 // Mock next/navigation
@@ -121,7 +119,7 @@ describe("RouteGuard.tsx — Route Protection Component", () => {
     it("should return null while loading (ready=false)", () => {
       mockUsePathname.mockReturnValue("/reception");
 
-      const { container } = render(
+      render(
         <AuthProvider>
           <RouteGuard>
             <TestContent />
@@ -315,7 +313,7 @@ describe("RouteGuard.tsx — Route Protection Component", () => {
 
       mockUsePathname.mockReturnValue("/reception");
 
-      const { container } = render(
+      render(
         <AuthProvider>
           <RouteGuard>
             <TestContent />

@@ -64,7 +64,7 @@ describe("HttpCommandAdapter headers — RED (v0: X-Idempotency-Key con prefijo 
   });
 
   // Comportamiento POST-PR#51 → falla contra v0 → evidencia RED
-  // eslint-disable-next-line jest/no-disabled-tests
+   
   it.failing("envía 'Idempotency-Key' (sin prefijo X-) — nombre renombrado en PR#51, ausente en v0", async () => {
     mockFetchOk();
     await adapterV0.callNextAtCashier({ queueId: "q1", actor: "caja" });

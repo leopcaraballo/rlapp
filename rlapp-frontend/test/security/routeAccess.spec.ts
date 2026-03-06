@@ -5,7 +5,6 @@ import {
   isDisplayPath,
   isPublicPath,
   isRouteAllowed,
-  LOGIN_PATH,
 } from "@/security/routeAccess";
 
 describe("routeAccess.ts — Role-Based Access Control", () => {
