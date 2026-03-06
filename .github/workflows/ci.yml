@@ -156,6 +156,8 @@ jobs:
             --logger "trx;LogFileName=integration-results.trx"
         env:
           ConnectionStrings__PostgresIdempotencyConnection: "Host=localhost;Port=5432;Database=rlapp_db;Username=rlapp_user;Password=rlapp_password"
+          POSTGRES_CONNECTION_STRING: "Host=localhost;Port=5432;Database=rlapp_db;Username=rlapp_user;Password=rlapp_password"
+          RLAPP_INTEGRATION_EVENTSTORE_CONNECTION: "Host=localhost;Port=5432;Database=rlapp_db;Username=rlapp_user;Password=rlapp_password"
           RabbitMQ__HostName: "localhost"
 
       - name: Upload Integration Test Results
