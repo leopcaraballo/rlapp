@@ -527,7 +527,6 @@ public sealed class WaitingQueue : AggregateRoot
 
     private void When(PatientPaymentValidated @event)
     {
-        _patientStates[@event.PatientId] = WaitingQueueInvariants.PaymentValidatedState;
         _patientStates[@event.PatientId] = WaitingQueueInvariants.WaitingConsultationState;
         _paymentAttempts.Remove(@event.PatientId);
         _cashierAbsenceRetries.Remove(@event.PatientId);
@@ -548,7 +547,6 @@ public sealed class WaitingQueue : AggregateRoot
     private void When(PatientAbsentAtCashier @event)
     {
         _cashierAbsenceRetries[@event.PatientId] = @event.RetryNumber;
-        _patientStates[@event.PatientId] = WaitingQueueInvariants.CashierAbsentState;
         _patientStates[@event.PatientId] = WaitingQueueInvariants.WaitingCashierState;
         CurrentCashierPatientId = null;
         CurrentCashierState = null;
@@ -578,7 +576,6 @@ public sealed class WaitingQueue : AggregateRoot
     private void When(PatientAbsentAtConsultation @event)
     {
         _consultationAbsenceRetries[@event.PatientId] = @event.RetryNumber;
-        _patientStates[@event.PatientId] = WaitingQueueInvariants.ConsultationAbsentState;
         _patientStates[@event.PatientId] = WaitingQueueInvariants.WaitingConsultationState;
         CurrentAttentionPatientId = null;
         CurrentAttentionState = null;
