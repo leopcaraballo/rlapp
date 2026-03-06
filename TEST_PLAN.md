@@ -55,6 +55,10 @@ RLAPP es un sistema de gestion de sala de espera medica con arquitectura Hexagon
 | Jhorman | Components, Hooks, Services, Application, Infrastructure, Repositories, Security (frontend), E2E Playwright | Nivel 1 (componente frontend), Nivel 3 (E2E frontend) |
 | Leopoldo | Domain Aggregates, Value Objects, Events, Application Handlers, Projections, Integration (infra real), Caja Negra via API | Nivel 1 (unitario/componente backend), Nivel 2 (integracion), Nivel 3 (Caja Negra API) |
 
+
+### 1.7 Estrategia de inmutabilidad y empaquetamiento Docker
+Con el fin de garantizar la separación de conceptos y la inmutabilidad en el ciclo de vida de los despliegues, la arquitectura opta por definir los de `Dockerfile` de forma independiente dentro de los módulos `rlapp-backend/` y `rlapp-frontend/`. Esto garantiza que los test de integración y los escaneos de vulnerabilidades identifiquen de manera segregada las brechas en la imagen `.NET` o la de `Next.js` sin fricción. Aunque el pipeline lo centraliza todo desde `.github/workflows/ci.yml` ejecutando comandos ubicados en los subdirectorios, en términos de monorepositorios profesionales, mantener el `Dockerfile` junto al código asegura la cohesividad por componente en lugar de recurrir a un hiper-dockerfile complejo en la raíz.
+
 ## 2. Estrategia multinivel (piramide de pruebas)
 
 La estrategia sigue la piramide de pruebas adaptada al contexto de Event Sourcing + CQRS del proyecto.
@@ -498,6 +502,9 @@ Jobs (en orden de dependencia):
 | Tasa de falsos positivos frontend | < 5% | Sin medicion |
 
 ## 9. Mapeo al pipeline CI/CD
+
+> **Evidencia de Ejecución:** [Ver Ejecución Exitosa del Pipeline CI/CD en GitHub Actions]( Reemplazar con URL de GitHub Actions )
+> *Para consultar capturas detalladas de los tests en verde, referirse a `docs/evidencia/EVIDENCIA_PIPELINE.md`*.
 
 | Job del pipeline | Niveles de prueba | Tecnicas | Archivos | Responsable |
 | --- | --- | --- | --- | --- |
