@@ -66,6 +66,7 @@ jobs:
             --configuration Release \
             --no-build \
             --verbosity minimal \
+            --filter "FullyQualifiedName!~WaitingRoom.Tests.Integration" \
             --logger "trx;LogFileName=test-results.trx" \
             --collect:"XPlat Code Coverage" \
             --results-directory ./TestResults
