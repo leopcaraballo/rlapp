@@ -801,3 +801,18 @@ Razón: Estos tests son intensivos y validan escenarios ya verificados mediante 
 
 - `ae51592` — ci(tests): move db schema init to integration-tests job
 - `5a89330` — ci(tests): resolve DB mismatch, pointing integrations to rlapp_waitingroom_test using matched roles
+
+### Tarea J4: Pruebas de Componente Frontend en CI (Pipeline Estabilizado)
+
+**Contexto:** El usuario solicitó ejecutar y estabilizar la Tarea J4 referida a la ejecución de las pruebas unitarias y de componente del Frontend (Jest + RTL) en el pipeline de GitHub Actions, asegurando que se ignore el directorio de pruebas E2E en Playwright y se guarden los reportes de cobertura en la ubicación adecuada.
+
+**Pasos Ejecutados:**
+1. **Verificación Local vs. CI:** Confirmé que la instrucción `test:component` generera exclusiones debidas en la suite E2E (`--testPathIgnorePatterns='e2e'`). Estas instrucciones ya se encontraban listas en el CLI del `package.json` de previas iteraciones de refactor local.
+2. **Generación de Reportes (`coverage`):** Analicé `jest.config.ts`, notando que exporta sus métricas hacia `.rootDir/test-results/coverage`, no la carpeta `/coverage/` cruda en la raíz del frontend. 
+3. **Parche en Pipeline YAML (`ci.yml`):** Reemplacé la instrucción de subida en la fase de Github Actions, cambiando `rlapp-frontend/coverage/` por `rlapp-frontend/test-results/coverage/` como la ruta definitiva para el artefacto de resultados frontend.
+
+**Comando Principal de Test:**
+```bash
+npm run test:component
+```
+*Resultados locales confirmados: `Test Suites: 68 passed, 68 total`, `Tests: 815 passed, 815 total`.*
