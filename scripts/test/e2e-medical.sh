@@ -1,5 +1,16 @@
-#!/bin/bash
-# Script E2E completo incluyendo activación de consultorio
+#!/usr/bin/env bash
+# =============================================================================
+# E2E Medical Flow — RLAPP
+# Activa consultorio y prueba flujo del médico.
+# Requiere: stack Docker activo (scripts/dev/start.sh)
+# =============================================================================
+set -euo pipefail
+
+_SCRIPT_DIR="$(cd "$(dirname "${BASH_SOURCE[0]}")" && pwd)"
+# shellcheck disable=SC1091
+source "$_SCRIPT_DIR/../lib/docker-check.sh"
+docker_require_api
+
 API="http://localhost:5000"
 QUEUE="QUEUE-01"
 

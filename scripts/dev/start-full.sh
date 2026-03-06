@@ -2,16 +2,22 @@
 set -euo pipefail
 
 # ==============================================================================
-# RLAPP — Script de levantamiento completo del stack
-# Uso: ./scripts/start_stack.sh [--no-build | --clean]
+# RLAPP — Levantamiento completo del stack con verificación de salud
+# Uso: scripts/dev/start-full.sh [--no-build | --clean]
 #
 # Opciones:
 #   --no-build  Reutilizar imagenes existentes (sin reconstruir)
 #   --clean     Eliminar contenedores, volumenes e imagenes antes de iniciar
 # ==============================================================================
 
-ROOT_DIR=$(cd "$(dirname "${BASH_SOURCE[0]}")/../../" && pwd)
+ROOT_DIR=$(cd "$(dirname "${BASH_SOURCE[0]}")/../.." && pwd)
+LIB_DIR="$(cd "$(dirname "${BASH_SOURCE[0]}")/../lib" && pwd)"
 COMPOSE_FILE="$ROOT_DIR/docker-compose.yml"
+
+# shellcheck source=../lib/docker-check.sh
+# shellcheck disable=SC1091
+source "$LIB_DIR/docker-check.sh"
+docker_check
 
 # Colores
 GREEN='\033[0;32m'

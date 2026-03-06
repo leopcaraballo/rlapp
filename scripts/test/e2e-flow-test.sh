@@ -1,10 +1,16 @@
-#!/bin/bash
+#!/usr/bin/env bash
 # =============================================================================
 # E2E Business Flow Test — RLAPP
 # Flujo completo: Recepción → Caja → Área Médica → Fin
+# Requiere: stack Docker activo (scripts/dev/start.sh)
 # =============================================================================
 
-set -e
+set -euo pipefail
+
+_SCRIPT_DIR="$(cd "$(dirname "${BASH_SOURCE[0]}")" && pwd)"
+# shellcheck disable=SC1091
+source "$_SCRIPT_DIR/../lib/docker-check.sh"
+docker_require_api
 
 API="http://localhost:5000"
 QUEUE_ID="QUEUE-01"

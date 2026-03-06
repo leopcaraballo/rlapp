@@ -1,19 +1,24 @@
 #!/usr/bin/env bash
 # ==============================================================================
-# RLAPP - Script de prueba de carga para validar Grafana
-# Genera trafico realista a traves de los endpoints de la API
-# utilizando los DTOs correctos del dominio (Event Sourcing / CQRS).
+# RLAPP — Prueba de carga para validar Grafana
+# Genera tráfico realista a través de los endpoints de la API.
+# Requiere: stack Docker completo activo (scripts/dev/start.sh)
 #
 # Flujo por ciclo:
-#   1. Crear queueId unico por ciclo
-#   2. Activar consultorio medico
+#   1. Crear queueId único por ciclo
+#   2. Activar consultorio médico
 #   3. Check-in de N pacientes
 #   4. Validate-payment para cada paciente
 #   5. Medical call-next + finish-consultation secuencial
 #   6. Consultas de proyecciones (queue-state, monitor, recent-history)
-#   7. Trafico adicional (health checks, 404s, 400s)
+#   7. Tráfico adicional (health checks, 404s, 400s)
 # ==============================================================================
 set -euo pipefail
+
+_SCRIPT_DIR="$(cd "$(dirname "${BASH_SOURCE[0]}")" && pwd)"
+# shellcheck disable=SC1091
+source "$_SCRIPT_DIR/../lib/docker-check.sh"
+docker_require_api
 
 API_BASE="http://localhost:5000"
 PROMETHEUS_URL="http://localhost:9090"

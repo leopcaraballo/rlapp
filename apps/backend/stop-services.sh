@@ -16,6 +16,17 @@ REPO_ROOT="$(cd "$PROJECT_ROOT/../.." && pwd)"
 COMPOSE_FILE="$REPO_ROOT/docker-compose.yml"
 PID_FILE="/tmp/rlapp-local-pids"
 
+# --- Validación Docker -----------------------------------------------------
+if ! command -v docker &>/dev/null; then
+  echo -e "${RED}ERROR: Docker no esta instalado o no esta en PATH.${NC}"
+  exit 1
+fi
+if ! docker info &>/dev/null; then
+  echo -e "${RED}ERROR: El daemon de Docker no esta corriendo.${NC}"
+  echo "  Ejecuta: sudo systemctl start docker"
+  exit 1
+fi
+
 # --- Colores ---------------------------------------------------------------
 GREEN='\033[0;32m'
 YELLOW='\033[1;33m'

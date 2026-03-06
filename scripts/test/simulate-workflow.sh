@@ -3,6 +3,7 @@ set -euo pipefail
 
 # =============================================================================
 # RLAPP — Simulación de flujo completo del sistema
+# Requiere: stack Docker activo (scripts/dev/start.sh)
 # Ciclo: check-in → caja (call-next + validate-payment) → médico (call-next + finish)
 #
 # Payloads alineados con los DTOs del backend:
@@ -16,6 +17,11 @@ set -euo pipefail
 #   Idempotency-Key: UUID (obligatorio para POST — middleware IdempotencyKeyMiddleware)
 #   X-User-Role: Receptionist (obligatorio para check-in — ReceptionistOnlyFilter)
 # =============================================================================
+
+_SCRIPT_DIR="$(cd "$(dirname "${BASH_SOURCE[0]}")" && pwd)"
+# shellcheck disable=SC1091
+source "$_SCRIPT_DIR/../lib/docker-check.sh"
+docker_require_api
 
 RED='\033[0;31m'
 GREEN='\033[0;32m'

@@ -1,6 +1,15 @@
-#!/bin/bash
-# Script de prueba E2E del flujo completo de negocio
-set -e
+#!/usr/bin/env bash
+# =============================================================================
+# E2E Test — RLAPP
+# Prueba el flujo completo de negocio (6 pasos).
+# Requiere: stack Docker activo (scripts/dev/start.sh)
+# =============================================================================
+set -euo pipefail
+
+_SCRIPT_DIR="$(cd "$(dirname "${BASH_SOURCE[0]}")" && pwd)"
+# shellcheck disable=SC1091
+source "$_SCRIPT_DIR/../lib/docker-check.sh"
+docker_require_api
 
 API="http://localhost:5000"
 QUEUE="QUEUE-01"

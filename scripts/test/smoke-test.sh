@@ -2,10 +2,17 @@
 set -euo pipefail
 
 # =============================================================================
-# RLAPP — Test de integración Frontend-Backend
-# Verifica que el frontend puede comunicarse con el backend correctamente
-# Uso: ./test-integration.sh
+# RLAPP — Smoke test: conectividad Frontend ↔ Backend
+# Verifica que el stack está corriendo y los servicios se comunican.
+# Requiere: stack Docker activo (scripts/dev/start.sh)
+# Uso: scripts/test/smoke-test.sh
 # =============================================================================
+
+SCRIPT_DIR="$(cd "$(dirname "${BASH_SOURCE[0]}")" && pwd)"
+# shellcheck source=../lib/docker-check.sh
+# shellcheck disable=SC1091
+source "$SCRIPT_DIR/../lib/docker-check.sh"
+docker_require_full_stack
 
 GREEN='\033[0;32m'
 RED='\033[0;31m'
@@ -15,7 +22,7 @@ NC='\033[0m'
 
 echo ""
 echo -e "${CYAN}═══════════════════════════════════════════════════════════════${NC}"
-echo -e "${CYAN}  RLAPP — Test de Integración Frontend-Backend${NC}"
+echo -e "${CYAN}  RLAPP — Smoke Test: Conectividad Frontend ↔ Backend${NC}"
 echo -e "${CYAN}═══════════════════════════════════════════════════════════════${NC}"
 echo ""
 
