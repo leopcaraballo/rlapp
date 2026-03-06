@@ -74,7 +74,7 @@ describe("useConsultingRooms.activate — RED (v0: sin String(e))", () => {
   });
 
   // Comportamiento NUEVO (String(e)) → falla contra v0 → evidencia RED
-  // eslint-disable-next-line jest/no-disabled-tests
+   
   it.failing("error === 'error de red' cuando se lanza un string (v0 deja error en null)", async () => {
     activateMock.mockRejectedValue("error de red" as never);
     const { result } = renderHook(() => useConsultingRooms());

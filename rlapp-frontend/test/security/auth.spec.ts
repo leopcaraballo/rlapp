@@ -124,7 +124,7 @@ describe("auth.ts — Session Management", () => {
 
     it("should handle server-side rendering (no window.localStorage available)", () => {
       const originalWindow = global.window;
-      // @ts-ignore
+      // @ts-expect-error -- global.window is deletable in Node.js test context to simulate SSR
       delete global.window;
 
       // Should not throw
@@ -186,7 +186,7 @@ describe("auth.ts — Session Management", () => {
 
     it("should handle server-side rendering (no window.localStorage available)", () => {
       const originalWindow = global.window;
-      // @ts-ignore
+      // @ts-expect-error -- global.window is deletable in Node.js test context to simulate SSR
       delete global.window;
 
       const loaded = loadSession();
@@ -280,7 +280,7 @@ describe("auth.ts — Session Management", () => {
 
     it("should handle server-side rendering (no window.localStorage available)", () => {
       const originalWindow = global.window;
-      // @ts-ignore
+      // @ts-expect-error -- global.window is deletable in Node.js test context to simulate SSR
       delete global.window;
 
       // Should not throw

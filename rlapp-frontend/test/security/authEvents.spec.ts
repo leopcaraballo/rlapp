@@ -42,7 +42,7 @@ describe("authEvents.ts — Auth Event Dispatching", () => {
 
     it("should handle server-side rendering (no window.dispatchEvent available)", () => {
       const originalWindow = global.window;
-      // @ts-ignore
+      // @ts-expect-error -- global.window is deletable in Node.js test context to simulate SSR
       delete global.window;
 
       expect(() => {
@@ -154,7 +154,7 @@ describe("authEvents.ts — Auth Event Dispatching", () => {
 
     it("should handle server-side rendering (no window.dispatchEvent available)", () => {
       const originalWindow = global.window;
-      // @ts-ignore
+      // @ts-expect-error -- global.window is deletable in Node.js test context to simulate SSR
       delete global.window;
 
       const detail: AuthInvalidDetail = { reason: "expired" };

@@ -11,6 +11,7 @@
  * Commit par (GREEN): test/components/NetworkStatus.spec.tsx — usa la implementación real.
  */
 import "@testing-library/jest-dom";
+
 import { render, screen } from "@testing-library/react";
 import userEvent from "@testing-library/user-event";
 import React from "react";
@@ -32,31 +33,31 @@ describe("NetworkStatus — RED (v0: sin manejo de estados ni props)", () => {
   });
 
   // Comportamientos NUEVOS → fallan contra v0 → evidencia RED
-  // eslint-disable-next-line jest/no-disabled-tests
+   
   it.failing("muestra 'Conectando…' cuando connectionState = connecting (falta en v0)", () => {
     render(<NetworkStatus connectionState="connecting" />);
     expect(screen.getByText("Conectando…")).toBeInTheDocument();
   });
 
-  // eslint-disable-next-line jest/no-disabled-tests
+   
   it.failing("muestra 'Problemas de red' cuando connectionState = offline (falta en v0)", () => {
     render(<NetworkStatus connectionState="offline" />);
     expect(screen.getByText("Problemas de red")).toBeInTheDocument();
   });
 
-  // eslint-disable-next-line jest/no-disabled-tests
+   
   it.failing("muestra 'Problemas de red' cuando connectionState = degraded (falta en v0)", () => {
     render(<NetworkStatus connectionState="degraded" />);
     expect(screen.getByText("Problemas de red")).toBeInTheDocument();
   });
 
-  // eslint-disable-next-line jest/no-disabled-tests
+   
   it.failing("muestra <small> con hora cuando lastUpdated está definido (falta en v0)", () => {
     render(<NetworkStatus connectionState="online" lastUpdated="2026-03-04T10:30:00.000Z" />);
     expect(document.querySelector("small")).not.toBeNull();
   });
 
-  // eslint-disable-next-line jest/no-disabled-tests
+   
   it.failing("invoca onForceRefresh al hacer clic en el botón Forzar (falta en v0)", async () => {
     const onForceRefresh = jest.fn();
     render(<NetworkStatus connectionState="online" onForceRefresh={onForceRefresh} />);

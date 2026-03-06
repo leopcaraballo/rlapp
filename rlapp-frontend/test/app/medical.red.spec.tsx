@@ -118,41 +118,41 @@ describe("MedicalPage — RED (v0: sin useWaitingRoom, sin guards, sin auto-fill
     expect(screen.queryByText(/Paciente en turno/i)).toBeNull();
   });
 
-  // eslint-disable-next-line jest/no-disabled-tests
+   
   it.failing("muestra tarjeta de paciente cuando nextTurn.status = 'claimed' (integración useWaitingRoom ausente en v0)", () => {
     render(<MedicalPage />);
     expect(screen.getByText(/Paciente en turno/i)).toBeTruthy();
   });
 
-  // eslint-disable-next-line jest/no-disabled-tests
+   
   it.failing("dispara showError al activar sin stationId (guard ausente en v0)", async () => {
     render(<MedicalPage />);
     await user.click(screen.getByRole("button", { name: /^Activar estación$/i }));
     expect(mockShowError).toHaveBeenCalledWith("Seleccione un consultorio para activar");
   });
 
-  // eslint-disable-next-line jest/no-disabled-tests
+   
   it.failing("dispara showError al desactivar sin stationId (guard ausente en v0)", async () => {
     render(<MedicalPage />);
     await user.click(screen.getByRole("button", { name: /Desactivar estación/i }));
     expect(mockShowError).toHaveBeenCalledWith("Seleccione un consultorio para desactivar");
   });
 
-  // eslint-disable-next-line jest/no-disabled-tests
+   
   it.failing("dispara showError al iniciar consulta sin patientId (guard ausente en v0)", async () => {
     render(<MedicalPage />);
     await user.click(screen.getByRole("button", { name: /Iniciar consulta/i }));
     expect(mockShowError).toHaveBeenCalledWith("El ID de paciente es obligatorio");
   });
 
-  // eslint-disable-next-line jest/no-disabled-tests
+   
   it.failing("dispara showError al marcar ausente sin patientId (guard ausente en v0)", async () => {
     render(<MedicalPage />);
     await user.click(screen.getByRole("button", { name: /Marcar ausente/i }));
     expect(mockShowError).toHaveBeenCalledWith("El ID de paciente es obligatorio");
   });
 
-  // eslint-disable-next-line jest/no-disabled-tests
+   
   it.failing("muestra badge auto-rellenado cuando lastResult tiene patientId (auto-fill ausente en v0)", () => {
     mockMedical.lastResult = { patientId: "CC-123" };
     render(<MedicalPage />);

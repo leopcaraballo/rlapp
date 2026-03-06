@@ -113,16 +113,17 @@ jobs:
         run: npx eslint . --max-warnings 0 || true
 
       - name: Ejecutar tests
-        run: npm test -- --runInBand --coverage --ci
+        run: npm run test:ci
         env:
           CI: true
+          NODE_OPTIONS: --max-old-space-size=6144
 
       - name: Publicar resultados de cobertura frontend
         if: always()
         uses: actions/upload-artifact@v4
         with:
           name: frontend-coverage
-          path: rlapp-frontend/coverage/
+          path: rlapp-frontend/test-results/coverage/
           retention-days: 30
 
   # ===========================================================================

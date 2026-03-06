@@ -1,8 +1,8 @@
-import { act, render, screen, waitFor } from "@testing-library/react";
+import { render, screen } from "@testing-library/react";
 import React from "react";
 
-import type { ConnectionStatus } from "@/components/WebSocketStatus";
 import AppointmentsScreen from "@/app/page";
+import type { ConnectionStatus } from "@/components/WebSocketStatus";
 
 function createMockAudio() {
   return {

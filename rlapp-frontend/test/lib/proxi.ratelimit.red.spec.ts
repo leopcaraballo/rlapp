@@ -49,7 +49,7 @@ describe("proxi middleware — RED (v0: sin getClientIP, sin rate limit)", () =>
 
   // Comportamientos NUEVOS → fallan contra v0 → evidencia RED
 
-  // eslint-disable-next-line jest/no-disabled-tests
+   
   it.failing("extrae IP de x-real-ip cuando x-forwarded-for no está presente (getClientIP ausente en v0)", () => {
     // v0 no tenía getClientIP → no hay lógica de x-real-ip
     // Este test verifica solo la función getClientIP que no existía en v0.
@@ -58,7 +58,7 @@ describe("proxi middleware — RED (v0: sin getClientIP, sin rate limit)", () =>
     expect(ipFromRealIp).toBe("2.2.2.2");
   });
 
-  // eslint-disable-next-line jest/no-disabled-tests
+   
   it.failing("retorna 429 al superar el límite de 25 peticiones por IP (rate limiting ausente en v0)", () => {
     // v0 no tenía rate limit → la petición 26 devuelve 200, no 429
     const responses: { status: number }[] = [];
@@ -70,7 +70,7 @@ describe("proxi middleware — RED (v0: sin getClientIP, sin rate limit)", () =>
     expect(last.status).toBe(429);
   });
 
-  // eslint-disable-next-line jest/no-disabled-tests
+   
   it.failing("getClientIP retorna 'unknown' cuando no hay cabeceras de IP (fallback ausente en v0)", () => {
     // v0 no tenía getClientIP con fallback "unknown"
     const ipFallback: string | null = null; // v0: devolvería undefined o null

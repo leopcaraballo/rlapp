@@ -74,18 +74,37 @@ describe("LoginPage", () => {
 
   // ── Envío básico ──────────────────────────────────────────────────────────
   it("llama signIn y redirige a la ruta por defecto al enviar con rol patient", async () => {
+    const user = userEvent.setup();
     render(<LoginPage />);
-    fireEvent.submit(screen.getByRole("button", { name: "Ingresar" }).closest("form")!);
+
+    const idInput = screen.getByPlaceholderText("Número de Identificación");
+    await user.type(idInput, "123456");
+
+    await user.click(screen.getByRole("button", { name: "Ingresar" }));
 
     await waitFor(() => expect(mockSignIn).toHaveBeenCalledWith("patient", 120));
-    expect(mockRouterReplace).toHaveBeenCalledWith(
-      "/display/QUEUE-01",
-    );
+    expect(mockRouterReplace).toHaveBeenCalledWith("/patient" === "/patient" ? "/display/QUEUE-01" : "/display/QUEUE-01");
+  });
+
+  it("muestra error si la identificación tiene menos de 6 caracteres", async () => {
+    const user = userEvent.setup();
+    render(<LoginPage />);
+
+    const idInput = screen.getByPlaceholderText("Número de Identificación");
+    await user.type(idInput, "12345");
+
+    await user.click(screen.getByRole("button", { name: "Ingresar" }));
+
+    expect(screen.getByText(/al menos 6 dígitos/i)).toBeInTheDocument();
+    expect(mockSignIn).not.toHaveBeenCalled();
   });
 
   it("redirige a /cashier cuando el rol es cashier", async () => {
     const user = userEvent.setup();
     render(<LoginPage />);
+
+    const idInput = screen.getByPlaceholderText("Número de Identificación");
+    await user.type(idInput, "123456");
 
     await user.selectOptions(screen.getByLabelText("Rol"), "cashier");
     await user.click(screen.getByRole("button", { name: "Ingresar" }));
@@ -97,6 +116,9 @@ describe("LoginPage", () => {
   it("redirige a /reception cuando el rol es reception", async () => {
     const user = userEvent.setup();
     render(<LoginPage />);
+
+    const idInput = screen.getByPlaceholderText("Número de Identificación");
+    await user.type(idInput, "123456");
 
     await user.selectOptions(screen.getByLabelText("Rol"), "reception");
     await user.click(screen.getByRole("button", { name: "Ingresar" }));
@@ -111,6 +133,9 @@ describe("LoginPage", () => {
     const user = userEvent.setup();
     render(<LoginPage />);
 
+    const idInput = screen.getByPlaceholderText("Número de Identificación");
+    await user.type(idInput, "123456");
+
     await user.selectOptions(screen.getByLabelText("Rol"), "doctor");
     await user.click(screen.getByRole("button", { name: "Ingresar" }));
 
@@ -121,6 +146,9 @@ describe("LoginPage", () => {
   it("redirige a /consulting-rooms cuando el rol es admin", async () => {
     const user = userEvent.setup();
     render(<LoginPage />);
+
+    const idInput = screen.getByPlaceholderText("Número de Identificación");
+    await user.type(idInput, "123456");
 
     await user.selectOptions(screen.getByLabelText("Rol"), "admin");
     await user.click(screen.getByRole("button", { name: "Ingresar" }));
@@ -139,6 +167,9 @@ describe("LoginPage", () => {
     const user = userEvent.setup();
     render(<LoginPage />);
 
+    const idInput = screen.getByPlaceholderText("Número de Identificación");
+    await user.type(idInput, "123456");
+
     await user.selectOptions(screen.getByLabelText("Rol"), "admin");
     await user.click(screen.getByRole("button", { name: "Ingresar" }));
 
@@ -150,6 +181,9 @@ describe("LoginPage", () => {
   it("pasa el TTL personalizado a signIn", async () => {
     const user = userEvent.setup();
     render(<LoginPage />);
+
+    const idInput = screen.getByPlaceholderText("Número de Identificación");
+    await user.type(idInput, "123456");
 
     const ttlInput = screen.getByLabelText("Tiempo de sesion (minutos)");
     await user.clear(ttlInput);
@@ -163,6 +197,9 @@ describe("LoginPage", () => {
   it("usa TTL de 120 cuando el valor ingresado es inválido (0 o NaN)", async () => {
     const user = userEvent.setup();
     render(<LoginPage />);
+
+    const idInput = screen.getByPlaceholderText("Número de Identificación");
+    await user.type(idInput, "123456");
 
     const ttlInput = screen.getByLabelText("Tiempo de sesion (minutos)");
     await user.clear(ttlInput);

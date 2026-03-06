@@ -69,7 +69,7 @@ describe("MonitorCard — RED (v0: Stat sin fallback ?? '-')", () => {
   });
 
   // Comportamiento NUEVO → falla contra v0 → evidencia RED
-  // eslint-disable-next-line jest/no-disabled-tests
+   
   it.failing("muestra '-' cuando value es null — rama ?? '-' ausente en v0", () => {
     const monitor: WaitingRoomMonitorView = {
       ...BASE,

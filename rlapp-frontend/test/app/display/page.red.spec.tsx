@@ -1,5 +1,5 @@
-import { act, render, screen } from "@testing-library/react";
-import React, { Suspense } from "react";
+import { render, screen } from "@testing-library/react";
+import React from "react";
 
 // ── mocks globales ──────────────────────────────────────────────────────────
 /**
@@ -9,7 +9,7 @@ import React, { Suspense } from "react";
  */
 /** Datos mutables para controlar el estado del hook por test */
 let mockParams: { queueId: string };
-// eslint-disable-next-line @typescript-eslint/no-explicit-any
+ 
 jest.spyOn(React, "use").mockImplementation((_: unknown) => mockParams as any);
 
 let mockNextTurn: { patientName: string; stationId?: string } | null = null;
