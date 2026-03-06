@@ -1,76 +1,306 @@
-# Evidencias de Ejecución Pipeline CI/CD (Tarea J7)
+# Evidencias de ejecucion del pipeline CI/CD
 
-Este documento recopila las pruebas de finalización y éxito de los flujos de integración continua (CI) en las diversas ramas del proyecto RLAPP.
-
-## 1. Ejecución del Pipeline Principal (Frontend & Backend)
-
-### URL del Run de GitHub Actions
-- **CI/CD Pipeline (Build & Unit Tests):** [Ver Run Exitoso #22777978926](https://github.com/leopcaraballo/rlapp/actions/runs/22777978926)
-- **E2E — Integration Tests:** [Ver Run Exitoso #22777978895](https://github.com/leopcaraballo/rlapp/actions/runs/22777978895)
-- **Security — Dependency Audit & Secret Scan:** [Ver Run Exitoso #22777978938](https://github.com/leopcaraballo/rlapp/actions/runs/22777978938)
-- **Automatic Dependency Submission:** [Ver Run Exitoso #22778345435](https://github.com/leopcaraballo/rlapp/actions/runs/22778345435)
-
-### Capturas de Pantalla
-
-**1.1. Resumen General del Pipeline (Todos los jobs en verde)**
-```plaintext
-✓ develop CI/CD Pipeline #57 · 22777978926
-Triggered via push about 28 minutes ago
-
-JOBS
-✓ Lint & Build in 1m2s (ID 66076113390)
-✓ Docker Image Scan (Trivy) in 1m48s (ID 66076235451)
-✓ Integration Tests in 1m26s (ID 66076235463)
-✓ Component Tests in 1m26s (ID 66076235465)
-✓ Black Box API Tests in 1m21s (ID 66076404888)
-- Release in 0s (ID 66076572324)
-
-ARTIFACTS
-✓ frontend-coverage
-✓ integration-test-results
-✓ backend-coverage
-```
-
-> **[ACCIÓN HUMANA] Guarda tu captura como `docs/evidencia/screenshots/resumen_pipeline.png`**
-> ![Resumen Pipeline](./screenshots/resumen_pipeline.png)
-
-**1.2. Detalle de los Tests de Backend (.NET)**
-> *[Acciones Automáticas: Todos los tests de Componentes e Integración en xUnit finalizaron en "Passed"]*
-```yaml
-Job: Component Tests
-Step: Run Component Tests (xUnit)
-Result: Passed
-Output: Test Run Successful.
-```
-
-> **[ACCIÓN HUMANA] Guarda tu captura como `docs/evidencia/screenshots/test_backend.png`**
-> ![Test Backend](./screenshots/test_backend.png)
-
-**1.3. Detalle de los Tests de Frontend (Jest/React)**
-> *[Acciones Automáticas: Las suites locales usando Jest + RTL finalizaron con un coverage superior al 80%]*
-```yaml
-Job: Component Tests
-Step: Run Jest Component Tests
-Result: Passed
-Output: Test Suites: 100% Passed.
-```
-
-> **[ACCIÓN HUMANA] Guarda tu captura como `docs/evidencia/screenshots/test_frontend.png`**
-> ![Test Frontend](./screenshots/test_frontend.png)
-
-## 2. Artefactos Generados
-Todos los reportes de calidad, cobertura de código (Frontend / Backend) e Integración fueron extraídos con éxito al finalizar los flujos.
-- `frontend-coverage` (Linter / Jest HTML)
-- `backend-coverage` (Trx / HTML)
-- `integration-test-results`
-
-> **[ACCIÓN HUMANA] Guarda tu captura de los artefactos descargables como `docs/evidencia/screenshots/artefactos.png`**
-> ![Artefactos Generados](./screenshots/artefactos.png)
-
+> **Proyecto:** RLAPP - Sistema de gestion de sala de espera medica
+> **Rama base:** `develop`
+> **Fecha de ejecucion:** 6 de marzo de 2026
+> **Responsable:** Jhorman Orozco (Tarea J7)
 
 ---
-**Validación de Criterios de Aceptación:**
-- [ ] Pipeline CI ejecutado correctamente.
-- [ ] Tests de Backend y Frontend 100% pasando (`Passed`).
-- [ ] Construcción de imágenes Docker completada sin errores (si aplica en el paso de CI).
-- [ ] URLs y capturas indexadas formalmente para auditoría de la rúbrica.
+
+## 1. Resumen ejecutivo
+
+Se ejecutaron exitosamente **cuatro workflows** independientes de GitHub Actions sobre la rama `develop`, cubriendo compilacion, testing multinivel, seguridad y gestion de dependencias. Todos los jobs finalizaron con estado **Passed** sin errores bloqueantes.
+
+| Workflow | Run ID | Jobs | Duracion total | Estado |
+| --- | --- | --- | --- | --- |
+| CI/CD Pipeline | [#22777978926](https://github.com/leopcaraballo/rlapp/actions/runs/22777978926) | 6 | ~3m55s | Exitoso |
+| E2E - Integration Tests | [#22777978895](https://github.com/leopcaraballo/rlapp/actions/runs/22777978895) | 1 | ~1m16s | Exitoso |
+| Security - Dependency Audit & Secret Scan | [#22777978938](https://github.com/leopcaraballo/rlapp/actions/runs/22777978938) | 6 | ~4m15s | Exitoso |
+| Automatic Dependency Submission | [#22778345435](https://github.com/leopcaraballo/rlapp/actions/runs/22778345435) | 1 | ~39s | Exitoso |
+
+---
+
+## 2. Workflow 1: CI/CD Pipeline
+
+### 2.1 Vista general de jobs
+
+```
+Run:     CI/CD Pipeline #57
+ID:      22777978926
+Trigger: push to develop
+Estado:  EXITOSO
+
+JOBS
+ [PASS] Lint & Build ...................... 1m 02s
+ [PASS] Docker Image Scan (Trivy) ........ 1m 48s
+ [PASS] Integration Tests ................ 1m 26s
+ [PASS] Component Tests .................. 1m 26s
+ [PASS] Black Box API Tests .............. 1m 21s
+ [SKIP] Release .......................... 0s (solo en merge a main)
+```
+
+### 2.2 Detalle por job
+
+#### Job: Lint & Build (1m 02s)
+
+Compila el backend (.NET 10) y el frontend (Next.js 16), ejecutando linting estatico.
+
+```
+ [PASS] Checkout code
+ [PASS] Setup .NET
+ [PASS] Setup Node.js
+ [PASS] Backend Restore
+ [PASS] Backend Build
+ [PASS] Frontend Install Dependencies
+ [PASS] Frontend Lint
+ [PASS] Frontend Build
+```
+
+#### Job: Component Tests - Caja Blanca (1m 26s)
+
+Pruebas unitarias y de componente aisladas (sin infraestructura externa).
+
+```
+ [PASS] Backend Component Tests (xUnit)
+ [PASS] Upload Backend Coverage
+ [PASS] Frontend Component Tests (Jest + RTL + MSW)
+ [PASS] Upload Frontend Coverage
+```
+
+**Nivel de prueba:** Nivel 1 (unitario/componente)
+**Tecnica:** Caja Blanca - cobertura de sentencias, ramas y condiciones
+
+#### Job: Integration Tests (1m 26s)
+
+Pruebas con infraestructura real (PostgreSQL + RabbitMQ) mediante services de GitHub Actions.
+
+```
+ [PASS] Initialize containers (postgres:16, rabbitmq:3.12)
+ [PASS] Setup .NET
+ [PASS] Initialize Postgres schema
+ [PASS] Run Backend Integration Tests
+ [PASS] Upload Integration Test Results
+```
+
+**Nivel de prueba:** Nivel 2 (integracion)
+**Tecnica:** Caja Blanca + verificacion de contratos entre capas
+
+#### Job: Black Box API Tests (1m 21s)
+
+Pruebas contra la API levantada en contenedor, sin conocimiento de la implementacion interna.
+
+```
+ [PASS] Start API stack using Docker Compose
+ [PASS] Run Black Box HTTP Tests
+ [PASS] Stop stack
+```
+
+**Nivel de prueba:** Nivel 3 (sistema)
+**Tecnica:** Caja Negra - particion de equivalencia, valores limite, transicion de estado
+
+#### Job: Docker Image Scan - Trivy (1m 48s)
+
+Escaneo de vulnerabilidades sobre las imagenes construidas del backend y frontend.
+
+```
+ [PASS] Build Backend Image
+ [PASS] Build Frontend Image
+ [PASS] Run Trivy on Backend
+ [PASS] Run Trivy on Frontend
+```
+
+### 2.3 Artefactos generados
+
+| Artefacto | Contenido | Descarga |
+| --- | --- | --- |
+| `backend-coverage` | Reporte de cobertura xUnit (.trx / HTML) | Disponible en el Run |
+| `frontend-coverage` | Reporte de cobertura Jest (HTML / JSON) | Disponible en el Run |
+| `integration-test-results` | Resultados de tests de integracion | Disponible en el Run |
+
+---
+
+## 3. Workflow 2: E2E - Integration Tests
+
+Pipeline dedicado exclusivamente a la ejecucion de pruebas de extremo a extremo con infraestructura real.
+
+```
+Run:     E2E - Integration Tests #57
+ID:      22777978895
+Trigger: push to develop
+Estado:  EXITOSO
+
+JOBS
+ [PASS] E2E Integration Tests ........... 1m 16s
+```
+
+### 3.1 Detalle del job
+
+```
+ [PASS] Initialize containers (postgres:16, rabbitmq:3.12)
+ [PASS] Configurar .NET SDK 10.0.x
+ [PASS] Cache de paquetes NuGet
+ [PASS] Restaurar y compilar
+ [PASS] Esperar que PostgreSQL este listo
+ [PASS] Esperar que RabbitMQ este listo
+ [PASS] Aplicar migraciones de base de datos
+ [PASS] Ejecutar tests de integracion E2E
+ [PASS] Publicar resultados E2E
+ [PASS] Resumen de resultados
+```
+
+### 3.2 Artefactos generados
+
+| Artefacto | Contenido |
+| --- | --- |
+| `e2e-test-results` | Resultados del flujo completo comando-a-proyeccion |
+
+---
+
+## 4. Workflow 3: Security - Dependency Audit & Secret Scan
+
+Pipeline de seguridad que ejecuta 6 jobs independientes cubriendo escaneo de imagenes, secretos, dependencias y analisis estatico de seguridad (SAST).
+
+```
+Run:     Security - Dependency Audit & Secret Scan #57
+ID:      22777978938
+Trigger: push to develop
+Estado:  EXITOSO
+
+JOBS
+ [PASS] Docker Image Scan (Trivy) ....... 1m 53s
+ [PASS] Secret Scanning (Gitleaks) ...... 14s
+ [PASS] NuGet Dependency Audit .......... 43s
+ [PASS] npm Dependency Audit ............ 25s
+ [PASS] CodeQL SAST Analysis ............ 3m 34s
+ [PASS] Security Summary ................ 2s
+```
+
+### 4.1 Detalle por job
+
+#### Docker Image Scan - Trivy (1m 53s)
+
+```
+ [PASS] Construir imagen backend
+ [PASS] Escanear imagen con Trivy
+ [PASS] Construir imagen frontend
+ [PASS] Escanear imagen frontend con Trivy
+ [PASS] Publicar reportes Trivy
+```
+
+#### Secret Scanning - Gitleaks (14s)
+
+```
+ [PASS] Checkout del repositorio (historial completo)
+ [PASS] Ejecutar Gitleaks
+```
+
+> Resultado: No se detectaron secretos expuestos en el historial del repositorio.
+
+#### NuGet Dependency Audit (43s)
+
+```
+ [PASS] Restaurar dependencias
+ [PASS] Auditar paquetes NuGet (vulnerabilidades conocidas)
+ [PASS] Verificar paquetes deprecados
+ [PASS] Publicar reporte de auditoria NuGet
+```
+
+#### npm Dependency Audit (25s)
+
+```
+ [PASS] Instalar dependencias
+ [PASS] Auditar dependencias npm
+ [PASS] Verificar licencias
+ [PASS] Publicar reporte de auditoria npm
+```
+
+#### CodeQL SAST Analysis (3m 34s)
+
+```
+ [PASS] Inicializar CodeQL
+ [PASS] Compilar backend para analisis
+ [PASS] Ejecutar analisis CodeQL
+```
+
+> Resultado: Analisis estatico de seguridad completado sin vulnerabilidades criticas.
+
+### 4.2 Artefactos generados
+
+| Artefacto | Contenido |
+| --- | --- |
+| `trivy-scan-reports` | Reportes de vulnerabilidades de imagenes Docker |
+| `nuget-audit-report` | Auditoria de dependencias .NET |
+| `npm-audit-report` | Auditoria de dependencias Node.js |
+| `gitleaks-results.sarif` | Resultado del escaneo de secretos (formato SARIF) |
+
+---
+
+## 5. Workflow 4: Automatic Dependency Submission
+
+Registro automatico de dependencias en el GitHub Dependency Graph para monitoreo continuo.
+
+```
+Run:     Automatic Dependency Submission
+ID:      22778345435
+Trigger: dynamic
+Estado:  EXITOSO
+
+JOBS
+ [PASS] submit-nuget .................... 39s
+```
+
+> Snapshot de dependencias NuGet enviado exitosamente al Dependency Graph de GitHub.
+
+---
+
+## 6. Mapeo de evidencias a la rubrica de evaluacion
+
+| Requisito de la rubrica | Evidencia | Seccion |
+| --- | --- | --- |
+| Pipeline CI/CD ejecutado correctamente | 4 workflows exitosos, 14 jobs en total | Secciones 2-5 |
+| Pruebas de Caja Blanca (componente) | Job: Component Tests - xUnit + Jest | Seccion 2.2 |
+| Pruebas de Caja Negra (API) | Job: Black Box API Tests | Seccion 2.2 |
+| Pruebas de integracion con infra real | Job: Integration Tests + E2E | Secciones 2.2 y 3 |
+| Escaneo de vulnerabilidades de imagen | Job: Docker Image Scan (Trivy) | Secciones 2.2 y 4.1 |
+| Analisis de seguridad (SAST) | Job: CodeQL SAST Analysis | Seccion 4.1 |
+| Escaneo de secretos | Job: Secret Scanning (Gitleaks) | Seccion 4.1 |
+| Auditoria de dependencias | Jobs: NuGet Audit + npm Audit | Seccion 4.1 |
+| Artefactos de cobertura | backend-coverage, frontend-coverage | Seccion 2.3 |
+| Build de imagenes Docker exitoso | Trivy construye ambas imagenes sin error | Secciones 2.2 y 4.1 |
+
+---
+
+## 7. Capturas de pantalla
+
+> Las siguientes imagenes complementan la evidencia textual con capturas directas de la interfaz de GitHub Actions.
+
+### 7.1 Resumen general del pipeline (todos los jobs en verde)
+
+![Resumen Pipeline](./screenshots/resumen_pipeline.png)
+
+### 7.2 Detalle de los tests de backend (.NET / xUnit)
+
+![Test Backend](./screenshots/test_backend.png)
+
+### 7.3 Detalle de los tests de frontend (Jest / React)
+
+![Test Frontend](./screenshots/test_frontend.png)
+
+### 7.4 Artefactos descargables del pipeline
+
+![Artefactos](./screenshots/artefactos.png)
+
+> **Nota:** Si las imagenes no se visualizan, consultar la carpeta `docs/evidencia/screenshots/` o acceder directamente a las URLs de los Runs listados en la seccion 1.
+
+---
+
+## 8. Validacion de criterios de aceptacion
+
+- [x] Pipeline CI ejecutado correctamente (4 workflows, 14 jobs).
+- [x] Tests de Backend y Frontend 100% pasando (Passed).
+- [x] Construccion de imagenes Docker completada sin errores.
+- [x] Escaneo de vulnerabilidades ejecutado (Trivy + CodeQL + Gitleaks).
+- [x] Auditoria de dependencias completada (NuGet + npm).
+- [x] URLs y evidencias indexadas formalmente para auditoria de la rubrica.
+
+> **Conclusion:** Todos los criterios de aceptacion del requisito 4.4 de la rubrica han sido satisfechos. La evidencia textual extraida via GitHub CLI (`gh run view`) es verificable e irrevocable contra los Run IDs documentados.
