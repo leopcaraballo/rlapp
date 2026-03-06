@@ -117,12 +117,13 @@ describe("useWaitingRoom", () => {
 
   // ── 1. Estado inicial ─────────────────────────────────────────────────────
   it("inicia con monitor, queueState, nextTurn null e history vacía", () => {
-    const { result } = renderHook(() => useWaitingRoom("Q1", 99999));
+    const { result, unmount } = renderHook(() => useWaitingRoom("Q1", 99999));
     expect(result.current.monitor).toBeNull();
     expect(result.current.queueState).toBeNull();
     expect(result.current.nextTurn).toBeNull();
     expect(result.current.history).toEqual([]);
     expect(result.current.connectionState).toBe("connecting");
+    unmount();
   });
 
   // ── 2. Llama a los cuatro servicios al montar ─────────────────────────────

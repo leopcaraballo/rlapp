@@ -72,6 +72,7 @@ jobs:
         uses: actions/setup-dotnet@v4
         with:
           dotnet-version: ${{ env.DOTNET_VERSION }}
+          include-prerelease: true
 
       - name: Cache de paquetes NuGet
         uses: actions/cache@v4
@@ -107,7 +108,7 @@ jobs:
       - name: Aplicar migraciones de base de datos
         working-directory: rlapp-backend
         run: |
-          PGPASSWORD=rlapp_pass psql -h localhost -U rlapp_user -d rlapp_waitingroom -f scripts/migrations/*.sql || true
+          PGPASSWORD=rlapp_pass psql -h localhost -U rlapp_user -d rlapp_waitingroom -f infrastructure/postgres/init.sql || true
         env:
           PGPASSWORD: rlapp_pass
 
@@ -122,6 +123,8 @@ jobs:
             --results-directory ./E2EResults
         env:
           ConnectionStrings__WaitingRoom: "Host=localhost;Port=5432;Database=rlapp_waitingroom;Username=rlapp_user;Password=rlapp_pass"
+          RLAPP_INTEGRATION_EVENTSTORE_CONNECTION: "Host=localhost;Port=5432;Database=rlapp_waitingroom_test;Username=rlapp_user;Password=rlapp_pass"
+          POSTGRES_CONNECTION_STRING: "Host=localhost;Port=5432;Database=rlapp_waitingroom;Username=rlapp_user;Password=rlapp_pass"
           RabbitMQ__Host: localhost
           RabbitMQ__Port: "5672"
           RabbitMQ__User: rlapp_user

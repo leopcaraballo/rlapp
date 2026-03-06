@@ -1,4 +1,4 @@
-import { render, screen, waitFor } from "@testing-library/react";
+import { act, render, screen, waitFor } from "@testing-library/react";
 import userEvent from "@testing-library/user-event";
 import React from "react";
 
@@ -116,7 +116,9 @@ describe("ReceptionPage — RED", () => {
 
     expect(mockRegisterReception).toHaveBeenCalledTimes(1);
 
-    // liberar la promesa para no dejar la prueba colgada
-    resolvePromise!();
+    // liberar la promesa dentro de act() para que el state update no genere warnings
+    await act(async () => {
+      resolvePromise!();
+    });
   });
 });
