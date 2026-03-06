@@ -7,6 +7,9 @@ import { EventEmitter } from "events";
 // Setup environment variables for tests
 process.env.NEXT_PUBLIC_API_BASE_URL ??= "http://localhost:3000";
 process.env.NEXT_PUBLIC_DEFAULT_QUEUE_ID ??= "QUEUE-01";
+// Deshabilitar SignalR/WebSocket en todos los tests para evitar conexiones
+// reales que libuv no puede destruir limpiamente (SIGABRT en uv__stream_destroy)
+process.env.NEXT_PUBLIC_WS_DISABLED ??= "1";
 
 if (!globalThis.TextEncoder) {
   (
