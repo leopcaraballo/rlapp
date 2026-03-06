@@ -83,7 +83,7 @@ jobs:
             nuget-${{ runner.os }}-
 
       - name: Restaurar y compilar
-        working-directory: rlapp-backend
+        working-directory: apps/backend
         run: |
           dotnet restore RLAPP.slnx
           dotnet build RLAPP.slnx --configuration Release --no-restore
@@ -106,14 +106,14 @@ jobs:
           done
 
       - name: Aplicar migraciones de base de datos
-        working-directory: rlapp-backend
+        working-directory: apps/backend
         run: |
           PGPASSWORD=rlapp_pass psql -h localhost -U rlapp_user -d rlapp_waitingroom -f infrastructure/postgres/init.sql || true
         env:
           PGPASSWORD: rlapp_pass
 
       - name: Ejecutar tests de integracion E2E
-        working-directory: rlapp-backend
+        working-directory: apps/backend
         run: |
           dotnet test RLAPP.slnx \
             --configuration Release \
@@ -135,7 +135,7 @@ jobs:
         uses: actions/upload-artifact@v4
         with:
           name: e2e-test-results
-          path: rlapp-backend/E2EResults/
+          path: apps/backend/E2EResults/
           retention-days: 30
 
       - name: Resumen de resultados

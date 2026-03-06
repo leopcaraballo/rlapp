@@ -19,7 +19,7 @@ services:
       - "5432:5432"
     volumes:
       - postgres_data:/var/lib/postgresql/data
-      - ./rlapp-backend/infrastructure/postgres/init.sql:/docker-entrypoint-initdb.d/01-init.sql
+      - ./infrastructure/database/postgres/init.sql:/docker-entrypoint-initdb.d/01-init.sql
     healthcheck:
       test: ["CMD-SHELL", "pg_isready -U rlapp"]
       interval: 5s
@@ -57,9 +57,9 @@ services:
       - "15692:15692"
     volumes:
       - rabbitmq_data:/var/lib/rabbitmq
-      - ./rlapp-backend/infrastructure/rabbitmq/rabbitmq.conf:/etc/rabbitmq/rabbitmq.conf:ro
-      - ./rlapp-backend/infrastructure/rabbitmq/enabled_plugins:/etc/rabbitmq/enabled_plugins:ro
-      - ./rlapp-backend/infrastructure/rabbitmq/init-rabbitmq.sh:/docker-entrypoint-initdb.d/init-rabbitmq.sh:ro
+      - ./infrastructure/messaging/rabbitmq/rabbitmq.conf:/etc/rabbitmq/rabbitmq.conf:ro
+      - ./infrastructure/messaging/rabbitmq/enabled_plugins:/etc/rabbitmq/enabled_plugins:ro
+      - ./infrastructure/messaging/rabbitmq/init-rabbitmq.sh:/docker-entrypoint-initdb.d/init-rabbitmq.sh:ro
     healthcheck:
       test: rabbitmq-diagnostics -q ping
       interval: 5s
@@ -86,7 +86,7 @@ services:
   # ---------------------------------------------------------------------------
   api:
     build:
-      context: ./rlapp-backend
+      context: ./apps/backend
       dockerfile: Dockerfile
       args:
         PROJECT: src/Services/WaitingRoom/WaitingRoom.API/WaitingRoom.API.csproj
@@ -141,7 +141,7 @@ services:
   # ---------------------------------------------------------------------------
   worker:
     build:
-      context: ./rlapp-backend
+      context: ./apps/backend
       dockerfile: Dockerfile
       args:
         PROJECT: src/Services/WaitingRoom/WaitingRoom.Worker/WaitingRoom.Worker.csproj
@@ -193,7 +193,7 @@ services:
   # ---------------------------------------------------------------------------
   frontend:
     build:
-      context: ./rlapp-frontend
+      context: ./apps/frontend
       dockerfile: Dockerfile
     container_name: rlapp-frontend
     environment:
@@ -204,7 +204,7 @@ services:
     ports:
       - "3001:3000"
     volumes:
-      - ./rlapp-frontend:/app:delegated
+      - ./apps/frontend:/app:delegated
       - frontend_node_modules:/app/node_modules
     working_dir: /app
     command: ["npm", "run", "dev", "--", "-p", "3000", "-H", "0.0.0.0"]
@@ -244,8 +244,8 @@ services:
     ports:
       - "9090:9090"
     volumes:
-      - ./rlapp-backend/infrastructure/prometheus/prometheus.yml:/etc/prometheus/prometheus.yml:ro
-      - ./rlapp-backend/infrastructure/prometheus/alert-rules.yml:/etc/prometheus/alert-rules.yml:ro
+      - ./infrastructure/monitoring/prometheus/prometheus.yml:/etc/prometheus/prometheus.yml:ro
+      - ./infrastructure/monitoring/prometheus/alert-rules.yml:/etc/prometheus/alert-rules.yml:ro
       - prometheus_data:/prometheus
     networks:
       - rlapp-network
@@ -290,8 +290,8 @@ services:
     ports:
       - "3002:3000"
     volumes:
-      - ./rlapp-backend/infrastructure/grafana/provisioning:/etc/grafana/provisioning:ro
-      - ./rlapp-backend/infrastructure/grafana/dashboards:/var/lib/grafana/dashboards:ro
+      - ./infrastructure/monitoring/grafana/provisioning:/etc/grafana/provisioning:ro
+      - ./infrastructure/monitoring/grafana/dashboards:/var/lib/grafana/dashboards:ro
       - grafana_data:/var/lib/grafana
     networks:
       - rlapp-network

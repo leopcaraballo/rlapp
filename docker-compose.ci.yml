@@ -14,7 +14,7 @@ services:
     environment:
       POSTGRES_PASSWORD: ci_test_password
     volumes:
-      - ./rlapp-backend/infrastructure/postgres/init.sql:/docker-entrypoint-initdb.d/01-init.sql
+      - ./infrastructure/database/postgres/init.sql:/docker-entrypoint-initdb.d/01-init.sql
     deploy:
       resources:
         limits:
@@ -29,8 +29,8 @@ services:
     environment:
       RABBITMQ_DEFAULT_PASS: ci_test_password
     volumes:
-      - ./rlapp-backend/infrastructure/rabbitmq/rabbitmq.conf:/etc/rabbitmq/rabbitmq.conf:ro
-      - ./rlapp-backend/infrastructure/rabbitmq/enabled_plugins:/etc/rabbitmq/enabled_plugins:ro
+      - ./infrastructure/messaging/rabbitmq/rabbitmq.conf:/etc/rabbitmq/rabbitmq.conf:ro
+      - ./infrastructure/messaging/rabbitmq/enabled_plugins:/etc/rabbitmq/enabled_plugins:ro
     deploy:
       resources:
         limits:
