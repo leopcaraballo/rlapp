@@ -197,8 +197,8 @@ jobs:
           echo "Executing Black-box tests..."
           # Make a simple curl to the test URL logic to ensure it serves the api contract
           curl -s http://localhost:5000/health/ready | grep "Healthy"
-          # Or call swagger json
-          curl -s http://localhost:5000/swagger/v1/swagger.json | grep "openapi"
+          # Or call OpenAPI schema (Scalar/Microsoft.AspNetCore.OpenApi)
+          curl -s http://localhost:5000/openapi/v1.json | grep "openapi"
 
       - name: Stop stack
         if: always()
