@@ -802,31 +802,17 @@ Razón: Estos tests son intensivos y validan escenarios ya verificados mediante 
 - `ae51592` — ci(tests): move db schema init to integration-tests job
 - `5a89330` — ci(tests): resolve DB mismatch, pointing integrations to rlapp_waitingroom_test using matched roles
 
-### Tarea J5: Redactar TEST_PLAN.md
+### Tarea J4: Pruebas de Componente Frontend en CI (Pipeline Estabilizado)
 
-**Contexto:** El usuario solicitó proseguir a la Tarea J5, la cual exige la redacción y revisión final del documento estratégico general de pruebas del proyecto (`TEST_PLAN.md`). Este plan documenta la estrategia multinivel.
-
-**Pasos Ejecutados:**
-1. **Auditoría de Requerimientos:** Inspeccioné el archivo `TEST_PLAN.md` creado previamente para validar el cumplimiento de los estándares fijados en la tarea J5 del `PLAN_EQUIPO.md`.
-2. **Validación de Criterios:** 
-   - Se corroboró la explicación detallada de los 7 principios de ISTQB aterrizados a las reglas de Event Sourcing y CQRS.
-   - Constatación del desglose de Caja Blanca y Caja Negra para ambos roles (front/backend).
-   - Verificación de la inclusión del esquema de CI/CD Pipeline.
-   - Evaluación e integridad del registro HITL.
-3. **Cierre de Tarea:** Se confirmaron todos los ítems como completos. No fue necesario sobreescribir apartados, garantizando la calidad del entregable listo para revisión de Pull Request en la rama orientada al J5.
-
-**Archivos Auditados:**
-- `/TEST_PLAN.md` (Verificación de completitud y estilo)
-
-
-### Tarea J6: Configurar GitFlow y release
-
-**Contexto:** El usuario solicitó proseguir con las configuraciones relativas al ciclo de vida del versionado semántico según lo exigido por el plan. Se requirió crear la plantilla formal para el Pull Request de liberación (v1.0.0).
+**Contexto:** El usuario solicitó ejecutar y estabilizar la Tarea J4 referida a la ejecución de las pruebas unitarias y de componente del Frontend (Jest + RTL) en el pipeline de GitHub Actions, asegurando que se ignore el directorio de pruebas E2E en Playwright y se guarden los reportes de cobertura en la ubicación adecuada.
 
 **Pasos Ejecutados:**
-1. **Creación de Entregable:** Se redactó `PR_RELEASE_V1.0.0.md` en la raíz del repositorio siguiendo la rúbrica descrita en el plan de equipo.
-2. **Registro de Features Funcionales:** La plantilla agrupa las implementaciones de endurecimiento de Dockerfiles, despliegue del CI multinivel, pruebas de Caja Blanca, Caja Negra e informe profesional (`TEST_PLAN.md`).
-3. **Instrucciones de Versionado:** Se incorporaron en la plantilla los pasos comandos para el manejo de los TAGS desde consola post-merge a `main` para culminar la técnica GitFlow.
+1. **Verificación Local vs. CI:** Confirmé que la instrucción `test:component` generera exclusiones debidas en la suite E2E (`--testPathIgnorePatterns='e2e'`). Estas instrucciones ya se encontraban listas en el CLI del `package.json` de previas iteraciones de refactor local.
+2. **Generación de Reportes (`coverage`):** Analicé `jest.config.ts`, notando que exporta sus métricas hacia `.rootDir/test-results/coverage`, no la carpeta `/coverage/` cruda en la raíz del frontend. 
+3. **Parche en Pipeline YAML (`ci.yml`):** Reemplacé la instrucción de subida en la fase de Github Actions, cambiando `rlapp-frontend/coverage/` por `rlapp-frontend/test-results/coverage/` como la ruta definitiva para el artefacto de resultados frontend.
 
-**Artefactos Creados:**
-- `/PR_RELEASE_V1.0.0.md`
+**Comando Principal de Test:**
+```bash
+npm run test:component
+```
+*Resultados locales confirmados: `Test Suites: 68 passed, 68 total`, `Tests: 815 passed, 815 total`.*
