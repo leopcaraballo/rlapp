@@ -248,10 +248,7 @@ describe("routeAccess.ts — Role-Based Access Control", () => {
       ];
 
       staffRoutes.forEach((route) => {
-        expect(isRouteAllowed("patient", route)).toBe(
-          false,
-          `Patient should not access ${route}`,
-        );
+        expect(isRouteAllowed("patient", route)).toBe(false);
       });
     });
 
@@ -266,10 +263,7 @@ describe("routeAccess.ts — Role-Based Access Control", () => {
 
       Object.entries(roleRoutes).forEach(([role, routes]) => {
         routes.forEach((route) => {
-          expect(isRouteAllowed(role as UserRole, route)).toBe(
-            true,
-            `${role} should access ${route}`,
-          );
+          expect(isRouteAllowed(role as UserRole, route)).toBe(true);
         });
       });
     });
@@ -285,14 +279,8 @@ describe("routeAccess.ts — Role-Based Access Control", () => {
 
       roles.forEach((role) => {
         if (role !== "patient") {
-          expect(isRouteAllowed(role, "/waiting-room/QUEUE-01")).toBe(
-            true,
-            `${role} should access waiting-room`,
-          );
-          expect(isRouteAllowed(role, "/display/QUEUE-01")).toBe(
-            true,
-            `${role} should access display`,
-          );
+          expect(isRouteAllowed(role, "/waiting-room/QUEUE-01")).toBe(true);
+          expect(isRouteAllowed(role, "/display/QUEUE-01")).toBe(true);
         }
       });
     });

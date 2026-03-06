@@ -13,10 +13,13 @@ source "$_SCRIPT_DIR/../lib/docker-check.sh"
 docker_require_api
 
 API="http://localhost:5000"
-QUEUE_ID="QUEUE-01"
-PATIENT_ID="TEST-E2E-$(date +%s)"
-CORR_ID="e2e-corr-$(date +%s)"
-IDEM_KEY="e2e-idem-$(date +%s)"
+TS=$(date +%s)
+# IDs únicos por corrida → evita contaminación de estado entre ejecuciones
+QUEUE_ID="Q-E2E-${TS: -8}"   # 12 chars (límite: 20)
+ROOM_ID="CR-E2E-${TS: -7}"   # 12 chars
+PATIENT_ID="TEST-E2E-$TS"
+CORR_ID="e2e-corr-$TS"
+IDEM_KEY="e2e-idem-$TS"
 
 # Generar token local para cada rol
 gen_token() {
@@ -139,7 +142,7 @@ RESPONSE=$(curl -s -w "\n%{http_code}" -X POST "${API}/api/cashier/call-next" \
   -H "Idempotency-Key: ${IDEM_KEY}-3" \
   -H "Authorization: Bearer ${CASHIER_TOKEN}" \
   -H "X-User-Role: Cashier" \
-  -d "{\"queueId\":\"${QUEUE_ID}\"}")
+  -d "{\"queueId\":\"${QUEUE_ID}\",\"actor\":\"cajero\"}")
 
 HTTP_CODE=$(echo "$RESPONSE" | tail -1)
 BODY=$(echo "$RESPONSE" | head -n -1)
@@ -178,7 +181,7 @@ if [[ -n "$CASHIER_PATIENT_ID" ]]; then
     -H "Idempotency-Key: ${IDEM_KEY}-4" \
     -H "Authorization: Bearer ${CASHIER_TOKEN}" \
     -H "X-User-Role: Cashier" \
-    -d "{\"queueId\":\"${QUEUE_ID}\",\"patientId\":\"${CASHIER_PATIENT_ID}\",\"amount\":50000,\"paymentMethod\":\"Cash\"}")
+    -d "{\"queueId\":\"${QUEUE_ID}\",\"patientId\":\"${CASHIER_PATIENT_ID}\",\"actor\":\"cajero\",\"paymentReference\":\"REF-E2E-${TS}\"}")
 
   HTTP_CODE=$(echo "$RESPONSE" | tail -1)
   BODY=$(echo "$RESPONSE" | head -n -1)
@@ -206,7 +209,7 @@ RESPONSE=$(curl -s -w "\n%{http_code}" -X POST "${API}/api/medical/consulting-ro
   -H "Idempotency-Key: ${IDEM_KEY}-5" \
   -H "Authorization: Bearer ${DOCTOR_TOKEN}" \
   -H "X-User-Role: Doctor" \
-  -d "{\"queueId\":\"${QUEUE_ID}\",\"stationId\":\"ROOM-01\"}")
+  -d "{\"queueId\":\"${QUEUE_ID}\",\"consultingRoomId\":\"${ROOM_ID}\",\"actor\":\"doctor\"}")
 
 HTTP_CODE=$(echo "$RESPONSE" | tail -1)
 BODY=$(echo "$RESPONSE" | head -n -1)
@@ -231,7 +234,7 @@ RESPONSE=$(curl -s -w "\n%{http_code}" -X POST "${API}/api/medical/call-next" \
   -H "Idempotency-Key: ${IDEM_KEY}-6" \
   -H "Authorization: Bearer ${DOCTOR_TOKEN}" \
   -H "X-User-Role: Doctor" \
-  -d "{\"queueId\":\"${QUEUE_ID}\"}")
+  -d "{\"queueId\":\"${QUEUE_ID}\",\"actor\":\"doctor\",\"stationId\":\"${ROOM_ID}\"}")
 
 HTTP_CODE=$(echo "$RESPONSE" | tail -1)
 BODY=$(echo "$RESPONSE" | head -n -1)

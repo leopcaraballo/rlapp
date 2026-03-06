@@ -41,6 +41,8 @@ log_info() { echo -e "${CYAN}[INFO]${NC} $1"; }
 log_warn() { echo -e "${YELLOW}[WARN]${NC} $1"; }
 
 gen_uuid() { cat /proc/sys/kernel/random/uuid 2>/dev/null || uuidgen 2>/dev/null || python3 -c 'import uuid; print(uuid.uuid4())'; }
+# gen_id_short: genera ID alfanumérico de ≤18 chars (compatible con límite de 20 del dominio)
+gen_id_short() { echo "$(date +%s%3N | tail -c 8)${RANDOM}" | head -c 18; }
 
 FIRST_NAMES=("Carlos" "Maria" "Jose" "Ana" "Luis" "Elena" "Pedro" "Sofia" "Miguel" "Laura"
              "Diego" "Paula" "Andres" "Camila" "Jorge" "Valentina" "Ricardo" "Isabella" "Fernando" "Daniela")
@@ -55,9 +57,18 @@ random_item() {
 }
 
 do_post() {
-    local url="$1" payload="$2"
+    local url="$1" payload="$2" role="${3:-}"
+    local idem_key
+    idem_key="glt-$(date +%s%3N)-$RANDOM"
+    local role_args=()
+    if [[ -n "$role" ]]; then
+        role_args=(-H "X-User-Role: $role")
+    fi
     curl -s -w "\n%{http_code}" -X POST "$url" \
-        -H "Content-Type: application/json" -d "$payload" 2>/dev/null || echo -e "\n000"
+        -H "Content-Type: application/json" \
+        -H "Idempotency-Key: $idem_key" \
+        "${role_args[@]}" \
+        -d "$payload" 2>/dev/null || echo -e "\n000"
 }
 
 do_get() {
@@ -91,14 +102,14 @@ do_checkin_phase() {
     PATIENT_IDS=()
     for i in $(seq 1 "$count"); do
         local pid fname lname priority ctype
-        pid=$(gen_uuid)
+        pid=$(gen_id_short)
         fname=$(random_item FIRST_NAMES)
         lname=$(random_item LAST_NAMES)
         priority=$(random_item PRIORITIES)
         ctype=$(random_item CONSULTATION_TYPES)
         local payload="{\"queueId\":\"$queue_id\",\"patientId\":\"$pid\",\"patientName\":\"$fname $lname\",\"priority\":\"$priority\",\"consultationType\":\"$ctype\",\"actor\":\"recepcion-ciclo-$cycle\",\"age\":$((RANDOM % 70 + 5)),\"notes\":\"Prueba ciclo $cycle paciente $i\"}"
         local resp code body
-        resp=$(do_post "$API_BASE/api/waiting-room/check-in" "$payload")
+        resp=$(do_post "$API_BASE/api/waiting-room/check-in" "$payload" "Receptionist")
         code=$(parse_code "$resp")
         body=$(parse_body "$resp")
         if is_success "$code"; then
@@ -290,7 +301,7 @@ main() {
         echo -e "  ${CYAN}CICLO $cycle de $CYCLES${NC}"
         echo "---------------------------------------------------------"
         local queue_id
-        queue_id=$(gen_uuid)
+        queue_id="Q-LT-$(gen_id_short | head -c 9)"   # ≤16 chars
         local patients_count=$((RANDOM % 4 + 4))
         do_checkin_phase "$cycle" "$patients_count" "$queue_id"
         if [[ ${#PATIENT_IDS[@]} -eq 0 ]]; then

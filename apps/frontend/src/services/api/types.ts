@@ -2,7 +2,7 @@ import type { AppointmentPriority } from "../../domain/Appointment";
 import type { ConsultationType } from "../../domain/patient/ConsultationType";
 
 export interface ApiError {
-  error: string;
+  error?: string;
   message?: string;
   correlationId?: string;
   detail?: string;

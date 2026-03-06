@@ -12,8 +12,10 @@ source "$_SCRIPT_DIR/../lib/docker-check.sh"
 docker_require_api
 
 API="http://localhost:5000"
-QUEUE="QUEUE-01"
 TS=$(date +%s%3N)
+# IDs únicos por corrida → evita contaminación de estado entre ejecuciones
+QUEUE="Q-E2E-${TS: -9}"   # 11 chars (límite: 20)
+ROOM="CR-E2E-${TS: -7}"   # 12 chars
 
 echo ""
 echo "=============================================="
@@ -88,18 +90,25 @@ echo "  Respuesta: $STEP5"
 sleep 2
 
 # ─── PASO 6: Médico — reclamar siguiente ─────────
-STEP6_ACTIVATE=$(curl -sf -X POST "$API/api/medical/consulting-room/activate" \
+# Activate es idempotente: 200 (primera vez) o 400 "already active" (re-runs) → ambos son OK
+STEP6_ACTIVATE=$(curl -s -o /tmp/e2e-activate.json -w "%{http_code}" -X POST "$API/api/medical/consulting-room/activate" \
   -H "Content-Type: application/json" \
   -H "Idempotency-Key: e2e-activate-$TS" \
-  -d "{\"queueId\":\"$QUEUE\",\"consultingRoomId\":\"CONS-01\",\"actor\":\"doctor\"}")
-echo "  Consultorio activado: $STEP6_ACTIVATE"
+  -d "{\"queueId\":\"$QUEUE\",\"consultingRoomId\":\"$ROOM\",\"actor\":\"doctor\"}")
+ACTIVATE_BODY=$(cat /tmp/e2e-activate.json)
+if [ "$STEP6_ACTIVATE" = "200" ] || echo "$ACTIVATE_BODY" | grep -q "already active"; then
+  echo "  Consultorio activo (HTTP $STEP6_ACTIVATE): OK"
+else
+  echo "  ❌ ERROR al activar consultorio (HTTP $STEP6_ACTIVATE): $ACTIVATE_BODY"
+  exit 1
+fi
 
 echo ""
 echo "[6/6] MÉDICO — reclamar siguiente paciente..."
 STEP6=$(curl -sf -X POST "$API/api/medical/call-next" \
   -H "Content-Type: application/json" \
   -H "Idempotency-Key: e2e-medical-$TS" \
-  -d "{\"queueId\":\"$QUEUE\",\"actor\":\"doctor\",\"stationId\":\"CONS-01\"}")
+  -d "{\"queueId\":\"$QUEUE\",\"actor\":\"doctor\",\"stationId\":\"$ROOM\"}")
 echo "  Respuesta: $STEP6"
 MED_PATIENT=$(echo "$STEP6" | grep -o '"patientId":"[^"]*"' | cut -d'"' -f4)
 echo "  Paciente reclamado: $MED_PATIENT"

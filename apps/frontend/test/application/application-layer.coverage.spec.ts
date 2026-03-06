@@ -3,11 +3,28 @@
  * Cubre: CashierUseCases, MedicalUseCases, ConsultingRoomUseCases,
  *        CheckInPatientUseCase y PatientState (dominio).
  */
-import { callNextAtCashier, cancelByPayment, markAbsentAtCashier, markPaymentPending, validatePayment } from "@/application/cashier/CashierUseCases";
-import { activateConsultingRoom, deactivateConsultingRoom } from "@/application/consulting-rooms/ConsultingRoomUseCases";
-import { callPatient, claimNextPatient, completeAttention, markAbsentAtMedical } from "@/application/medical/MedicalUseCases";
+import {
+  callNextAtCashier,
+  cancelByPayment,
+  markAbsentAtCashier,
+  markPaymentPending,
+  validatePayment,
+} from "@/application/cashier/CashierUseCases";
+import {
+  activateConsultingRoom,
+  deactivateConsultingRoom,
+} from "@/application/consulting-rooms/ConsultingRoomUseCases";
+import {
+  callPatient,
+  claimNextPatient,
+  completeAttention,
+  markAbsentAtMedical,
+} from "@/application/medical/MedicalUseCases";
 import { checkInPatient } from "@/application/reception/CheckInPatientUseCase";
-import { isTerminalState,PATIENT_STATE_LABELS } from "@/domain/patient/PatientState";
+import {
+  isTerminalState,
+  PATIENT_STATE_LABELS,
+} from "@/domain/patient/PatientState";
 import type { ICommandGateway } from "@/domain/ports/ICommandGateway";
 
 // ---------------------------------------------------------------------------
@@ -52,7 +69,12 @@ describe("CashierUseCases", () => {
 
   it("markPaymentPending delega al gateway", async () => {
     const gw = makeGateway();
-    const cmd = { queueId: "q1", patientId: "p1", actor: "caja1", reason: "sin efectivo" };
+    const cmd = {
+      queueId: "q1",
+      patientId: "p1",
+      actor: "caja1",
+      reason: "sin efectivo",
+    };
     const result = await markPaymentPending(gw, cmd);
     expect(gw.markPaymentPending).toHaveBeenCalledWith(cmd);
     expect(result).toEqual({ success: true });
@@ -77,7 +99,9 @@ describe("CashierUseCases", () => {
   it("propaga el error del gateway", async () => {
     const gw = makeGateway();
     gw.callNextAtCashier.mockRejectedValue(new Error("sin pacientes"));
-    await expect(callNextAtCashier(gw, { queueId: "q1", actor: "caja1" })).rejects.toThrow("sin pacientes");
+    await expect(
+      callNextAtCashier(gw, { queueId: "q1", actor: "caja1" }),
+    ).rejects.toThrow("sin pacientes");
   });
 });
 
@@ -103,7 +127,12 @@ describe("MedicalUseCases", () => {
 
   it("completeAttention delega al gateway", async () => {
     const gw = makeGateway();
-    const cmd = { queueId: "q1", patientId: "p1", actor: "doctor1", outcome: "recuperado" };
+    const cmd = {
+      queueId: "q1",
+      patientId: "p1",
+      actor: "doctor1",
+      outcome: "recuperado",
+    };
     const result = await completeAttention(gw, cmd);
     expect(gw.completeAttention).toHaveBeenCalledWith(cmd);
     expect(result).toEqual({ success: true });
@@ -120,7 +149,9 @@ describe("MedicalUseCases", () => {
   it("propaga el error del gateway", async () => {
     const gw = makeGateway();
     gw.claimNextPatient.mockRejectedValue(new Error("cola vacía"));
-    await expect(claimNextPatient(gw, { queueId: "q1", actor: "doctor1" })).rejects.toThrow("cola vacía");
+    await expect(
+      claimNextPatient(gw, { queueId: "q1", actor: "doctor1" }),
+    ).rejects.toThrow("cola vacía");
   });
 });
 
@@ -180,14 +211,18 @@ describe("CheckInPatientUseCase", () => {
       patientId: "p2",
       patientName: "Ana",
       priority: "Urgent",
-      consultationType: "Pediatric",
+      consultationType: "General",
       age: 5,
       isPregnant: false,
       notes: "alergia a penicilina",
       actor: "recepcion1",
     });
     expect(gw.checkInPatient).toHaveBeenCalledWith(
-      expect.objectContaining({ age: 5, isPregnant: false, notes: "alergia a penicilina" }),
+      expect.objectContaining({
+        age: 5,
+        isPregnant: false,
+        notes: "alergia a penicilina",
+      }),
     );
   });
 
@@ -195,7 +230,14 @@ describe("CheckInPatientUseCase", () => {
     const gw = makeGateway();
     gw.checkInPatient.mockRejectedValue(new Error("capacidad máxima"));
     await expect(
-      checkInPatient(gw, { queueId: "q1", patientId: "p1", patientName: "Juan", priority: "Medium", consultationType: "General", actor: "rx" }),
+      checkInPatient(gw, {
+        queueId: "q1",
+        patientId: "p1",
+        patientName: "Juan",
+        priority: "Medium",
+        consultationType: "General",
+        actor: "rx",
+      }),
     ).rejects.toThrow("capacidad máxima");
   });
 });

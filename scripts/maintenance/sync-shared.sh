@@ -61,8 +61,8 @@ for f in \
   "$REPO_ROOT/docker-compose.yml" \
   "$REPO_ROOT/infrastructure/database/postgres/init.sql" \
   "$REPO_ROOT/infrastructure/messaging/rabbitmq/rabbitmq.conf"; do
-  [[ -f "$f" ]] && check "$(basename $f)" "ok" \
-    || check "$(basename $f)" "no encontrado: $f"
+  [[ -f "$f" ]] && check "$(basename "$f")" "ok" \
+    || check "$(basename "$f")" "no encontrado: $f"
 done
 echo ""
 

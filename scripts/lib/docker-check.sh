@@ -47,7 +47,7 @@ docker_require_api() {
   local api="${1:-http://localhost:5000}"
   docker_check
   local ok=false
-  for path in /health /api/health ""; do
+  for path in /health/live /health/ready /health ""; do
     if curl -sf --max-time 5 "${api}${path}" >/dev/null 2>&1; then
       ok=true
       break

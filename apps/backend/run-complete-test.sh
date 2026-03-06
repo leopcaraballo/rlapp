@@ -325,7 +325,7 @@ print_section "Paso 6 — Capa 2: Integration tests (Worker / Domain / Mock)"
 LAYER2_PASS=true
 
 # Excluir namespaces que requieren infra real
-FILTER_L2="FullyQualifiedName!~WaitingRoom.Tests.Integration.API.&FullyQualifiedName!~WaitingRoom.Tests.Integration.Infrastructure."
+FILTER_L2="FullyQualifiedName!~WaitingRoom.Tests.Integration.API.&FullyQualifiedName!~WaitingRoom.Tests.Integration.Infrastructure.&FullyQualifiedName!~WaitingRoom.Tests.Integration.EndToEnd."
 
 run_project_tests "Integration-Mock" "$TEST_INTEGRATION" "$FILTER_L2" || LAYER2_PASS=false
 
@@ -337,9 +337,9 @@ else
 fi
 
 # =============================================================================
-# PASO 7 — CAPA 3: Integration/Infrastructure (requiere Postgres)
+# PASO 7 — CAPA 3: Integration/Infrastructure + EndToEnd (requiere Postgres)
 # =============================================================================
-print_section "Paso 7 — Capa 3: Integration/Infrastructure (Postgres)"
+print_section "Paso 7 — Capa 3: Integration/Infrastructure+EndToEnd (Postgres)"
 
 LAYER3_PASS=true
 
@@ -351,7 +351,7 @@ if $POSTGRES_AVAILABLE; then
   export RabbitMq__UserName="guest"
   export RabbitMq__Password="guest"
 
-  FILTER_L3="FullyQualifiedName~WaitingRoom.Tests.Integration.Infrastructure."
+  FILTER_L3="FullyQualifiedName~WaitingRoom.Tests.Integration.Infrastructure.|FullyQualifiedName~WaitingRoom.Tests.Integration.EndToEnd."
   run_project_tests "Integration-Postgres" "$TEST_INTEGRATION" "$FILTER_L3" || LAYER3_PASS=false
 
   if $LAYER3_PASS; then
