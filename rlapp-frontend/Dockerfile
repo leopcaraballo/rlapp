@@ -16,6 +16,11 @@ COPY --from=deps /app/node_modules ./node_modules
 COPY . .
 # Configurar telemetría como deshabilitada
 ENV NEXT_TELEMETRY_DISABLED=1
+
+# Proveer variable default en build-time para evitar fallos de renderizado estático
+ARG NEXT_PUBLIC_API_BASE_URL="http://localhost:5000"
+ENV NEXT_PUBLIC_API_BASE_URL=$NEXT_PUBLIC_API_BASE_URL
+
 RUN npm run build
 
 # Etapa 4: Runtime final (Producción, Rootless)
