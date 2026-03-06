@@ -816,3 +816,13 @@ Razón: Estos tests son intensivos y validan escenarios ya verificados mediante 
 npm run test:component
 ```
 *Resultados locales confirmados: `Test Suites: 68 passed, 68 total`, `Tests: 815 passed, 815 total`.*
+
+### Tarea J7: Recopilación de Evidencias de Ejecución (Re-creado desde Develop)
+
+- **Contexto:** Compilación de la prueba fehaciente (URLs, capturas) sobre la ejecución limpia del pipeline CI/CD requerida en los criterios del QA Master Plan.
+- **Actividades:**
+  1. Creación de una nueva rama `feature/j7-execution-evidence` de forma limpia desde `develop`.
+  2. Se generó un archivo orquestador `docs/evidencia/EVIDENCIA_PIPELINE.md` pautando metódicamente las secciones para los comprobantes del Build, Tests Multinivel de Backend y métricas para Frontend.
+  3. Se preparó la plantilla del PR correspondiente en `PR_J7_EVIDENCE.md`.
+- **Archivos Adicionados:** `docs/evidencia/EVIDENCIA_PIPELINE.md`, `PR_J7_EVIDENCE.md`
+- **Estado:** Esperando input del usuario para adjuntar URLs e imágenes, necesario para el PR hacia develop.
