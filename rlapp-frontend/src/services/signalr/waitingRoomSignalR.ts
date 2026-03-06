@@ -3,7 +3,6 @@ import { HttpTransportType, HubConnection, HubConnectionBuilder, HubConnectionSt
 const WS_BASE = (process.env.NEXT_PUBLIC_WS_URL || process.env.NEXT_PUBLIC_API_BASE_URL || "http://localhost:5000").replace(/\/$/, "");
 
 /** Si es true, todos los intentos de conectar se omiten silenciosamente. */
-const WS_DISABLED = process.env.NEXT_PUBLIC_WS_DISABLED === "true";
 
 let connection: HubConnection | null = null;
 /** queueId de la última conexión, usado para re-registrar tras reconexión. */
@@ -62,7 +61,7 @@ async function startWithRetry(
  */
 export async function connect(queueId: string, handlers: WaitingRoomHandlers = {}): Promise<HubConnection | null> {
   // Salida rápida si SignalR está deshabilitado por variable de entorno
-  if (WS_DISABLED) {
+  if (process.env.NEXT_PUBLIC_WS_DISABLED === "true") {
     console.info("SignalR: deshabilitado por NEXT_PUBLIC_WS_DISABLED. Usando solo polling REST.");
     return null;
   }
