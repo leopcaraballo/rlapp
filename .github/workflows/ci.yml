@@ -32,26 +32,26 @@ jobs:
         with:
           node-version: ${{ env.NODE_VERSION }}
           cache: 'npm'
-          cache-dependency-path: rlapp-frontend/package-lock.json
+          cache-dependency-path: apps/frontend/package-lock.json
 
       - name: Backend Restore
-        working-directory: ./rlapp-backend
+        working-directory: ./apps/backend
         run: dotnet restore RLAPP.slnx
 
       - name: Backend Build
-        working-directory: ./rlapp-backend
+        working-directory: ./apps/backend
         run: dotnet build RLAPP.slnx --configuration Release --no-restore
 
       - name: Frontend Install Dependencies
-        working-directory: ./rlapp-frontend
+        working-directory: ./apps/frontend
         run: npm ci
 
       - name: Frontend Lint
-        working-directory: ./rlapp-frontend
+        working-directory: ./apps/frontend
         run: npm run lint
 
       - name: Frontend Build
-        working-directory: ./rlapp-frontend
+        working-directory: ./apps/frontend
         run: npm run build
         env:
           NEXT_TELEMETRY_DISABLED: 1
@@ -75,10 +75,10 @@ jobs:
         with:
           node-version: ${{ env.NODE_VERSION }}
           cache: 'npm'
-          cache-dependency-path: rlapp-frontend/package-lock.json
+          cache-dependency-path: apps/frontend/package-lock.json
 
       - name: Backend Component Tests
-        working-directory: ./rlapp-backend
+        working-directory: ./apps/backend
         run: >
           dotnet test RLAPP.slnx
           --configuration Release
@@ -92,15 +92,15 @@ jobs:
         if: always()
         with:
           name: backend-coverage
-          path: rlapp-backend/TestResults/**/coverage.cobertura.xml
+          path: apps/backend/TestResults/**/coverage.cobertura.xml
           retention-days: 30
 
       - name: Frontend Install Dependencies
-        working-directory: ./rlapp-frontend
+        working-directory: ./apps/frontend
         run: npm ci
 
       - name: Frontend Component Tests (Jest)
-        working-directory: ./rlapp-frontend
+        working-directory: ./apps/frontend
         run: npm run test:component
 
       - name: Upload Frontend Coverage
@@ -108,7 +108,7 @@ jobs:
         if: always()
         with:
           name: frontend-coverage
-          path: rlapp-frontend/test-results/coverage/
+          path: apps/frontend/test-results/coverage/
           retention-days: 30
 
   integration-tests:
@@ -152,10 +152,10 @@ jobs:
           sudo apt-get update && sudo apt-get install -y postgresql-client
           echo "Waiting for Postgres..."
           timeout 60 bash -c 'until pg_isready -h localhost -p 5432 -U rlapp; do sleep 1; done'
-          PGPASSWORD=rlapp_secure_password psql "host=localhost port=5432 dbname=postgres user=rlapp" -f rlapp-backend/infrastructure/postgres/init.sql
+          PGPASSWORD=rlapp_secure_password psql "host=localhost port=5432 dbname=postgres user=rlapp" -f infrastructure/database/postgres/init.sql
 
       - name: Run Backend Integration Tests
-        working-directory: ./rlapp-backend
+        working-directory: ./apps/backend
         run: |
           dotnet test RLAPP.slnx \
             --configuration Release \
@@ -172,7 +172,7 @@ jobs:
         if: always()
         with:
           name: integration-test-results
-          path: rlapp-backend/**/integration-results.trx
+          path: apps/backend/**/integration-results.trx
           retention-days: 30
 
   black-box-tests:
@@ -213,10 +213,10 @@ jobs:
         uses: actions/checkout@v4
 
       - name: Build Backend Image
-        run: docker build -t rlapp-api:scan -f rlapp-backend/Dockerfile rlapp-backend/
+        run: docker build -t rlapp-api:scan -f apps/backend/Dockerfile apps/backend/
 
       - name: Build Frontend Image
-        run: docker build -t rlapp-frontend:scan -f rlapp-frontend/Dockerfile rlapp-frontend/
+        run: docker build -t rlapp-frontend:scan -f apps/frontend/Dockerfile apps/frontend/
 
       - name: Run Trivy on Backend
         uses: aquasecurity/trivy-action@master

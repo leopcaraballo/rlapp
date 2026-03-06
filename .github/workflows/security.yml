@@ -41,7 +41,7 @@ jobs:
     runs-on: ubuntu-latest
     defaults:
       run:
-        working-directory: rlapp-backend
+        working-directory: apps/backend
 
     steps:
       - name: Checkout del repositorio
@@ -76,8 +76,8 @@ jobs:
         with:
           name: nuget-audit-report
           path: |
-            rlapp-backend/nuget-audit.txt
-            rlapp-backend/nuget-deprecated.txt
+            apps/backend/nuget-audit.txt
+            apps/backend/nuget-deprecated.txt
           retention-days: 90
 
   # ===========================================================================
@@ -88,7 +88,7 @@ jobs:
     runs-on: ubuntu-latest
     defaults:
       run:
-        working-directory: rlapp-frontend
+        working-directory: apps/frontend
 
     steps:
       - name: Checkout del repositorio
@@ -99,7 +99,7 @@ jobs:
         with:
           node-version: ${{ env.NODE_VERSION }}
           cache: npm
-          cache-dependency-path: rlapp-frontend/package-lock.json
+          cache-dependency-path: apps/frontend/package-lock.json
 
       - name: Instalar dependencias
         run: npm ci
@@ -120,8 +120,8 @@ jobs:
         with:
           name: npm-audit-report
           path: |
-            rlapp-frontend/npm-audit.txt
-            rlapp-frontend/npm-licenses.txt
+            apps/frontend/npm-audit.txt
+            apps/frontend/npm-licenses.txt
           retention-days: 90
 
   # ===========================================================================
@@ -154,7 +154,7 @@ jobs:
         uses: actions/checkout@v4
 
       - name: Inicializar CodeQL
-        uses: github/codeql-action/init@v3
+        uses: github/codeql-action/init@v4
         with:
           languages: csharp, javascript
 
@@ -164,13 +164,13 @@ jobs:
           dotnet-version: ${{ env.DOTNET_VERSION }}
 
       - name: Compilar backend para analisis
-        working-directory: rlapp-backend
+        working-directory: apps/backend
         run: |
           dotnet restore RLAPP.slnx
           dotnet build RLAPP.slnx --configuration Release --no-restore
 
       - name: Ejecutar analisis CodeQL
-        uses: github/codeql-action/analyze@v3
+        uses: github/codeql-action/analyze@v4
         with:
           category: "/language:csharp,javascript"
 
@@ -186,7 +186,7 @@ jobs:
         uses: actions/checkout@v4
 
       - name: Construir imagen backend
-        run: docker build -t rlapp-api:scan -f rlapp-backend/Dockerfile rlapp-backend/
+        run: docker build -t rlapp-api:scan -f apps/backend/Dockerfile apps/backend/
 
       - name: Escanear imagen con Trivy
         uses: aquasecurity/trivy-action@master
@@ -200,7 +200,7 @@ jobs:
           output: "trivy-backend-report.txt"
 
       - name: Construir imagen frontend
-        run: docker build -t rlapp-frontend:scan -f rlapp-frontend/Dockerfile rlapp-frontend/
+        run: docker build -t rlapp-frontend:scan -f apps/frontend/Dockerfile apps/frontend/
 
       - name: Escanear imagen frontend con Trivy
         uses: aquasecurity/trivy-action@master
