@@ -27,6 +27,13 @@ jobs:
         with:
           dotnet-version: ${{ env.DOTNET_VERSION }}
 
+      - name: Initialize Postgres schema
+        run: |
+          sudo apt-get update && sudo apt-get install -y postgresql-client
+          echo "Waiting for Postgres..."
+          timeout 60 bash -c 'until pg_isready -h localhost -p 5432; do sleep 1; done'
+          PGPASSWORD=rlapp_password psql "host=localhost port=5432 dbname=rlapp_db user=rlapp_user" -f rlapp-backend/infrastructure/postgres/init.sql
+
       - name: Setup Node.js
         uses: actions/setup-node@v4
         with:
