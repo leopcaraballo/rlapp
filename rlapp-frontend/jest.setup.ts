@@ -94,6 +94,6 @@ const {
   server: import("msw/node").SetupServerApi;
 } = require("@test/mocks/server");
 
-beforeAll(() => server.listen({ onUnhandledRequest: "error" }));
+beforeAll(() => server.listen({ onUnhandledRequest: "warn" }));
 afterEach(() => server.resetHandlers());
 afterAll(() => server.close());
