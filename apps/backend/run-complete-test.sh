@@ -348,8 +348,8 @@ if $POSTGRES_AVAILABLE; then
   export POSTGRES_CONNECTION_STRING="Host=localhost;Port=5432;Database=rlapp_waitingroom;Username=rlapp;Password=rlapp_secure_password"
   export RabbitMq__HostName="localhost"
   export RabbitMq__Port="5672"
-  export RabbitMq__UserName="guest"
-  export RabbitMq__Password="guest"
+  export RabbitMq__UserName="admin"
+  export RabbitMq__Password="admin"
 
   FILTER_L3="FullyQualifiedName~WaitingRoom.Tests.Integration.Infrastructure.|FullyQualifiedName~WaitingRoom.Tests.Integration.EndToEnd."
   run_project_tests "Integration-Postgres" "$TEST_INTEGRATION" "$FILTER_L3" || LAYER3_PASS=false
