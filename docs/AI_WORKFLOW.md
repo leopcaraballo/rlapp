@@ -1,4 +1,49 @@
+### 2026-03-09 — Corrección de solución raíz para dependency submission en CI
+
+- Actor: GitHub Copilot (GPT-5.4)
+- Task: Corregir la solución raíz para que el job de dependency submission de GitHub Actions pueda restaurar los proyectos backend tras la migración de estructura a `apps/backend`.
+- AO model: GPT-5.4
+- SA model: GPT-5.4
+
+- Archivos de fuente modificados:
+  - `rlapp.sln` — se actualizaron todas las rutas de proyectos desde `rlapp-backend/src/...` a `apps/backend/src/...`.
+
+- Acciones realizadas:
+  1. Se reprodujo localmente el fallo con `dotnet restore rlapp.sln` y se confirmó el error `MSB3202` por rutas inexistentes.
+  2. Se comparó la solución raíz con `apps/backend/RLAPP.slnx`, que ya refleja la estructura vigente del repositorio.
+  3. Se corrigieron las referencias obsoletas en `rlapp.sln` para alinear la solución raíz con la ubicación real de los proyectos.
+  4. Se validó nuevamente la restauración local de `rlapp.sln` y de `apps/backend/RLAPP.slnx`.
+
+- Notas / Human checks:
+  - No fue necesario actualizar `DEBT_REPORT.md`, porque la intervención corrige una desalineación operativa puntual y no resuelve un ítem formalizado del backlog de deuda técnica.
+
 ## AI_WORKFLOW Log
+
+### 2026-03-09 — Reubicación de documentación raíz en `docs/`
+
+- Actor: GitHub Copilot (GPT-5.4)
+- Task: Reorganizar la documentación ubicada en la raíz del repositorio y ubicarla dentro de `docs/` según su tipo documental.
+- AO model: GPT-5.4
+- SA model: GPT-5.4
+
+- Archivos reubicados o normalizados:
+  - `ARCHITECTURE.md` → `docs/architecture/ARCHITECTURE.md`
+  - `DIAGNOSTIC_REPORT.md` → consolidado en `docs/reports/DIAGNOSTIC_REPORT.md`
+  - `HARDENING_IMPLEMENTATION_SUMMARY.md` → consolidado en `docs/reports/HARDENING_IMPLEMENTATION_SUMMARY.md`
+  - `IMPLEMENTATION_SUMMARY_TECHNICAL.md` → consolidado en `docs/reports/IMPLEMENTATION_SUMMARY_TECHNICAL.md`
+  - `INFORME_TDD_REAL.md` → consolidado en `docs/reports/INFORME_TDD_REAL.md`
+  - `INTEGRATION_CHECKLIST.md` → consolidado en `docs/reports/INTEGRATION_CHECKLIST.md`
+  - `FRONTEND_PRODUCTION_AUDIT_REPORT.md` → consolidado en `docs/audits/FRONTEND_PRODUCTION_AUDIT_REPORT.md`
+  - `REPORTE_HARDENING_FINAL_CLINICO.md` → consolidado en `docs/audits/REPORTE_HARDENING_FINAL_CLINICO.md`
+
+- Acciones realizadas:
+  1. Se revisó la documentación ubicada en la raíz del proyecto y se clasificó por tipo.
+  2. Se verificó por hash que siete documentos de raíz ya tenían duplicados idénticos en `docs/`.
+  3. Se movió el documento de arquitectura a `docs/architecture/` y se eliminaron de la raíz los duplicados exactos ya consolidados en `docs/reports/` y `docs/audits/`.
+  4. Se actualizaron referencias internas para evitar enlaces rotos tras la reorganización.
+
+- Notas / Human checks:
+  - `README.md` y `CONTRIBUTING.md` se mantienen en la raíz por convención de repositorio; solo se actualizó el enlace de contribución hacia la nueva ubicación canónica de arquitectura.
 
 ### 2026-03-05 — Implementación de validación idCard en Login (TDD)
 
