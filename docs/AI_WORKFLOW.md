@@ -889,3 +889,20 @@ npm run test:component
 
 - Notas / Human checks:
   - La creación de tag, Pull Request remoto y release real no puede completarse únicamente desde la copia local del repositorio sin una instrucción explícita de operación Git remota.
+
+### 2026-03-08 — Ajuste de evidencia pendiente de J7
+
+- Actor: GitHub Copilot (GPT-5.4)
+- Task: Contrastar el plan del equipo contra la evidencia realmente incorporada y corregir el documento para reflejar pendientes reales de J7.
+- AO model: GPT-5.4
+- SA model: GPT-5.4
+
+- Archivos modificados:
+  - `docs/audits/evidencia/EVIDENCIA_PIPELINE.md`
+
+- Resultado:
+  - Se agrego una seccion explicita de evidencia pendiente para J7.
+  - Se corrigio la validacion final para evitar afirmar un cierre completo no respaldado por capturas especificas ni por una nueva ejecucion del pipeline.
+
+- Notas / Human checks:
+  - El cierre total de J7 depende de una ejecucion nueva en GitHub Actions y de capturas que no pueden inferirse honestamente desde evidencia historica previa.

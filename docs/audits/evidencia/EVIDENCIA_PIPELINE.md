@@ -290,6 +290,13 @@ JOBS
 
 ![Artefactos](./screenshots/artefactos.png)
 
+### 7.5 Evidencia pendiente para cierre total de J7
+
+- Pendiente una captura especifica del job `black-box-tests` mostrando la prueba de Caja Negra solicitada en el plan del equipo.
+- Pendiente una captura especifica del job `image-scan` mostrando el resultado detallado de Trivy.
+- Pendiente adjuntar estas capturas en el PR formal de release cuando se ejecute la liberacion.
+- Pendiente una nueva ejecucion del pipeline sobre la rama `feature/cierre-jhorman-semana3` para respaldar los cambios recientes al script Black Box y al escaneo bloqueante.
+
 > **Nota:** Si las imagenes no se visualizan, consultar la carpeta `docs/audits/evidencia/screenshots/` o acceder directamente a las URLs de los Runs listados en la seccion 1.
 
 ---
@@ -302,5 +309,8 @@ JOBS
 - [x] Escaneo de vulnerabilidades ejecutado (Trivy + CodeQL + Gitleaks).
 - [x] Auditoria de dependencias completada (NuGet + npm).
 - [x] URLs y evidencias indexadas formalmente para auditoria de la rubrica.
+- [ ] Captura especifica del job `black-box-tests` incorporada.
+- [ ] Captura especifica del job `image-scan` incorporada.
+- [ ] Evidencia actualizada con una ejecucion posterior a los cambios de la rama `feature/cierre-jhorman-semana3`.
 
-> **Conclusion:** Todos los criterios de aceptacion del requisito 4.4 de la rubrica han sido satisfechos. La evidencia textual extraida via GitHub CLI (`gh run view`) es verificable e irrevocable contra los Run IDs documentados.
+> **Conclusion:** La evidencia actual cubre una parte sustancial del requisito 4.4 y permite defender la existencia del pipeline, las pruebas multinivel y los escaneos de seguridad. Sin embargo, el cierre documental total de J7 sigue pendiente hasta incorporar las capturas especificas de `black-box-tests` e `image-scan`, y hasta registrar una nueva ejecucion del pipeline que refleje los cambios recientes de esta rama.
