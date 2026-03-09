@@ -927,3 +927,22 @@ npm run test:component
 - Notas / Human checks:
   - La validación local de `npm run build` fuera de Docker requiere definir `NEXT_PUBLIC_API_BASE_URL`; el Dockerfile ya lo resuelve mediante `ARG` y `ENV` de build.
   - La corrección se mantuvo deliberadamente fuera de `package.json` y `package-lock.json` porque el SARIF ubicó las vulnerabilidades en `/usr/local/lib/node_modules/npm/...` dentro de la imagen base.
+
+### 2026-03-08 — Actualización de evidencia con runs exitosos del PR 75
+
+- Actor: GitHub Copilot (GPT-5.4)
+- Task: Actualizar la evidencia documental tras la ejecución exitosa del PR 75 para dejar trazado el pase de Black Box y Trivy sobre la rama endurecida.
+- AO model: GPT-5.4
+- SA model: GPT-5.4
+
+- Archivos modificados:
+  - `docs/audits/evidencia/EVIDENCIA_PIPELINE.md`
+  - `docs/testing/TEST_PLAN.md`
+
+- Resultado:
+  - Se agregaron los runs exitosos `22837285689`, `22837285691` y `22837285692` como validación complementaria del PR 75.
+  - Se actualizó el enlace principal de evidencia del `TEST_PLAN.md` para apuntar al nuevo run exitoso del workflow principal.
+  - Se marcó como completada la evidencia de ejecución posterior a los cambios de la rama `feature/cierre-jhorman-semana3`.
+
+- Notas / Human checks:
+  - Las capturas específicas de `black-box-tests` e `image-scan` siguen pendientes como evidencia visual/manual y no fueron fabricadas ni inferidas.

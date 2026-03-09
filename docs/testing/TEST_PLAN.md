@@ -547,7 +547,7 @@ Jobs (en orden de dependencia):
 
 ## 9. Mapeo al pipeline CI/CD
 
-> **Evidencia de Ejecución:** [Ver Ejecución Exitosa del Pipeline CI/CD en GitHub Actions](https://github.com/leopcaraballo/rlapp/actions/runs/22777978926)
+> **Evidencia de Ejecución:** [Ver Ejecución Exitosa del Pipeline CI/CD en GitHub Actions](https://github.com/leopcaraballo/rlapp/actions/runs/22837285689)
 > *Para consultar capturas detalladas de los tests en verde, referirse a `docs/audits/evidencia/EVIDENCIA_PIPELINE.md`*.
 
 | Job del pipeline | Niveles de prueba | Tecnicas | Archivos | Responsable |
