@@ -826,3 +826,123 @@ npm run test:component
   3. Se preparó la plantilla del PR correspondiente en `PR_J7_EVIDENCE.md`.
 - **Archivos Adicionados:** `docs/evidencia/EVIDENCIA_PIPELINE.md`, `PR_J7_EVIDENCE.md`
 - **Estado:** Esperando input del usuario para adjuntar URLs e imágenes, necesario para el PR hacia develop.
+
+### 2026-03-08 — Auditoría de cumplimiento de rúbrica semana 3
+
+- Actor: GitHub Copilot (GPT-5.4)
+- Task: Auditar el cumplimiento del proyecto RLAPP frente a la rúbrica de DevOps, testing multinivel y ecosistema, y consolidar los hallazgos en un informe Markdown formal.
+- AO model: GPT-5.4
+- SA model: GPT-5.4
+
+- Archivos modificados:
+  - `docs/reports/RUBRICA_AUDITORIA_SEMANA3_2026-03-08.md` — informe consolidado con veredicto, brechas, evidencias verificadas y conclusiones.
+
+- Evidencias contrastadas:
+  - Workflows de CI/CD, seguridad y E2E
+  - Dockerfiles de backend y frontend
+  - Suites de pruebas backend y frontend
+  - `TEST_PLAN.md`, evidencia histórica del pipeline y plantilla de release
+  - Estado Git local de ramas y tags
+
+- Resultado:
+  - Se determinó que el repositorio presenta cumplimiento parcial de la rúbrica, con fortalezas claras en documentación, separación visual del pipeline y pruebas, pero con brechas verificables en Dockerfile de raíz, Caja Negra ejecutable en contenedor, release formal y escaneo bloqueante.
+
+- Notas / Human checks:
+  - La verificación de branch protection real y Pull Requests remotos no puede resolverse únicamente desde la copia local del repositorio. Requiere evidencia remota o acceso a la configuración de GitHub.
+
+### 2026-03-08 — Documento explicativo de pruebas del pipeline
+
+- Actor: GitHub Copilot (GPT-5.4)
+- Task: Generar un documento Markdown detallado explicando cada prueba y validación ejecutada en los workflows `ci.yml`, `e2e.yml` y `security.yml`.
+- AO model: GPT-5.4
+- SA model: GPT-5.4
+
+- Archivos modificados:
+  - `docs/reports/EXPLICACION_PRUEBAS_PIPELINE_2026-03-08.md` — explicación técnica detallada por workflow, job, tipo de prueba, alcance y limitaciones.
+
+- Resultado:
+  - Se consolidó una guía de estudio y defensa oral para distinguir con precisión pruebas de componente, pruebas funcionales rápidas con fakes, integración real, validaciones de seguridad y la actual debilidad del job Black Box del pipeline principal.
+
+- Notas / Human checks:
+  - El documento diferencia explícitamente entre lo que el pipeline valida de verdad y lo que solo aparenta validar por nomenclatura o ubicación de la suite.
+
+### 2026-03-08 — Cierre técnico parcial de tareas Jhorman
+
+- Actor: GitHub Copilot (GPT-5.4)
+- Task: Implementar cambios concretos para cerrar tareas J1, J3, J5 y J7 de Jhorman, priorizando Docker backend, Black Box real, endurecimiento de escaneo y alineación documental.
+- AO model: GPT-5.4
+- SA model: GPT-5.4
+
+- Archivos modificados:
+  - `apps/backend/.dockerignore`
+  - `scripts/black-box-test.sh`
+  - `.github/workflows/ci.yml`
+  - `.github/workflows/security.yml`
+  - `docs/testing/TEST_PLAN.md`
+  - `docs/audits/evidencia/EVIDENCIA_PIPELINE.md`
+
+- Resultado:
+  - Se agregó `.dockerignore` específico del backend.
+  - La validación Black Box del pipeline principal dejó de limitarse a `health` y `openapi`, y pasó a ejecutar escenarios HTTP de negocio reales sobre el endpoint de check-in.
+  - El escaneo Trivy quedó configurado para generar SARIF y fallar ante severidades `HIGH` o `CRITICAL`.
+  - `TEST_PLAN.md` quedó alineado con la ubicación real de la evidencia y con el estado actual de contenedorización del frontend.
+
+- Notas / Human checks:
+  - La creación de tag, Pull Request remoto y release real no puede completarse únicamente desde la copia local del repositorio sin una instrucción explícita de operación Git remota.
+
+### 2026-03-08 — Ajuste de evidencia pendiente de J7
+
+- Actor: GitHub Copilot (GPT-5.4)
+- Task: Contrastar el plan del equipo contra la evidencia realmente incorporada y corregir el documento para reflejar pendientes reales de J7.
+- AO model: GPT-5.4
+- SA model: GPT-5.4
+
+- Archivos modificados:
+  - `docs/audits/evidencia/EVIDENCIA_PIPELINE.md`
+
+- Resultado:
+  - Se agrego una seccion explicita de evidencia pendiente para J7.
+  - Se corrigio la validacion final para evitar afirmar un cierre completo no respaldado por capturas especificas ni por una nueva ejecucion del pipeline.
+
+- Notas / Human checks:
+  - El cierre total de J7 depende de una ejecucion nueva en GitHub Actions y de capturas que no pueden inferirse honestamente desde evidencia historica previa.
+
+### 2026-03-08 — Remediación del fallo Trivy en imagen frontend
+
+- Actor: GitHub Copilot (GPT-5.4)
+- Task: Investigar y corregir el fallo del escaneo Trivy del frontend en el PR 75 sin introducir cambios innecesarios en dependencias de la aplicación.
+- AO model: GPT-5.4
+- SA model: GPT-5.4
+
+- Archivos modificados:
+  - `apps/frontend/Dockerfile`
+
+- Resultado:
+  - Se confirmó que los hallazgos `HIGH` y `CRITICAL` del escaneo del frontend provenían del `npm` embebido en la imagen base `node` y del paquete del sistema `zlib`, no del grafo de dependencias declarado por la aplicación.
+  - Se migró el frontend a `node:20-bookworm-slim` en todos los stages del Dockerfile para evitar la exposición observada en Alpine.
+  - Se eliminó `npm` y `npx` del stage `runner`, ya que el runtime final solo necesita `node` para ejecutar el artefacto standalone.
+  - Se validó localmente la construcción completa de la imagen `rlapp-frontend:local-verify`.
+  - Se verificó dentro del contenedor final que `npm` ya no está presente y que el runtime mantiene `node` operativo.
+
+- Notas / Human checks:
+  - La validación local de `npm run build` fuera de Docker requiere definir `NEXT_PUBLIC_API_BASE_URL`; el Dockerfile ya lo resuelve mediante `ARG` y `ENV` de build.
+  - La corrección se mantuvo deliberadamente fuera de `package.json` y `package-lock.json` porque el SARIF ubicó las vulnerabilidades en `/usr/local/lib/node_modules/npm/...` dentro de la imagen base.
+
+### 2026-03-08 — Actualización de evidencia con runs exitosos del PR 75
+
+- Actor: GitHub Copilot (GPT-5.4)
+- Task: Actualizar la evidencia documental tras la ejecución exitosa del PR 75 para dejar trazado el pase de Black Box y Trivy sobre la rama endurecida.
+- AO model: GPT-5.4
+- SA model: GPT-5.4
+
+- Archivos modificados:
+  - `docs/audits/evidencia/EVIDENCIA_PIPELINE.md`
+  - `docs/testing/TEST_PLAN.md`
+
+- Resultado:
+  - Se agregaron los runs exitosos `22837285689`, `22837285691` y `22837285692` como validación complementaria del PR 75.
+  - Se actualizó el enlace principal de evidencia del `TEST_PLAN.md` para apuntar al nuevo run exitoso del workflow principal.
+  - Se marcó como completada la evidencia de ejecución posterior a los cambios de la rama `feature/cierre-jhorman-semana3`.
+
+- Notas / Human checks:
+  - Las capturas específicas de `black-box-tests` e `image-scan` siguen pendientes como evidencia visual/manual y no fueron fabricadas ni inferidas.

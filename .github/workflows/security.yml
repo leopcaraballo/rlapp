@@ -192,26 +192,27 @@ jobs:
         uses: aquasecurity/trivy-action@master
         with:
           image-ref: "rlapp-api:scan"
-          format: "table"
-          exit-code: "0"
+          format: "sarif"
+          exit-code: "1"
           ignore-unfixed: true
           vuln-type: "os,library"
           severity: "CRITICAL,HIGH"
-          output: "trivy-backend-report.txt"
+          output: "trivy-backend.sarif"
 
       - name: Construir imagen frontend
         run: docker build -t rlapp-frontend:scan -f apps/frontend/Dockerfile apps/frontend/
 
       - name: Escanear imagen frontend con Trivy
+        if: always()
         uses: aquasecurity/trivy-action@master
         with:
           image-ref: "rlapp-frontend:scan"
-          format: "table"
-          exit-code: "0"
+          format: "sarif"
+          exit-code: "1"
           ignore-unfixed: true
           vuln-type: "os,library"
           severity: "CRITICAL,HIGH"
-          output: "trivy-frontend-report.txt"
+          output: "trivy-frontend.sarif"
 
       - name: Publicar reportes Trivy
         if: always()
@@ -219,9 +220,23 @@ jobs:
         with:
           name: trivy-scan-reports
           path: |
-            trivy-backend-report.txt
-            trivy-frontend-report.txt
+            trivy-backend.sarif
+            trivy-frontend.sarif
           retention-days: 90
+
+      - name: Publicar SARIF backend
+        if: always()
+        uses: github/codeql-action/upload-sarif@v4
+        with:
+          sarif_file: trivy-backend.sarif
+          category: trivy-backend
+
+      - name: Publicar SARIF frontend
+        if: always()
+        uses: github/codeql-action/upload-sarif@v4
+        with:
+          sarif_file: trivy-frontend.sarif
+          category: trivy-frontend
 
   # ===========================================================================
   # Job 6: Resumen de Seguridad

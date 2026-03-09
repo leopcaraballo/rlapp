@@ -18,6 +18,22 @@ Se ejecutaron exitosamente **cuatro workflows** independientes de GitHub Actions
 | Security - Dependency Audit & Secret Scan | [#22777978938](https://github.com/leopcaraballo/rlapp/actions/runs/22777978938) | 6 | ~4m15s | Exitoso |
 | Automatic Dependency Submission | [#22778345435](https://github.com/leopcaraballo/rlapp/actions/runs/22778345435) | 1 | ~39s | Exitoso |
 
+### 1.1 Validacion complementaria sobre el PR 75
+
+Tras endurecer la validacion Black Box y el escaneo bloqueante de Trivy en la rama `feature/cierre-jhorman-semana3`, se ejecuto una nueva tanda de workflows sobre el PR [#75](https://github.com/leopcaraballo/rlapp/pull/75), todos en estado exitoso.
+
+| Workflow | Run ID | Contexto | Estado |
+| --- | --- | --- | --- |
+| CI/CD Pipeline | [#22837285689](https://github.com/leopcaraballo/rlapp/actions/runs/22837285689) | PR #75 | Exitoso |
+| E2E - Integration Tests | [#22837285691](https://github.com/leopcaraballo/rlapp/actions/runs/22837285691) | PR #75 | Exitoso |
+| Security - Dependency Audit & Secret Scan | [#22837285692](https://github.com/leopcaraballo/rlapp/actions/runs/22837285692) | PR #75 | Exitoso |
+
+Esta validacion complementaria confirma especificamente que:
+
+- el job `Black Box API Tests` ejecuto correctamente sobre la rama endurecida;
+- el job `Docker Image Scan (Trivy)` paso tanto en el workflow principal como en el workflow de seguridad;
+- la remediacion aplicada a la imagen del frontend elimino el bloqueo previo de Trivy.
+
 ---
 
 ## 2. Workflow 1: CI/CD Pipeline
@@ -290,7 +306,14 @@ JOBS
 
 ![Artefactos](./screenshots/artefactos.png)
 
-> **Nota:** Si las imagenes no se visualizan, consultar la carpeta `docs/evidencia/screenshots/` o acceder directamente a las URLs de los Runs listados en la seccion 1.
+### 7.5 Evidencia pendiente para cierre total de J7
+
+- Pendiente una captura especifica del job `black-box-tests` mostrando la prueba de Caja Negra solicitada en el plan del equipo.
+- Pendiente una captura especifica del job `image-scan` mostrando el resultado detallado de Trivy.
+- Pendiente adjuntar estas capturas en el PR formal de release cuando se ejecute la liberacion.
+- La nueva ejecucion del pipeline sobre la rama `feature/cierre-jhorman-semana3` ya fue registrada con los runs `22837285689`, `22837285691` y `22837285692`.
+
+> **Nota:** Si las imagenes no se visualizan, consultar la carpeta `docs/audits/evidencia/screenshots/` o acceder directamente a las URLs de los Runs listados en la seccion 1.
 
 ---
 
@@ -302,5 +325,8 @@ JOBS
 - [x] Escaneo de vulnerabilidades ejecutado (Trivy + CodeQL + Gitleaks).
 - [x] Auditoria de dependencias completada (NuGet + npm).
 - [x] URLs y evidencias indexadas formalmente para auditoria de la rubrica.
+- [ ] Captura especifica del job `black-box-tests` incorporada.
+- [ ] Captura especifica del job `image-scan` incorporada.
+- [x] Evidencia actualizada con una ejecucion posterior a los cambios de la rama `feature/cierre-jhorman-semana3`.
 
-> **Conclusion:** Todos los criterios de aceptacion del requisito 4.4 de la rubrica han sido satisfechos. La evidencia textual extraida via GitHub CLI (`gh run view`) es verificable e irrevocable contra los Run IDs documentados.
+> **Conclusion:** La evidencia actual ya respalda con ejecucion real los cambios recientes introducidos en la rama `feature/cierre-jhorman-semana3`, incluyendo `Black Box API Tests` y `Docker Image Scan (Trivy)` en verde. El cierre documental total de J7 sigue pendiente unicamente por la incorporacion de capturas especificas de `black-box-tests` e `image-scan` y su posterior referencia en el contexto de release.

@@ -441,10 +441,10 @@ El agregado `WaitingQueue` gestiona el ciclo de vida del paciente mediante trans
 
 ### 6.1 Contenedorizacion
 
-Ambos servicios estan doquerizados con Docker Compose para garantizar ambientes de prueba consistentes:
+Ambos servicios estan dockerizados con Docker Compose para garantizar ambientes de prueba consistentes:
 
 - **Backend:** Dockerfile multi-stage (build + runtime), imagen base `mcr.microsoft.com/dotnet/nightly/aspnet:10.0`.
-- **Frontend:** Dockerfile con `node:20-slim` (pendiente: multi-stage produccion).
+- **Frontend:** Dockerfile multi-stage con `node:20-alpine`, build standalone de Next.js y usuario no-root en runtime.
 - **Servicios auxiliares:** PostgreSQL 16 + RabbitMQ 3.x via `docker-compose.yml`.
 
 ### 6.2 Pipeline CI/CD (actualizado)
@@ -480,11 +480,11 @@ Jobs (en orden de dependencia):
                                                                      │
 6. black-box-tests (depende de 4 + 5) ─────────────────────────────┤
    Levantar API en contenedor con docker compose                     │
-   Ejecutar requests HTTP contra API real                            │
+   Ejecutar script HTTP real de negocio (valido, invalido, replay)  │
                                                                      │
 7. image-scan (depende de 1) ───────────────────────────────────────┤
    docker build backend + frontend                                   │
-   Trivy contra ambas imagenes                                       │
+   Trivy contra ambas imagenes + SARIF bloqueante                    │
                                                                      │
 8. release (solo en merge a main, depende de 2-7) ─────────────────┘
    Crear tag semantico + GitHub Release
@@ -514,7 +514,7 @@ Jobs (en orden de dependencia):
 | --- | --- |
 | Unitario / componente | 100% de tests pasando, cobertura >= 80% |
 | Integracion | 100% de tests pasando con infraestructura real |
-| Caja Negra | Los 3 escenarios minimos (exitoso, error validacion, duplicado) pasan |
+| Caja Negra | Los escenarios minimos (exitoso, error de validacion e idempotencia/replay) pasan |
 | E2E frontend | Flujos criticos completos sin errores |
 | Aceptacion | Validacion manual del flujo clinico completo |
 
@@ -542,13 +542,13 @@ Jobs (en orden de dependencia):
 | Cobertura de statements frontend | >= 80% | 81.61% |
 | Cobertura de ramas frontend | >= 70% | 70.56% |
 | Tests de componente frontend | >= 50 test cases | 71 archivos |
-| Tiempo de ejecucion pipeline | < 10 minutos total | Sin pipeline |
+| Tiempo de ejecucion pipeline | < 10 minutos total | ~3m55s en ejecucion validada del workflow principal |
 | Tasa de falsos positivos frontend | < 5% | Sin medicion |
 
 ## 9. Mapeo al pipeline CI/CD
 
-> **Evidencia de Ejecución:** [Ver Ejecución Exitosa del Pipeline CI/CD en GitHub Actions]( Reemplazar con URL de GitHub Actions )
-> *Para consultar capturas detalladas de los tests en verde, referirse a `docs/evidencia/EVIDENCIA_PIPELINE.md`*.
+> **Evidencia de Ejecución:** [Ver Ejecución Exitosa del Pipeline CI/CD en GitHub Actions](https://github.com/leopcaraballo/rlapp/actions/runs/22837285689)
+> *Para consultar capturas detalladas de los tests en verde, referirse a `docs/audits/evidencia/EVIDENCIA_PIPELINE.md`*.
 
 | Job del pipeline | Niveles de prueba | Tecnicas | Archivos | Responsable |
 | --- | --- | --- | --- | --- |

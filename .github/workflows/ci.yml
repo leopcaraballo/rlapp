@@ -1,5 +1,9 @@
 name: CI/CD Pipeline
 
+permissions:
+  contents: read
+  security-events: write
+
 on:
   push:
     branches:
@@ -321,11 +325,15 @@ jobs:
 
       - name: Run Black Box HTTP Tests
         run: |
-          echo "Executing Black-box tests..."
-          # Make a simple curl to the test URL logic to ensure it serves the api contract
-          curl -s http://localhost:5000/health/ready | grep "Healthy"
-          # Or call OpenAPI schema (Scalar/Microsoft.AspNetCore.OpenApi)
-          curl -s http://localhost:5000/openapi/v1.json | grep "openapi"
+          bash ./scripts/black-box-test.sh | tee black-box-results.txt
+
+      - name: Upload Black Box Results
+        uses: actions/upload-artifact@v4
+        if: always()
+        with:
+          name: black-box-results
+          path: black-box-results.txt
+          retention-days: 30
 
       - name: Stop stack
         if: always()
@@ -349,21 +357,48 @@ jobs:
         uses: aquasecurity/trivy-action@master
         with:
           image-ref: "rlapp-api:scan"
-          format: "table"
-          exit-code: "0"
+          format: "sarif"
+          output: "trivy-backend.sarif"
+          exit-code: "1"
           ignore-unfixed: true
           vuln-type: "os,library"
           severity: "CRITICAL,HIGH"
 
       - name: Run Trivy on Frontend
+        if: always()
         uses: aquasecurity/trivy-action@master
         with:
           image-ref: "rlapp-frontend:scan"
-          format: "table"
-          exit-code: "0"
+          format: "sarif"
+          output: "trivy-frontend.sarif"
+          exit-code: "1"
           ignore-unfixed: true
           vuln-type: "os,library"
           severity: "CRITICAL,HIGH"
+
+      - name: Upload Trivy SARIF artifacts
+        if: always()
+        uses: actions/upload-artifact@v4
+        with:
+          name: trivy-sarif-reports
+          path: |
+            trivy-backend.sarif
+            trivy-frontend.sarif
+          retention-days: 30
+
+      - name: Upload Backend SARIF
+        if: always()
+        uses: github/codeql-action/upload-sarif@v4
+        with:
+          sarif_file: trivy-backend.sarif
+          category: trivy-backend
+
+      - name: Upload Frontend SARIF
+        if: always()
+        uses: github/codeql-action/upload-sarif@v4
+        with:
+          sarif_file: trivy-frontend.sarif
+          category: trivy-frontend
 
   release:
     name: Release
