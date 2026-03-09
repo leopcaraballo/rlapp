@@ -107,6 +107,13 @@ Inventario completo de agentes, prompts, skills y documentación con sus relacio
 | `definition_of_ready.context.md` | Definición de listo (DoR) |
 | `reglas-de-oro.md` | Reglas operativas de la IA en el proyecto |
 
+### Arquitectura (`docs/architecture/`)
+
+| Archivo | Descripción |
+|---------|-------------|
+| `ARCHITECTURE.md` | Arquitectura del monorepo, estructura y flujo técnico general |
+| `README.md` | Índice y apoyo para documentación de arquitectura |
+
 ### Outputs (`docs/output/`)
 
 Reportes generados automáticamente por el pipeline GAIDD, organizados por agente. Ruta base configurada en `config.yaml` → `output_folder`.
