@@ -290,7 +290,7 @@ JOBS
 
 ![Artefactos](./screenshots/artefactos.png)
 
-> **Nota:** Si las imagenes no se visualizan, consultar la carpeta `docs/evidencia/screenshots/` o acceder directamente a las URLs de los Runs listados en la seccion 1.
+> **Nota:** Si las imagenes no se visualizan, consultar la carpeta `docs/audits/evidencia/screenshots/` o acceder directamente a las URLs de los Runs listados en la seccion 1.
 
 ---
 

@@ -826,3 +826,66 @@ npm run test:component
   3. Se preparó la plantilla del PR correspondiente en `PR_J7_EVIDENCE.md`.
 - **Archivos Adicionados:** `docs/evidencia/EVIDENCIA_PIPELINE.md`, `PR_J7_EVIDENCE.md`
 - **Estado:** Esperando input del usuario para adjuntar URLs e imágenes, necesario para el PR hacia develop.
+
+### 2026-03-08 — Auditoría de cumplimiento de rúbrica semana 3
+
+- Actor: GitHub Copilot (GPT-5.4)
+- Task: Auditar el cumplimiento del proyecto RLAPP frente a la rúbrica de DevOps, testing multinivel y ecosistema, y consolidar los hallazgos en un informe Markdown formal.
+- AO model: GPT-5.4
+- SA model: GPT-5.4
+
+- Archivos modificados:
+  - `docs/reports/RUBRICA_AUDITORIA_SEMANA3_2026-03-08.md` — informe consolidado con veredicto, brechas, evidencias verificadas y conclusiones.
+
+- Evidencias contrastadas:
+  - Workflows de CI/CD, seguridad y E2E
+  - Dockerfiles de backend y frontend
+  - Suites de pruebas backend y frontend
+  - `TEST_PLAN.md`, evidencia histórica del pipeline y plantilla de release
+  - Estado Git local de ramas y tags
+
+- Resultado:
+  - Se determinó que el repositorio presenta cumplimiento parcial de la rúbrica, con fortalezas claras en documentación, separación visual del pipeline y pruebas, pero con brechas verificables en Dockerfile de raíz, Caja Negra ejecutable en contenedor, release formal y escaneo bloqueante.
+
+- Notas / Human checks:
+  - La verificación de branch protection real y Pull Requests remotos no puede resolverse únicamente desde la copia local del repositorio. Requiere evidencia remota o acceso a la configuración de GitHub.
+
+### 2026-03-08 — Documento explicativo de pruebas del pipeline
+
+- Actor: GitHub Copilot (GPT-5.4)
+- Task: Generar un documento Markdown detallado explicando cada prueba y validación ejecutada en los workflows `ci.yml`, `e2e.yml` y `security.yml`.
+- AO model: GPT-5.4
+- SA model: GPT-5.4
+
+- Archivos modificados:
+  - `docs/reports/EXPLICACION_PRUEBAS_PIPELINE_2026-03-08.md` — explicación técnica detallada por workflow, job, tipo de prueba, alcance y limitaciones.
+
+- Resultado:
+  - Se consolidó una guía de estudio y defensa oral para distinguir con precisión pruebas de componente, pruebas funcionales rápidas con fakes, integración real, validaciones de seguridad y la actual debilidad del job Black Box del pipeline principal.
+
+- Notas / Human checks:
+  - El documento diferencia explícitamente entre lo que el pipeline valida de verdad y lo que solo aparenta validar por nomenclatura o ubicación de la suite.
+
+### 2026-03-08 — Cierre técnico parcial de tareas Jhorman
+
+- Actor: GitHub Copilot (GPT-5.4)
+- Task: Implementar cambios concretos para cerrar tareas J1, J3, J5 y J7 de Jhorman, priorizando Docker backend, Black Box real, endurecimiento de escaneo y alineación documental.
+- AO model: GPT-5.4
+- SA model: GPT-5.4
+
+- Archivos modificados:
+  - `apps/backend/.dockerignore`
+  - `scripts/black-box-test.sh`
+  - `.github/workflows/ci.yml`
+  - `.github/workflows/security.yml`
+  - `docs/testing/TEST_PLAN.md`
+  - `docs/audits/evidencia/EVIDENCIA_PIPELINE.md`
+
+- Resultado:
+  - Se agregó `.dockerignore` específico del backend.
+  - La validación Black Box del pipeline principal dejó de limitarse a `health` y `openapi`, y pasó a ejecutar escenarios HTTP de negocio reales sobre el endpoint de check-in.
+  - El escaneo Trivy quedó configurado para generar SARIF y fallar ante severidades `HIGH` o `CRITICAL`.
+  - `TEST_PLAN.md` quedó alineado con la ubicación real de la evidencia y con el estado actual de contenedorización del frontend.
+
+- Notas / Human checks:
+  - La creación de tag, Pull Request remoto y release real no puede completarse únicamente desde la copia local del repositorio sin una instrucción explícita de operación Git remota.

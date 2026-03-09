@@ -28,7 +28,7 @@ node_modules/
 .env.local
 
 # Docker
-.dockerignore
+!.dockerignore
 
 # OS
 .DS_Store
