@@ -1,7 +1,5 @@
 # Etapa 1: Base image
-FROM node:20-alpine AS base
-# Instalar libc compatibilidad requerida por algunos paquetes en Alpine
-RUN apk add --no-cache libc6-compat
+FROM node:20-bookworm-slim AS base
 
 # Etapa 2: Dependencias
 FROM base AS deps
@@ -29,6 +27,10 @@ WORKDIR /app
 
 ENV NODE_ENV=production
 ENV NEXT_TELEMETRY_DISABLED=1
+
+# El runtime final no usa npm ni npx; se eliminan para reducir superficie de ataque.
+RUN rm -rf /usr/local/lib/node_modules/npm \
+    && rm -f /usr/local/bin/npm /usr/local/bin/npx
 
 # Crear usuario y grupo no-root por seguridad (Principio de mínimo privilegio)
 RUN addgroup --system --gid 1001 nodejs \

@@ -906,3 +906,24 @@ npm run test:component
 
 - Notas / Human checks:
   - El cierre total de J7 depende de una ejecucion nueva en GitHub Actions y de capturas que no pueden inferirse honestamente desde evidencia historica previa.
+
+### 2026-03-08 — Remediación del fallo Trivy en imagen frontend
+
+- Actor: GitHub Copilot (GPT-5.4)
+- Task: Investigar y corregir el fallo del escaneo Trivy del frontend en el PR 75 sin introducir cambios innecesarios en dependencias de la aplicación.
+- AO model: GPT-5.4
+- SA model: GPT-5.4
+
+- Archivos modificados:
+  - `apps/frontend/Dockerfile`
+
+- Resultado:
+  - Se confirmó que los hallazgos `HIGH` y `CRITICAL` del escaneo del frontend provenían del `npm` embebido en la imagen base `node` y del paquete del sistema `zlib`, no del grafo de dependencias declarado por la aplicación.
+  - Se migró el frontend a `node:20-bookworm-slim` en todos los stages del Dockerfile para evitar la exposición observada en Alpine.
+  - Se eliminó `npm` y `npx` del stage `runner`, ya que el runtime final solo necesita `node` para ejecutar el artefacto standalone.
+  - Se validó localmente la construcción completa de la imagen `rlapp-frontend:local-verify`.
+  - Se verificó dentro del contenedor final que `npm` ya no está presente y que el runtime mantiene `node` operativo.
+
+- Notas / Human checks:
+  - La validación local de `npm run build` fuera de Docker requiere definir `NEXT_PUBLIC_API_BASE_URL`; el Dockerfile ya lo resuelve mediante `ARG` y `ENV` de build.
+  - La corrección se mantuvo deliberadamente fuera de `package.json` y `package-lock.json` porque el SARIF ubicó las vulnerabilidades en `/usr/local/lib/node_modules/npm/...` dentro de la imagen base.
