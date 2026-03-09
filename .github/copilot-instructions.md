@@ -50,10 +50,10 @@ If it persists after two retries, restart the session and verify the four contex
 ```javascript
 // Step 0: Dependency Injection (DIP) — WITH FAIL-FAST
 const REQUIRED_MODULES = [
-  "docs/agent-context/PROJECT_CONTEXT.md",
-  "docs/agent-context/RULES.md",
-  "docs/agent-context/WORKFLOW.md",
-  "docs/agent-context/SKILL_REGISTRY.md",
+  "docs/decisions/PROJECT_CONTEXT.md",
+  "docs/decisions/RULES.md",
+  "docs/decisions/WORKFLOW.md",
+  "docs/decisions/SKILL_REGISTRY.md",
 ];
 
 // FAIL-FAST: Validate existence BEFORE loading
@@ -64,11 +64,11 @@ for (const mod of REQUIRED_MODULES) {
 }
 
 const PROJECT_CONTEXT = await read_file(
-  "docs/agent-context/PROJECT_CONTEXT.md",
+  "docs/decisions/PROJECT_CONTEXT.md",
 );
-const RULES = await read_file("docs/agent-context/RULES.md");
-const WORKFLOW = await read_file("docs/agent-context/WORKFLOW.md");
-const SKILL_REGISTRY = await read_file("docs/agent-context/SKILL_REGISTRY.md");
+const RULES = await read_file("docs/decisions/RULES.md");
+const WORKFLOW = await read_file("docs/decisions/WORKFLOW.md");
+const SKILL_REGISTRY = await read_file("docs/decisions/SKILL_REGISTRY.md");
 ```
 
 **Single Source of Truth:**
@@ -77,7 +77,7 @@ const SKILL_REGISTRY = await read_file("docs/agent-context/SKILL_REGISTRY.md");
 - **Rules/Anti-patterns:** `RULES.md` (SOLID, DRY, KISS, naming conventions, // HUMAN CHECK)
 - **11-step Workflow:** `WORKFLOW.md` (Read > Choose > Match > Plan > Approve > Execute...)
 - **Skill Catalog:** `SKILL_REGISTRY.md` (8 skills with triggers, paths, scopes)
-- **Markdown Style:** `docs/MD_STYLE_GUIDE.md` (no emojis in headings/tables, sentence case, standardized status vocabulary)
+- **Markdown Style:** `docs/guidelines/MD_STYLE_GUIDE.md` (no emojis in headings/tables, sentence case, standardized status vocabulary)
 
 ## 1. Skill selection protocol
 
@@ -132,7 +132,7 @@ async function delegateTask(userRequest, retryCount = 0) {
 
   // 2. FAIL-FAST: Validate that ALL skills exist on disk
   for (const skillName of requiredSkills) {
-    if (!(await file_exists(`skills/${skillName}/skill.md`))) {
+    if (!(await file_exists(`tools/automation/skills/${skillName}/skill.md`))) {
       STOP(`Skill "${skillName}" not found on disk. Use skill-creator first.`);
     }
   }
@@ -141,7 +141,7 @@ async function delegateTask(userRequest, retryCount = 0) {
   const orderedSkills = resolveDependencyOrder(requiredSkills);
   const skills = {};
   for (const skillName of orderedSkills) {
-    skills[skillName] = await read_file(`skills/${skillName}/skill.md`);
+    skills[skillName] = await read_file(`tools/automation/skills/${skillName}/skill.md`);
   }
 
   // 4. Calculate allowed scope (union of scopes from all skills)
@@ -221,7 +221,7 @@ ${skills[name]}
 1. Implemented code (applying skills in order)
 2. Tests (coverage >80%)
 3. Change documentation (// HUMAN CHECK where applicable)
-4. Action Summary (format: skills/action-summary-template.md)
+4. Action Summary (format: tools/automation/skills/action-summary-template.md)
 5. Recommended model: Evaluate task complexity and recommend
    the optimal model according to section 2 (Model selection policy).
    Format: "Recommended model for this task: [model] (Tier X) — [reason]"
@@ -326,12 +326,12 @@ If the human rejects the plan:
 
 > **Delegation templates by task type:**
 >
-> - Frontend: See `skills/frontend-ui/assets/delegation-template.md`
-> - Backend: See `skills/backend-api/assets/delegation-template.md`
-> - Security: See `skills/security-audit/assets/delegation-template.md`
-> - Testing: See `skills/testing-qa/assets/delegation-template.md`
+> - Frontend: See `tools/automation/skills/frontend-ui/assets/delegation-template.md`
+> - Backend: See `tools/automation/skills/backend-api/assets/delegation-template.md`
+> - Security: See `tools/automation/skills/security-audit/assets/delegation-template.md`
+> - Testing: See `tools/automation/skills/testing-qa/assets/delegation-template.md`
 >
-> **Action Summary template:** See `skills/action-summary-template.md`
+> **Action Summary template:** See `tools/automation/skills/action-summary-template.md`
 >
 > **Executed examples:** See `AI_WORKFLOW.md` sections 9.1-9.12
 
@@ -491,7 +491,7 @@ function chooseModel(role, taskType, budget = "normal") {
 ```
 BOOTSTRAP OBLIGATORIO: ejecuta el protocolo PRE-RESPONSE completo antes de responder.
 - CWD: ${workspaceFolder}
-- Leer y validar: docs/agent-context/PROJECT_CONTEXT.md, RULES.md, WORKFLOW.md, SKILL_REGISTRY.md
+- Leer y validar: docs/decisions/PROJECT_CONTEXT.md, RULES.md, WORKFLOW.md, SKILL_REGISTRY.md
 - Idioma de salida: español formal
 - NO ejecutar cambios sin Plan de Accion aprobado por el humano
 
