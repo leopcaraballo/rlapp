@@ -1,0 +1,145 @@
+# =============================================================================
+# RLAPP — Pipeline E2E (End-to-End Tests)
+# =============================================================================
+# Ejecuta tests E2E con infraestructura completa (PostgreSQL + RabbitMQ)
+# mediante Docker Compose en un entorno aislado de CI.
+#
+# HUMAN CHECK: Este pipeline requiere Docker Compose v2 disponible en el runner.
+#              Verificar que los puertos 5432, 5672 y 5000 no esten en uso.
+# =============================================================================
+
+name: E2E — Integration Tests
+
+on:
+  push:
+    branches: [develop, main]
+  pull_request:
+    branches: [develop, main]
+  workflow_dispatch:
+
+concurrency:
+  group: e2e-${{ github.ref }}
+  cancel-in-progress: true
+
+env:
+  DOTNET_VERSION: "10.0.x"
+  DOTNET_SKIP_FIRST_TIME_EXPERIENCE: true
+  DOTNET_CLI_TELEMETRY_OPTOUT: true
+
+jobs:
+  # ===========================================================================
+  # Job: E2E con infraestructura levantada via Docker Compose
+  # ===========================================================================
+  e2e-tests:
+    name: E2E Integration Tests
+    runs-on: ubuntu-latest
+    timeout-minutes: 15
+
+    services:
+      postgres:
+        image: postgres:16-alpine
+        env:
+          POSTGRES_DB: rlapp_waitingroom
+          POSTGRES_USER: rlapp_user
+          POSTGRES_PASSWORD: rlapp_pass
+        ports:
+          - 5432:5432
+        options: >-
+          --health-cmd "pg_isready -U rlapp_user -d rlapp_waitingroom"
+          --health-interval 10s
+          --health-timeout 5s
+          --health-retries 5
+
+      rabbitmq:
+        image: rabbitmq:3.12-management-alpine
+        env:
+          RABBITMQ_DEFAULT_USER: rlapp_user
+          RABBITMQ_DEFAULT_PASS: rlapp_pass
+        ports:
+          - 5672:5672
+          - 15672:15672
+        options: >-
+          --health-cmd "rabbitmq-diagnostics -q ping"
+          --health-interval 10s
+          --health-timeout 5s
+          --health-retries 10
+
+    steps:
+      - name: Checkout del repositorio
+        uses: actions/checkout@v4
+
+      - name: Configurar .NET SDK ${{ env.DOTNET_VERSION }}
+        uses: actions/setup-dotnet@v4
+        with:
+          dotnet-version: ${{ env.DOTNET_VERSION }}
+
+      - name: Cache de paquetes NuGet
+        uses: actions/cache@v4
+        with:
+          path: ~/.nuget/packages
+          key: nuget-${{ runner.os }}-${{ hashFiles('**/*.csproj') }}
+          restore-keys: |
+            nuget-${{ runner.os }}-
+
+      - name: Restaurar y compilar
+        working-directory: apps/backend
+        run: |
+          dotnet restore RLAPP.slnx
+          dotnet build RLAPP.slnx --configuration Release --no-restore
+
+      - name: Esperar que PostgreSQL este listo
+        run: |
+          for i in $(seq 1 30); do
+            pg_isready -h localhost -p 5432 -U rlapp_user && break
+            echo "Esperando PostgreSQL... intento $i/30"
+            sleep 2
+          done
+
+      - name: Esperar que RabbitMQ este listo
+        run: |
+          for i in $(seq 1 30); do
+            curl -sf http://localhost:15672/api/overview \
+              -u rlapp_user:rlapp_pass > /dev/null 2>&1 && break
+            echo "Esperando RabbitMQ... intento $i/30"
+            sleep 2
+          done
+
+      - name: Aplicar migraciones de base de datos
+        run: |
+          PGPASSWORD=rlapp_pass psql -h localhost -U rlapp_user -d rlapp_waitingroom -f infrastructure/database/postgres/init.sql || true
+        env:
+          PGPASSWORD: rlapp_pass
+
+      - name: Ejecutar tests de integracion E2E
+        working-directory: apps/backend
+        run: |
+          dotnet test RLAPP.slnx \
+            --configuration Release \
+            --no-build \
+            --verbosity normal \
+            --logger "trx;LogFileName=e2e-results.trx" \
+            --results-directory ./E2EResults
+        env:
+          ConnectionStrings__WaitingRoom: "Host=localhost;Port=5432;Database=rlapp_waitingroom;Username=rlapp_user;Password=rlapp_pass"
+          RLAPP_INTEGRATION_EVENTSTORE_CONNECTION: "Host=localhost;Port=5432;Database=rlapp_waitingroom_test;Username=rlapp_user;Password=rlapp_pass"
+          POSTGRES_CONNECTION_STRING: "Host=localhost;Port=5432;Database=rlapp_waitingroom;Username=rlapp_user;Password=rlapp_pass"
+          RabbitMQ__Host: localhost
+          RabbitMQ__Port: "5672"
+          RabbitMQ__User: rlapp_user
+          RabbitMQ__Password: rlapp_pass
+
+      - name: Publicar resultados E2E
+        if: always()
+        uses: actions/upload-artifact@v4
+        with:
+          name: e2e-test-results
+          path: apps/backend/E2EResults/
+          retention-days: 30
+
+      - name: Resumen de resultados
+        if: always()
+        run: |
+          echo "=== Resumen E2E ==="
+          echo "Resultado: ${{ job.status }}"
+          echo "PostgreSQL: localhost:5432"
+          echo "RabbitMQ:   localhost:5672"

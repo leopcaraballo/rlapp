@@ -1,0 +1,419 @@
+name: CI/CD Pipeline
+
+permissions:
+  contents: read
+  security-events: write
+
+on:
+  push:
+    branches:
+      - develop
+      - main
+  pull_request:
+    branches:
+      - develop
+      - main
+
+env:
+  DOTNET_VERSION: "10.0.x"
+  NODE_VERSION: "20"
+
+jobs:
+  lint-and-build:
+    name: Lint & Build
+    runs-on: ubuntu-latest
+    steps:
+      - name: Checkout code
+        uses: actions/checkout@v4
+
+      - name: Setup .NET
+        uses: actions/setup-dotnet@v4
+        with:
+          dotnet-version: ${{ env.DOTNET_VERSION }}
+
+      - name: Setup Node.js
+        uses: actions/setup-node@v4
+        with:
+          node-version: ${{ env.NODE_VERSION }}
+          cache: "npm"
+          cache-dependency-path: apps/frontend/package-lock.json
+
+      - name: Backend Restore
+        working-directory: ./apps/backend
+        run: dotnet restore RLAPP.slnx
+
+      - name: Backend Build
+        working-directory: ./apps/backend
+        run: dotnet build RLAPP.slnx --configuration Release --no-restore
+
+      - name: Frontend Install Dependencies
+        working-directory: ./apps/frontend
+        run: npm ci
+
+      - name: Frontend Lint
+        working-directory: ./apps/frontend
+        run: npm run lint
+
+      - name: Frontend Build
+        working-directory: ./apps/frontend
+        run: npm run build
+        env:
+          NEXT_TELEMETRY_DISABLED: 1
+          NEXT_PUBLIC_API_BASE_URL: "http://localhost:5000"
+
+  # ================================================================
+  # COMPONENT TESTS (Unit: Domain, Application, Projections)
+  # ================================================================
+  component-tests:
+    name: Component Tests (Unit)
+    runs-on: ubuntu-latest
+    needs: lint-and-build
+    steps:
+      - name: Checkout code
+        uses: actions/checkout@v4
+
+      - name: Setup .NET
+        uses: actions/setup-dotnet@v4
+        with:
+          dotnet-version: ${{ env.DOTNET_VERSION }}
+
+      - name: Setup Node.js
+        uses: actions/setup-node@v4
+        with:
+          node-version: ${{ env.NODE_VERSION }}
+          cache: "npm"
+          cache-dependency-path: apps/frontend/package-lock.json
+
+      - name: Backend Component Tests (Domain + Application + Projections)
+        working-directory: ./apps/backend
+        run: >
+          dotnet test RLAPP.slnx
+          --configuration Release
+          --filter "Category!=Integration&Category!=E2E&FullyQualifiedName!~WaitingRoom.Tests.Integration"
+          --logger "trx;LogFileName=test-results.trx"
+          --collect:"XPlat Code Coverage"
+          --results-directory ./TestResults
+
+      - name: Upload Backend Coverage
+        uses: actions/upload-artifact@v4
+        if: always()
+        with:
+          name: backend-coverage
+          path: apps/backend/TestResults/**/coverage.cobertura.xml
+          retention-days: 30
+
+      - name: Frontend Install Dependencies
+        working-directory: ./apps/frontend
+        run: npm ci
+
+      - name: Frontend Component Tests (Jest)
+        working-directory: ./apps/frontend
+        run: npm run test:component
+
+      - name: Upload Frontend Coverage
+        uses: actions/upload-artifact@v4
+        if: always()
+        with:
+          name: frontend-coverage
+          path: apps/frontend/test-results/coverage/
+          retention-days: 30
+
+  # ================================================================
+  # SMOKE & SANITY TESTS (Fast gate — in-memory, no infra required)
+  # ================================================================
+  smoke-sanity-tests:
+    name: Smoke & Sanity Tests
+    runs-on: ubuntu-latest
+    needs: lint-and-build
+    steps:
+      - name: Checkout code
+        uses: actions/checkout@v4
+
+      - name: Setup .NET
+        uses: actions/setup-dotnet@v4
+        with:
+          dotnet-version: ${{ env.DOTNET_VERSION }}
+
+      - name: Run Smoke Tests
+        working-directory: ./apps/backend
+        run: >
+          dotnet test
+          src/Tests/WaitingRoom.Tests.Integration/WaitingRoom.Tests.Integration.csproj
+          --configuration Release
+          --filter "Category=Smoke"
+          --logger "trx;LogFileName=smoke-results.trx"
+          --results-directory ./TestResults
+
+      - name: Run Sanity Tests
+        working-directory: ./apps/backend
+        run: >
+          dotnet test
+          src/Tests/WaitingRoom.Tests.Integration/WaitingRoom.Tests.Integration.csproj
+          --configuration Release
+          --filter "Category=Sanity"
+          --logger "trx;LogFileName=sanity-results.trx"
+          --results-directory ./TestResults
+
+      - name: Upload Smoke & Sanity Results
+        uses: actions/upload-artifact@v4
+        if: always()
+        with:
+          name: smoke-sanity-results
+          path: apps/backend/TestResults/*.trx
+          retention-days: 30
+
+  # ================================================================
+  # INTEGRATION TESTS (Full integration — requires PostgreSQL + RabbitMQ)
+  # ================================================================
+  integration-tests:
+    name: Integration Tests
+    runs-on: ubuntu-latest
+    needs: [lint-and-build, smoke-sanity-tests]
+    services:
+      postgres:
+        image: postgres:16-alpine
+        env:
+          POSTGRES_USER: rlapp
+          POSTGRES_PASSWORD: rlapp_secure_password
+          POSTGRES_DB: postgres
+        ports:
+          - 5432:5432
+        options: >-
+          --health-cmd pg_isready
+          --health-interval 10s
+          --health-timeout 5s
+          --health-retries 5
+      rabbitmq:
+        image: rabbitmq:3.12-management-alpine
+        ports:
+          - 5672:5672
+        options: >-
+          --health-cmd "rabbitmq-diagnostics -q ping"
+          --health-interval 10s
+          --health-timeout 5s
+          --health-retries 5
+    steps:
+      - name: Checkout code
+        uses: actions/checkout@v4
+
+      - name: Setup .NET
+        uses: actions/setup-dotnet@v4
+        with:
+          dotnet-version: ${{ env.DOTNET_VERSION }}
+
+      - name: Initialize Postgres schema
+        run: |
+          sudo apt-get update && sudo apt-get install -y postgresql-client
+          echo "Waiting for Postgres..."
+          timeout 60 bash -c 'until pg_isready -h localhost -p 5432 -U rlapp; do sleep 1; done'
+          PGPASSWORD=rlapp_secure_password psql "host=localhost port=5432 dbname=postgres user=rlapp" -f infrastructure/database/postgres/init.sql
+
+      - name: Run Backend Integration Tests
+        working-directory: ./apps/backend
+        run: |
+          dotnet test RLAPP.slnx \
+            --configuration Release \
+            --filter "Category=Integration|FullyQualifiedName~WaitingRoom.Tests.Integration" \
+            --logger "trx;LogFileName=integration-results.trx"
+        env:
+          ConnectionStrings__PostgresIdempotencyConnection: "Host=localhost;Port=5432;Database=rlapp_waitingroom_test;Username=rlapp;Password=rlapp_secure_password"
+          POSTGRES_CONNECTION_STRING: "Host=localhost;Port=5432;Database=rlapp_waitingroom_test;Username=rlapp;Password=rlapp_secure_password"
+          RLAPP_INTEGRATION_EVENTSTORE_CONNECTION: "Host=localhost;Port=5432;Database=rlapp_waitingroom_test;Username=rlapp;Password=rlapp_secure_password"
+          RabbitMQ__HostName: "localhost"
+
+      - name: Upload Integration Test Results
+        uses: actions/upload-artifact@v4
+        if: always()
+        with:
+          name: integration-test-results
+          path: apps/backend/**/integration-results.trx
+          retention-days: 30
+
+  # ================================================================
+  # QA EXTENDED TESTS (Security, Performance, Contract, Validation, Regression)
+  # ================================================================
+  qa-extended-tests:
+    name: QA Extended Tests
+    runs-on: ubuntu-latest
+    needs: [lint-and-build, smoke-sanity-tests]
+    steps:
+      - name: Checkout code
+        uses: actions/checkout@v4
+
+      - name: Setup .NET
+        uses: actions/setup-dotnet@v4
+        with:
+          dotnet-version: ${{ env.DOTNET_VERSION }}
+
+      - name: Run Security Tests
+        working-directory: ./apps/backend
+        run: >
+          dotnet test
+          src/Tests/WaitingRoom.Tests.Integration/WaitingRoom.Tests.Integration.csproj
+          --configuration Release
+          --filter "Category=Security"
+          --logger "trx;LogFileName=security-results.trx"
+          --results-directory ./TestResults
+
+      - name: Run Contract Tests
+        working-directory: ./apps/backend
+        run: >
+          dotnet test
+          src/Tests/WaitingRoom.Tests.Integration/WaitingRoom.Tests.Integration.csproj
+          --configuration Release
+          --filter "Category=Contract"
+          --logger "trx;LogFileName=contract-results.trx"
+          --results-directory ./TestResults
+
+      - name: Run Validation Tests
+        working-directory: ./apps/backend
+        run: >
+          dotnet test
+          src/Tests/WaitingRoom.Tests.Integration/WaitingRoom.Tests.Integration.csproj
+          --configuration Release
+          --filter "Category=Validation"
+          --logger "trx;LogFileName=validation-results.trx"
+          --results-directory ./TestResults
+
+      - name: Run Performance Tests
+        working-directory: ./apps/backend
+        run: >
+          dotnet test
+          src/Tests/WaitingRoom.Tests.Integration/WaitingRoom.Tests.Integration.csproj
+          --configuration Release
+          --filter "Category=Performance"
+          --logger "trx;LogFileName=performance-results.trx"
+          --results-directory ./TestResults
+
+      - name: Run Regression Tests
+        working-directory: ./apps/backend
+        run: >
+          dotnet test
+          src/Tests/WaitingRoom.Tests.Integration/WaitingRoom.Tests.Integration.csproj
+          --configuration Release
+          --filter "Category=Regression"
+          --logger "trx;LogFileName=regression-results.trx"
+          --results-directory ./TestResults
+
+      - name: Upload QA Extended Results
+        uses: actions/upload-artifact@v4
+        if: always()
+        with:
+          name: qa-extended-results
+          path: apps/backend/TestResults/*.trx
+          retention-days: 30
+
+  # ================================================================
+  # BLACK BOX API TESTS (Full Docker Compose stack)
+  # ================================================================
+  black-box-tests:
+    name: Black Box API Tests
+    runs-on: ubuntu-latest
+    needs: [integration-tests, qa-extended-tests]
+    steps:
+      - name: Checkout code
+        uses: actions/checkout@v4
+
+      - name: Start API stack using Docker Compose
+        run: |
+          # Up only the backend services we need
+          docker compose up -d postgres rabbitmq api
+
+          # Wait for API to be healthy
+          echo "Waiting for API..."
+          timeout 60 bash -c 'while [[ "$(curl -s -o /dev/null -w ''%{http_code}'' http://localhost:5000/health/ready)" != "200" ]]; do sleep 2; done' || (docker compose logs api && exit 1)
+
+      - name: Run Black Box HTTP Tests
+        run: |
+          bash ./scripts/black-box-test.sh | tee black-box-results.txt
+
+      - name: Upload Black Box Results
+        uses: actions/upload-artifact@v4
+        if: always()
+        with:
+          name: black-box-results
+          path: black-box-results.txt
+          retention-days: 30
+
+      - name: Stop stack
+        if: always()
+        run: docker compose down -v
+
+  image-scan:
+    name: Docker Image Scan (Trivy)
+    runs-on: ubuntu-latest
+    needs: lint-and-build
+    steps:
+      - name: Checkout code
+        uses: actions/checkout@v4
+
+      - name: Build Backend Image
+        run: docker build -t rlapp-api:scan -f apps/backend/Dockerfile apps/backend/
+
+      - name: Build Frontend Image
+        run: docker build -t rlapp-frontend:scan -f apps/frontend/Dockerfile apps/frontend/
+
+      - name: Run Trivy on Backend
+        uses: aquasecurity/trivy-action@master
+        with:
+          image-ref: "rlapp-api:scan"
+          format: "sarif"
+          output: "trivy-backend.sarif"
+          exit-code: "1"
+          ignore-unfixed: true
+          vuln-type: "os,library"
+          severity: "CRITICAL,HIGH"
+
+      - name: Run Trivy on Frontend
+        if: always()
+        uses: aquasecurity/trivy-action@master
+        with:
+          image-ref: "rlapp-frontend:scan"
+          format: "sarif"
+          output: "trivy-frontend.sarif"
+          exit-code: "1"
+          ignore-unfixed: true
+          vuln-type: "os,library"
+          severity: "CRITICAL,HIGH"
+
+      - name: Upload Trivy SARIF artifacts
+        if: always()
+        uses: actions/upload-artifact@v4
+        with:
+          name: trivy-sarif-reports
+          path: |
+            trivy-backend.sarif
+            trivy-frontend.sarif
+          retention-days: 30
+
+      - name: Upload Backend SARIF
+        if: always()
+        uses: github/codeql-action/upload-sarif@v4
+        with:
+          sarif_file: trivy-backend.sarif
+          category: trivy-backend
+
+      - name: Upload Frontend SARIF
+        if: always()
+        uses: github/codeql-action/upload-sarif@v4
+        with:
+          sarif_file: trivy-frontend.sarif
+          category: trivy-frontend
+
+  release:
+    name: Release
+    runs-on: ubuntu-latest
+    needs:
+      [
+        component-tests,
+        integration-tests,
+        qa-extended-tests,
+        black-box-tests,
+        image-scan,
+      ]
+    if: github.ref == 'refs/heads/main' && github.event_name == 'push'
+    steps:
+      - name: Checkout code
+        uses: actions/checkout@v4
+      - name: Semantic Release Dummy log
+        run: echo "Creating semantic release & tag since we merged to main"

@@ -1,0 +1,19 @@
+
+✓ develop CI/CD Pipeline #57 · 22777978926
+Triggered via push about 28 minutes ago
+
+JOBS
+✓ Lint & Build in 1m2s (ID 66076113390)
+✓ Docker Image Scan (Trivy) in 1m48s (ID 66076235451)
+✓ Integration Tests in 1m26s (ID 66076235463)
+✓ Component Tests in 1m26s (ID 66076235465)
+✓ Black Box API Tests in 1m21s (ID 66076404888)
+- Release in 0s (ID 66076572324)
+
+ARTIFACTS
+frontend-coverage
+integration-test-results
+backend-coverage
+
+For more information about a job, try: gh run view --job=<job-id>
+View this run on GitHub: https://github.com/leopcaraballo/rlapp/actions/runs/22777978926
