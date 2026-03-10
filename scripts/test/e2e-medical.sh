@@ -17,6 +17,29 @@ TS=$(date +%s%3N)
 QUEUE="Q-MED-${TS: -8}"   # 12 chars (límite: 20)
 ROOM="CR-MED-${TS: -7}"   # 12 chars
 PATIENT="P-MED-${TS: -9}" # 14 chars
+CORR_ID="e2e-med-$TS"
+IDEM_KEY="e2e-med-idem-$TS"
+
+request_token() {
+  local user_id="$1"
+  local user_name="$2"
+  local role="$3"
+  local token_suffix
+  token_suffix=$(echo "$role" | tr '[:upper:]' '[:lower:]')
+
+  local response
+  response=$(curl -sfS -X POST "$API/api/auth/token" \
+    -H "Content-Type: application/json" \
+    -H "X-Correlation-Id: ${CORR_ID}-auth-${token_suffix}" \
+    -H "Idempotency-Key: ${IDEM_KEY}-auth-${token_suffix}" \
+    -d "{\"userId\":\"${user_id}\",\"userName\":\"${user_name}\",\"role\":\"${role}\"}")
+
+  echo "$response" | python3 -c 'import json,sys; data=json.load(sys.stdin); print(data.get("token") or data.get("Token") or "")'
+}
+
+RECEPT_TOKEN=$(request_token "reception-med" "Recepcion Med" "Receptionist")
+CASHIER_TOKEN=$(request_token "cashier-med" "Caja Med" "Cashier")
+DOCTOR_TOKEN=$(request_token "doctor-med" "Doctor Med" "Doctor")
 
 echo ""
 echo "========================================"
@@ -29,8 +52,9 @@ echo ""
 echo "[SETUP] Registrar paciente..."
 curl -sf -X POST "$API/api/reception/register" \
   -H "Content-Type: application/json" \
-  -H "X-User-Role: Receptionist" \
+  -H "X-Correlation-Id: ${CORR_ID}-1" \
   -H "Idempotency-Key: med-reg-$TS" \
+  -H "Authorization: Bearer ${RECEPT_TOKEN}" \
   -d "{\"queueId\":\"$QUEUE\",\"patientId\":\"$PATIENT\",\"patientName\":\"Paciente Medico\",\"priority\":\"Medium\",\"consultationType\":\"General\",\"actor\":\"recepcion\"}" > /dev/null
 echo "  ✅ Paciente $PATIENT registrado en $QUEUE"
 
@@ -39,7 +63,9 @@ sleep 1
 echo "[SETUP] Cajero llama siguiente..."
 CASHIER_RESP=$(curl -sf -X POST "$API/api/cashier/call-next" \
   -H "Content-Type: application/json" \
+  -H "X-Correlation-Id: ${CORR_ID}-2" \
   -H "Idempotency-Key: med-cash-$TS" \
+  -H "Authorization: Bearer ${CASHIER_TOKEN}" \
   -d "{\"queueId\":\"$QUEUE\",\"actor\":\"cajero\"}")
 CALLED_ID=$(echo "$CASHIER_RESP" | grep -o '"patientId":"[^"]*"' | cut -d'"' -f4)
 echo "  ✅ Cajero llamó: $CALLED_ID"
@@ -49,7 +75,9 @@ sleep 1
 echo "[SETUP] Validar pago..."
 curl -sf -X POST "$API/api/cashier/validate-payment" \
   -H "Content-Type: application/json" \
+  -H "X-Correlation-Id: ${CORR_ID}-3" \
   -H "Idempotency-Key: med-pay-$TS" \
+  -H "Authorization: Bearer ${CASHIER_TOKEN}" \
   -d "{\"queueId\":\"$QUEUE\",\"patientId\":\"$CALLED_ID\",\"actor\":\"cajero\",\"paymentReference\":\"REF-MED-$TS\"}" > /dev/null
 echo "  ✅ Pago validado"
 
@@ -60,7 +88,9 @@ echo ""
 echo "--- Activar consultorio $ROOM ---"
 curl -sf -X POST "$API/api/medical/consulting-room/activate" \
   -H "Content-Type: application/json" \
+  -H "X-Correlation-Id: ${CORR_ID}-4" \
   -H "Idempotency-Key: med-act-$TS" \
+  -H "Authorization: Bearer ${DOCTOR_TOKEN}" \
   -d "{\"queueId\":\"$QUEUE\",\"consultingRoomId\":\"$ROOM\",\"actor\":\"doctor\"}"
 echo ""
 
@@ -69,7 +99,9 @@ sleep 1
 echo "--- Reclamar siguiente paciente (médico) ---"
 MED_RESP=$(curl -sf -X POST "$API/api/medical/call-next" \
   -H "Content-Type: application/json" \
+  -H "X-Correlation-Id: ${CORR_ID}-5" \
   -H "Idempotency-Key: med-call-$TS" \
+  -H "Authorization: Bearer ${DOCTOR_TOKEN}" \
   -d "{\"queueId\":\"$QUEUE\",\"actor\":\"doctor\",\"stationId\":\"$ROOM\"}")
 echo "$MED_RESP"
 MED_PATIENT=$(echo "$MED_RESP" | grep -o '"patientId":"[^"]*"' | cut -d'"' -f4)

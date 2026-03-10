@@ -226,9 +226,11 @@ if (!app.Environment.IsEnvironment("Testing"))
 
 // Middleware Pipeline (order matters)
 app.UseCorrelationId();
+// HUMAN CHECK: CORS se ejecuta antes de idempotencia para que los rechazos tempranos
+// expongan los encabezados correctos al frontend y eviten falsos positivos de diagnostico.
+app.UseCors("FrontendDev");
 app.UseIdempotencyKey();  // CRITICAL: Check and cache responses by idempotency key
 app.UseMiddleware<ExceptionHandlerMiddleware>();
-app.UseCors("FrontendDev");
 
 // Autenticación y autorización JWT
 app.UseAuthentication();

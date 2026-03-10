@@ -27,6 +27,19 @@ Este documento registra la deuda tecnica identificada, resuelta, y pendiente en 
 
 ## 2. Deuda tecnica resuelta
 
+### DT-P07: Contrato final de login operativo y E2E heredadas desalineadas (RESUELTA)
+
+| Campo | Detalle |
+| --- | --- |
+| ID | DT-P07 |
+| Severidad | Media |
+| Categoria | Seguridad / Testing |
+| Descripcion | Persistia una brecha final entre frontend y backend: el login operativo no enviaba encabezados de idempotencia y correlacion al solicitar JWT, las respuestas tempranas del backend se observaban como falsos errores CORS y dos scripts E2E heredados continuaban usando flujos sin JWT real. |
+| Resolucion | Se agregaron `Idempotency-Key` y `X-Correlation-Id` al cliente de autenticacion frontend, se reordeno `UseCors("FrontendDev")` antes de idempotencia para mejorar el diagnostico, se alinearon las pruebas Playwright con los formularios actuales y se refactorizaron los scripts shell heredados para obtener y usar JWT reales. |
+| Archivos | `apps/frontend/src/services/api/auth.ts`, `apps/frontend/test/security/api-auth.spec.ts`, `apps/frontend/test/e2e/frontend-hardening.spec.ts`, `apps/backend/src/Services/WaitingRoom/WaitingRoom.API/Program.cs`, `scripts/test/e2e-test.sh`, `scripts/test/e2e-medical.sh` |
+| Branch | `feature/frontend-backend-full-alignment` |
+| Tests | `dotnet test RLAPP.slnx --configuration Release --verbosity minimal`, `npm test -- --runInBand test/security/api-auth.spec.ts`, `npm run test:e2e -- test/e2e/frontend-hardening.spec.ts`, `bash scripts/test/e2e-test.sh`, `bash scripts/test/e2e-medical.sh` |
+
 ### DT-P05: Entorno Docker de desarrollo y scripts de validacion operativa desalineados (RESUELTA)
 
 | Campo | Detalle |

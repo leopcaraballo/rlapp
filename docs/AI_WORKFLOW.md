@@ -1,3 +1,45 @@
+### 2026-03-10 — Alineación final de login operativo, CORS diagnóstico y E2E heredadas
+
+- Actor: GitHub Copilot (GPT-5.4)
+- Task: Completar la alineación entre frontend y backend para el login operativo, eliminar la deriva restante en pruebas E2E heredadas y dejar trazabilidad de la rama dedicada creada para este cierre.
+- AO model: GPT-5.4
+- SA model: GPT-5.4
+
+- Branch de trabajo:
+  - Base respaldada y publicada: `feature/auth-projections-docker-hardening`
+  - Rama de ejecución aprobada: `feature/frontend-backend-full-alignment`
+
+- Archivos modificados:
+  - `apps/frontend/src/services/api/auth.ts`
+  - `apps/frontend/test/security/api-auth.spec.ts`
+  - `apps/frontend/test/e2e/frontend-hardening.spec.ts`
+  - `apps/backend/src/Services/WaitingRoom/WaitingRoom.API/Program.cs`
+  - `scripts/test/e2e-test.sh`
+  - `scripts/test/e2e-medical.sh`
+  - `docs/DEBT_REPORT.md`
+
+- Acciones realizadas:
+  1. Se agregó correlación e idempotencia explícita al cliente frontend que solicita JWT operativos en `/api/auth/token`.
+  2. Se reordenó el pipeline HTTP para aplicar `UseCors("FrontendDev")` antes del middleware de idempotencia y mejorar el diagnóstico observable de rechazos tempranos.
+  3. Se incorporó una prueba unitaria dedicada del cliente de autenticación para verificar encabezados obligatorios y propagación de errores del backend.
+  4. Se corrigieron las pruebas Playwright desalineadas con los formularios vigentes, completando `idCard` y `patientId` donde ahora son obligatorios.
+  5. Se refactorizaron los scripts heredados `e2e-test.sh` y `e2e-medical.sh` para usar JWT reales emitidos por la API y abandonar la dependencia funcional de `X-User-Role`.
+
+- Notas / Human checks:
+  - El reordenamiento de CORS se limita a mejorar visibilidad y compatibilidad diagnóstica en frontend; no relaja validaciones de negocio ni de seguridad. // HUMAN CHECK
+
+- Validacion ejecutada:
+  - `dotnet test RLAPP.slnx --configuration Release --verbosity minimal`
+  - Resultado backend: 499 pruebas superadas, 0 fallos.
+  - `npm test -- --runInBand test/security/api-auth.spec.ts`
+  - Resultado frontend unitario: 2 pruebas superadas, 0 fallos.
+  - `npm run test:e2e -- test/e2e/frontend-hardening.spec.ts`
+  - Resultado Playwright: 8 pruebas superadas, 0 fallos.
+  - `bash scripts/test/e2e-test.sh`
+  - Resultado: flujo E2E general superado con JWT real.
+  - `bash scripts/test/e2e-medical.sh`
+  - Resultado: flujo E2E médico superado con JWT real.
+
 ### 2026-03-10 — Refactor de automatización operativa y validación viva con JWT real
 
 - Actor: GitHub Copilot (GPT-5.4)

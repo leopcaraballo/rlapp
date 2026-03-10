@@ -16,6 +16,29 @@ TS=$(date +%s%3N)
 # IDs únicos por corrida → evita contaminación de estado entre ejecuciones
 QUEUE="Q-E2E-${TS: -9}"   # 11 chars (límite: 20)
 ROOM="CR-E2E-${TS: -7}"   # 12 chars
+CORR_ID="e2e-legacy-$TS"
+IDEM_KEY="e2e-legacy-idem-$TS"
+
+request_token() {
+  local user_id="$1"
+  local user_name="$2"
+  local role="$3"
+  local token_suffix
+  token_suffix=$(echo "$role" | tr '[:upper:]' '[:lower:]')
+
+  local response
+  response=$(curl -sfS -X POST "$API/api/auth/token" \
+    -H "Content-Type: application/json" \
+    -H "X-Correlation-Id: ${CORR_ID}-auth-${token_suffix}" \
+    -H "Idempotency-Key: ${IDEM_KEY}-auth-${token_suffix}" \
+    -d "{\"userId\":\"${user_id}\",\"userName\":\"${user_name}\",\"role\":\"${role}\"}")
+
+  echo "$response" | python3 -c 'import json,sys; data=json.load(sys.stdin); print(data.get("token") or data.get("Token") or "")'
+}
+
+RECEPT_TOKEN=$(request_token "reception-e2e" "Recepcion E2E" "Receptionist")
+CASHIER_TOKEN=$(request_token "cashier-e2e" "Caja E2E" "Cashier")
+DOCTOR_TOKEN=$(request_token "doctor-e2e" "Doctor E2E" "Doctor")
 
 echo ""
 echo "=============================================="
@@ -28,8 +51,9 @@ echo ""
 echo "[1/6] RECEPCIÓN — registrar paciente en $QUEUE..."
 STEP1=$(curl -sf -X POST "$API/api/reception/register" \
   -H "Content-Type: application/json" \
-  -H "X-User-Role: Receptionist" \
+  -H "X-Correlation-Id: ${CORR_ID}-1" \
   -H "Idempotency-Key: e2e-regist-$TS" \
+  -H "Authorization: Bearer ${RECEPT_TOKEN}" \
   -d "{\"queueId\":\"$QUEUE\",\"patientId\":\"p-e2e-$TS\",\"patientName\":\"Ana Lopez\",\"priority\":\"Medium\",\"consultationType\":\"General\",\"actor\":\"recepcion\"}")
 echo "  Respuesta: $STEP1"
 QUEUE_ID=$(echo "$STEP1" | grep -o '"queueId":"[^"]*"' | cut -d'"' -f4)
@@ -56,7 +80,9 @@ echo ""
 echo "[3/6] CAJERO — llamar siguiente paciente..."
 STEP3=$(curl -sf -X POST "$API/api/cashier/call-next" \
   -H "Content-Type: application/json" \
+  -H "X-Correlation-Id: ${CORR_ID}-3" \
   -H "Idempotency-Key: e2e-cashier-$TS" \
+  -H "Authorization: Bearer ${CASHIER_TOKEN}" \
   -d "{\"queueId\":\"$QUEUE\",\"actor\":\"cajero\"}")
 echo "  Respuesta: $STEP3"
 CALLED_PATIENT=$(echo "$STEP3" | grep -o '"patientId":"[^"]*"' | cut -d'"' -f4)
@@ -83,7 +109,9 @@ echo ""
 echo "[5/6] CAJERO — validar pago para $NEXT_PATIENT..."
 STEP5=$(curl -sf -X POST "$API/api/cashier/validate-payment" \
   -H "Content-Type: application/json" \
+  -H "X-Correlation-Id: ${CORR_ID}-5" \
   -H "Idempotency-Key: e2e-payment-$TS" \
+  -H "Authorization: Bearer ${CASHIER_TOKEN}" \
   -d "{\"queueId\":\"$QUEUE\",\"patientId\":\"$NEXT_PATIENT\",\"actor\":\"cajero\",\"paymentReference\":\"REF-E2E-$TS\"}")
 echo "  Respuesta: $STEP5"
 
@@ -93,7 +121,9 @@ sleep 2
 # Activate es idempotente: 200 (primera vez) o 400 "already active" (re-runs) → ambos son OK
 STEP6_ACTIVATE=$(curl -s -o /tmp/e2e-activate.json -w "%{http_code}" -X POST "$API/api/medical/consulting-room/activate" \
   -H "Content-Type: application/json" \
+  -H "X-Correlation-Id: ${CORR_ID}-6-activate" \
   -H "Idempotency-Key: e2e-activate-$TS" \
+  -H "Authorization: Bearer ${DOCTOR_TOKEN}" \
   -d "{\"queueId\":\"$QUEUE\",\"consultingRoomId\":\"$ROOM\",\"actor\":\"doctor\"}")
 ACTIVATE_BODY=$(cat /tmp/e2e-activate.json)
 if [ "$STEP6_ACTIVATE" = "200" ] || echo "$ACTIVATE_BODY" | grep -q "already active"; then
@@ -107,7 +137,9 @@ echo ""
 echo "[6/6] MÉDICO — reclamar siguiente paciente..."
 STEP6=$(curl -sf -X POST "$API/api/medical/call-next" \
   -H "Content-Type: application/json" \
+  -H "X-Correlation-Id: ${CORR_ID}-6-call" \
   -H "Idempotency-Key: e2e-medical-$TS" \
+  -H "Authorization: Bearer ${DOCTOR_TOKEN}" \
   -d "{\"queueId\":\"$QUEUE\",\"actor\":\"doctor\",\"stationId\":\"$ROOM\"}")
 echo "  Respuesta: $STEP6"
 MED_PATIENT=$(echo "$STEP6" | grep -o '"patientId":"[^"]*"' | cut -d'"' -f4)

@@ -1,7 +1,8 @@
 import type { AuthSession, UserRole } from "@/security/auth";
 
-const API_BASE =
-  process.env.NEXT_PUBLIC_API_BASE_URL || "http://localhost:5000";
+const API_BASE = (
+  process.env.NEXT_PUBLIC_API_BASE_URL || "http://localhost:5000"
+).replace(/\/$/, "");
 
 type StaffRole = Exclude<UserRole, "patient">;
 
@@ -17,6 +18,14 @@ const STAFF_ROLE_MAP: Record<StaffRole, string> = {
   doctor: "Doctor",
   admin: "Admin",
 };
+
+function buildCorrelationId(role: StaffRole, idCard: string): string {
+  return `auth-${role}-${idCard}-${crypto.randomUUID()}`;
+}
+
+function buildIdempotencyKey(role: StaffRole, idCard: string): string {
+  return `auth-token-${role}-${idCard}-${crypto.randomUUID()}`;
+}
 
 export async function requestOperationalSession(
   role: StaffRole,
@@ -35,6 +44,8 @@ export async function requestOperationalSession(
     method: "POST",
     headers: {
       "Content-Type": "application/json",
+      "X-Correlation-Id": buildCorrelationId(role, normalizedIdCard),
+      "Idempotency-Key": buildIdempotencyKey(role, normalizedIdCard),
     },
     body: JSON.stringify({
       userId: normalizedIdCard,

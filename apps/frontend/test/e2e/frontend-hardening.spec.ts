@@ -88,6 +88,7 @@ test.describe("Frontend hardening y alineacion backend", () => {
     await mockWaitingRoomReads(page);
     await page.goto("/login");
     await page.selectOption("#role", "patient");
+    await page.fill("#idCard", "12345678");
     await page.click('button:has-text("Ingresar")');
 
     await expect(page).toHaveURL(/\/display\/QUEUE-01$/);
@@ -126,6 +127,7 @@ test.describe("Frontend hardening y alineacion backend", () => {
     });
 
     await page.goto("/reception");
+    await page.fill("#patientId", "PAT-E2E-01");
     await page.fill("#patientName", "Paciente E2E");
     await page.click('button:has-text("Registrar check-in")');
 
@@ -304,6 +306,7 @@ test.describe("Frontend hardening y alineacion backend", () => {
     });
 
     await page.goto("/reception");
+    await page.fill("#patientId", "PAT-ERR-01");
     await page.fill("#patientName", "Paciente Error");
     await page.click('button:has-text("Registrar check-in")');
 
