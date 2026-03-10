@@ -26,10 +26,11 @@ export default function LoginPage() {
   const [idCard, setIdCard] = useState("");
   const [ttl, setTtl] = useState(120);
   const [error, setError] = useState<string | null>(null);
+  const [submitting, setSubmitting] = useState(false);
 
   const next = useMemo(() => search?.get("next"), [search]);
 
-  function onSubmit(e: React.FormEvent) {
+  async function onSubmit(e: React.FormEvent) {
     e.preventDefault();
     setError(null);
 
@@ -39,9 +40,19 @@ export default function LoginPage() {
     }
 
     const ttlMinutes = Number.isFinite(ttl) && ttl > 0 ? ttl : 120;
-    signIn(role, ttlMinutes);
-    const fallback = getDefaultRoute(role, env.DEFAULT_QUEUE_ID);
-    router.replace(next ? decodeURIComponent(next) : fallback);
+    setSubmitting(true);
+
+    try {
+      await signIn(role, ttlMinutes, idCard);
+      const fallback = getDefaultRoute(role, env.DEFAULT_QUEUE_ID);
+      router.replace(next ? decodeURIComponent(next) : fallback);
+    } catch (err) {
+      setError(
+        err instanceof Error ? err.message : "No fue posible iniciar sesión.",
+      );
+    } finally {
+      setSubmitting(false);
+    }
   }
 
   return (
@@ -98,7 +109,7 @@ export default function LoginPage() {
           onChange={(e) => setTtl(Number(e.target.value))}
         />
 
-        <button type="submit" className={styles.submit}>
+        <button type="submit" className={styles.submit} disabled={submitting}>
           Ingresar
         </button>
 

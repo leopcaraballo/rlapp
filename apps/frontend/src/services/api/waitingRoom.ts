@@ -10,8 +10,15 @@ import {
   CommandSuccess,
   CompleteAttentionDto,
   NextTurnView,
+  parseCommandSuccess,
+  parseNextTurnView,
+  parseQueueStateView,
+  parseRebuildProjectionResponse,
+  parseRecentAttentionHistory,
+  parseWaitingRoomMonitorView,
   QueueStateView,
   RecentAttentionRecordView,
+  RebuildProjectionResponse,
   ValidatePaymentDto,
   WaitingRoomMonitorView,
 } from "./types";
@@ -83,7 +90,9 @@ export async function getMonitor(
     `${API_BASE}/api/v1/waiting-room/${encodeURIComponent(queueId)}/monitor`,
     { headers: baseHeaders() },
   );
-  return handleResponse<WaitingRoomMonitorView>(res);
+  return parseWaitingRoomMonitorView(
+    await handleResponse<WaitingRoomMonitorView>(res),
+  );
 }
 
 export async function getQueueState(queueId: string): Promise<QueueStateView> {
@@ -91,7 +100,7 @@ export async function getQueueState(queueId: string): Promise<QueueStateView> {
     `${API_BASE}/api/v1/waiting-room/${encodeURIComponent(queueId)}/queue-state`,
     { headers: baseHeaders() },
   );
-  return handleResponse<QueueStateView>(res);
+  return parseQueueStateView(await handleResponse<QueueStateView>(res));
 }
 
 export async function getNextTurn(
@@ -103,7 +112,7 @@ export async function getNextTurn(
   );
   // 404 es normal cuando no hay turno activo (cola vacía o nadie llamado)
   if (res.status === 404) return null;
-  return handleResponse<NextTurnView>(res);
+  return parseNextTurnView(await handleResponse<NextTurnView>(res));
 }
 
 export async function getRecentHistory(
@@ -114,27 +123,31 @@ export async function getRecentHistory(
     `${API_BASE}/api/v1/waiting-room/${encodeURIComponent(queueId)}/recent-history?limit=${limit}`,
     { headers: baseHeaders() },
   );
-  return handleResponse<RecentAttentionRecordView[]>(res);
+  return parseRecentAttentionHistory(
+    await handleResponse<RecentAttentionRecordView[]>(res),
+  );
 }
 
 export async function rebuildProjection(
   queueId: string,
-): Promise<{ message: string; queueId: string }> {
+): Promise<RebuildProjectionResponse> {
   const res = await fetch(
     `${API_BASE}/api/v1/waiting-room/${encodeURIComponent(queueId)}/rebuild`,
     { method: "POST", headers: commandHeaders() },
   );
-  return handleResponse<{ message: string; queueId: string }>(res);
+  return parseRebuildProjectionResponse(
+    await handleResponse<RebuildProjectionResponse>(res),
+  );
 }
 
 // Command endpoints (write operations)
-async function postCommand<T, R>(path: string, dto: T): Promise<R> {
+async function postCommand<T>(path: string, dto: T): Promise<CommandSuccess> {
   const res = await fetch(`${API_BASE}${path}`, {
     method: "POST",
     headers: commandHeaders(),
     body: JSON.stringify(dto),
   });
-  const result = await handleResponse<R>(res);
+  const result = parseCommandSuccess(await handleResponse<CommandSuccess>(res));
   try {
     // Notify frontend listeners that a command succeeded so hooks can refresh
     const queueId = (dto as unknown as { queueId?: string })?.queueId;
@@ -150,43 +163,31 @@ async function postCommand<T, R>(path: string, dto: T): Promise<R> {
 export async function checkInPatient(
   dto: CheckInPatientDto,
 ): Promise<CommandSuccess> {
-  return postCommand<CheckInPatientDto, CommandSuccess>(
-    `/api/waiting-room/check-in`,
-    dto,
-  );
+  return postCommand<CheckInPatientDto>(`/api/waiting-room/check-in`, dto);
 }
 
 export async function registerReception(
   dto: CheckInPatientDto,
 ): Promise<CommandSuccess> {
-  return postCommand<CheckInPatientDto, CommandSuccess>(
-    `/api/reception/register`,
-    dto,
-  );
+  return postCommand<CheckInPatientDto>(`/api/reception/register`, dto);
 }
 
 export async function callNextCashier(
   dto: CallNextCashierDto,
 ): Promise<CommandSuccess> {
-  return postCommand<CallNextCashierDto, CommandSuccess>(
-    `/api/cashier/call-next`,
-    dto,
-  );
+  return postCommand<CallNextCashierDto>(`/api/cashier/call-next`, dto);
 }
 
 export async function validatePayment(
   dto: ValidatePaymentDto,
 ): Promise<CommandSuccess> {
-  return postCommand<ValidatePaymentDto, CommandSuccess>(
-    `/api/cashier/validate-payment`,
-    dto,
-  );
+  return postCommand<ValidatePaymentDto>(`/api/cashier/validate-payment`, dto);
 }
 
 export async function markPaymentPending(
   dto: ValidatePaymentDto,
 ): Promise<CommandSuccess> {
-  return postCommand<ValidatePaymentDto, CommandSuccess>(
+  return postCommand<ValidatePaymentDto>(
     `/api/cashier/mark-payment-pending`,
     dto,
   );
@@ -197,10 +198,7 @@ export async function markAbsentAtCashier(dto: {
   patientId: string;
   actor: string;
 }): Promise<CommandSuccess> {
-  return postCommand<typeof dto, CommandSuccess>(
-    `/api/cashier/mark-absent`,
-    dto,
-  );
+  return postCommand<typeof dto>(`/api/cashier/mark-absent`, dto);
 }
 
 export async function cancelByPayment(dto: {
@@ -209,19 +207,13 @@ export async function cancelByPayment(dto: {
   actor: string;
   reason?: string;
 }): Promise<CommandSuccess> {
-  return postCommand<typeof dto, CommandSuccess>(
-    `/api/cashier/cancel-payment`,
-    dto,
-  );
+  return postCommand<typeof dto>(`/api/cashier/cancel-payment`, dto);
 }
 
 export async function claimNextPatient(
   dto: ClaimNextPatientDto,
 ): Promise<CommandSuccess> {
-  return postCommand<ClaimNextPatientDto, CommandSuccess>(
-    `/api/waiting-room/claim-next`,
-    dto,
-  );
+  return postCommand<ClaimNextPatientDto>(`/api/waiting-room/claim-next`, dto);
 }
 
 export async function callPatient(dto: {
@@ -229,16 +221,13 @@ export async function callPatient(dto: {
   patientId: string;
   actor: string;
 }): Promise<CommandSuccess> {
-  return postCommand<typeof dto, CommandSuccess>(
-    `/api/waiting-room/call-patient`,
-    dto,
-  );
+  return postCommand<typeof dto>(`/api/waiting-room/call-patient`, dto);
 }
 
 export async function completeAttention(
   dto: CompleteAttentionDto,
 ): Promise<CommandSuccess> {
-  return postCommand<CompleteAttentionDto, CommandSuccess>(
+  return postCommand<CompleteAttentionDto>(
     `/api/waiting-room/complete-attention`,
     dto,
   );
@@ -267,7 +256,7 @@ export async function callNextMedical(dto: {
   queueId: string;
   actor: string;
 }): Promise<CommandSuccess> {
-  return postCommand<typeof dto, CommandSuccess>(`/api/medical/call-next`, dto);
+  return postCommand<typeof dto>(`/api/medical/call-next`, dto);
 }
 
 export async function activateConsultingRoom(dto: {
@@ -276,10 +265,10 @@ export async function activateConsultingRoom(dto: {
   stationId?: string | null;
 }): Promise<CommandSuccess> {
   const { stationId, ...rest } = dto;
-  return postCommand<object, CommandSuccess>(
-    `/api/medical/consulting-room/activate`,
-    { ...rest, consultingRoomId: stationId ?? null },
-  );
+  return postCommand<object>(`/api/medical/consulting-room/activate`, {
+    ...rest,
+    consultingRoomId: stationId ?? null,
+  });
 }
 
 export async function deactivateConsultingRoom(dto: {
@@ -288,10 +277,10 @@ export async function deactivateConsultingRoom(dto: {
   stationId?: string | null;
 }): Promise<CommandSuccess> {
   const { stationId, ...rest } = dto;
-  return postCommand<object, CommandSuccess>(
-    `/api/medical/consulting-room/deactivate`,
-    { ...rest, consultingRoomId: stationId ?? null },
-  );
+  return postCommand<object>(`/api/medical/consulting-room/deactivate`, {
+    ...rest,
+    consultingRoomId: stationId ?? null,
+  });
 }
 
 export async function startConsultation(dto: {
@@ -300,10 +289,7 @@ export async function startConsultation(dto: {
   actor: string;
   stationId?: string | null;
 }): Promise<CommandSuccess> {
-  return postCommand<typeof dto, CommandSuccess>(
-    `/api/medical/start-consultation`,
-    dto,
-  );
+  return postCommand<typeof dto>(`/api/medical/start-consultation`, dto);
 }
 
 export async function finishConsultation(dto: {
@@ -312,10 +298,7 @@ export async function finishConsultation(dto: {
   actor: string;
   stationId?: string | null;
 }): Promise<CommandSuccess> {
-  return postCommand<typeof dto, CommandSuccess>(
-    `/api/medical/finish-consultation`,
-    dto,
-  );
+  return postCommand<typeof dto>(`/api/medical/finish-consultation`, dto);
 }
 
 export async function markAbsentMedical(dto: {
@@ -323,10 +306,7 @@ export async function markAbsentMedical(dto: {
   patientId: string;
   actor: string;
 }): Promise<CommandSuccess> {
-  return postCommand<typeof dto, CommandSuccess>(
-    `/api/medical/mark-absent`,
-    dto,
-  );
+  return postCommand<typeof dto>(`/api/medical/mark-absent`, dto);
 }
 
 export default {

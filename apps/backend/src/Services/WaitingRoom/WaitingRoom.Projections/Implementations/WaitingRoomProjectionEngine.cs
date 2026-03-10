@@ -49,12 +49,17 @@ public sealed class WaitingRoomProjectionEngine : IProjection
             [nameof(Domain.Events.WaitingQueueCreated)] = new WaitingQueueCreatedProjectionHandler(),
             [nameof(Domain.Events.PatientCheckedIn)] = new PatientCheckedInProjectionHandler(),
             [nameof(Domain.Events.PatientCalledAtCashier)] = new PatientCalledAtCashierProjectionHandler(),
+            [nameof(Domain.Events.PatientPaymentPending)] = new PatientPaymentPendingProjectionHandler(),
+            [nameof(Domain.Events.PatientAbsentAtCashier)] = new PatientAbsentAtCashierProjectionHandler(),
             [nameof(Domain.Events.PatientPaymentValidated)] = new PatientPaymentValidatedProjectionHandler(),
+            [nameof(Domain.Events.PatientCancelledByPayment)] = new PatientCancelledByPaymentProjectionHandler(),
             [nameof(Domain.Events.ConsultingRoomActivated)] = new ConsultingRoomActivatedProjectionHandler(),
             [nameof(Domain.Events.ConsultingRoomDeactivated)] = new ConsultingRoomDeactivatedProjectionHandler(),
             [nameof(Domain.Events.PatientClaimedForAttention)] = new PatientClaimedForAttentionProjectionHandler(),
+            [nameof(Domain.Events.PatientAbsentAtConsultation)] = new PatientAbsentAtConsultationProjectionHandler(),
             [nameof(Domain.Events.PatientCalled)] = new PatientCalledProjectionHandler(),
             [nameof(Domain.Events.PatientAttentionCompleted)] = new PatientAttentionCompletedProjectionHandler(),
+            [nameof(Domain.Events.PatientCancelledByAbsence)] = new PatientCancelledByAbsenceProjectionHandler(),
         };
     }
 

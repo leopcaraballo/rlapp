@@ -346,53 +346,13 @@ describe("auth.ts — Session Management", () => {
       expect(headers.Authorization).toEqual(`Bearer ${session.token}`);
     });
 
-    it("should include X-User-Role header for non-patient roles", () => {
-      const session = buildSession("reception", 120);
-      localStorageMock.setItem("rlapp_auth", JSON.stringify(session));
-
-      const headers = getAuthHeaders();
-      expect(headers["X-User-Role"]).toBe("Receptionist");
-    });
-
-    it("should map reception role to Receptionist", () => {
-      const session = buildSession("reception", 120);
-      localStorageMock.setItem("rlapp_auth", JSON.stringify(session));
-
-      const headers = getAuthHeaders();
-      expect(headers["X-User-Role"]).toBe("Receptionist");
-    });
-
-    it("should map cashier role to Cashier", () => {
-      const session = buildSession("cashier", 120);
-      localStorageMock.setItem("rlapp_auth", JSON.stringify(session));
-
-      const headers = getAuthHeaders();
-      expect(headers["X-User-Role"]).toBe("Cashier");
-    });
-
-    it("should map doctor role to Doctor", () => {
-      const session = buildSession("doctor", 120);
-      localStorageMock.setItem("rlapp_auth", JSON.stringify(session));
-
-      const headers = getAuthHeaders();
-      expect(headers["X-User-Role"]).toBe("Doctor");
-    });
-
-    it("should map admin role to Admin", () => {
-      const session = buildSession("admin", 120);
-      localStorageMock.setItem("rlapp_auth", JSON.stringify(session));
-
-      const headers = getAuthHeaders();
-      expect(headers["X-User-Role"]).toBe("Admin");
-    });
-
-    it("should exclude X-User-Role for patient role", () => {
+    it("should only include Authorization header for authenticated sessions", () => {
       const session = buildSession("patient", 120);
       localStorageMock.setItem("rlapp_auth", JSON.stringify(session));
 
       const headers = getAuthHeaders();
-      expect(headers["X-User-Role"]).toBeUndefined();
       expect(headers.Authorization).toEqual(`Bearer ${session.token}`);
+      expect(Object.keys(headers)).toEqual(["Authorization"]);
     });
   });
 });

@@ -14,6 +14,16 @@ const setApiTestEnv = () => {
 
 type FetchMock = jest.Mock;
 
+function buildCommandSuccess(overrides: Record<string, unknown> = {}) {
+  return {
+    success: true,
+    message: "Operation completed successfully",
+    correlationId: "corr-test-001",
+    eventCount: 1,
+    ...overrides,
+  };
+}
+
 function mockFetchOk(body: unknown, status = 200) {
   (global as unknown as { fetch: FetchMock }).fetch.mockResolvedValueOnce({
     ok: status >= 200 && status < 300,
@@ -90,7 +100,17 @@ describe("services/api/waitingRoom", () => {
 
     it("llama a la URL que contiene el queueId y el endpoint monitor", async () => {
       const { getMonitor } = await import("@/services/api/waitingRoom");
-      mockFetchOk({ queueId: "Q2", totalPatientsWaiting: 0, highPriorityCount: 0, normalPriorityCount: 0, lowPriorityCount: 0, lastPatientCheckedInAt: null, averageWaitTimeMinutes: 0, utilizationPercentage: 0, projectedAt: "" });
+      mockFetchOk({
+        queueId: "Q2",
+        totalPatientsWaiting: 0,
+        highPriorityCount: 0,
+        normalPriorityCount: 0,
+        lowPriorityCount: 0,
+        lastPatientCheckedInAt: null,
+        averageWaitTimeMinutes: 0,
+        utilizationPercentage: 0,
+        projectedAt: "2026-03-10T10:00:00Z",
+      });
       await getMonitor("Q2");
       const fetchMock = (global as unknown as { fetch: FetchMock }).fetch;
       expect(fetchMock.mock.calls[0][0]).toContain("Q2");
@@ -200,15 +220,21 @@ describe("services/api/waitingRoom", () => {
   describe("rebuildProjection", () => {
     it("devuelve mensaje de éxito cuando el servidor responde 200", async () => {
       const { rebuildProjection } = await import("@/services/api/waitingRoom");
-      mockFetchOk({ message: "Proyección reconstruida correctamente", queueId: "QUEUE-1" });
+      mockFetchOk(
+        { message: "Projection rebuild initiated", queueId: "QUEUE-1" },
+        202,
+      );
       const result = await rebuildProjection("QUEUE-1");
-      expect(result.message).toMatch(/proyecci/i);
+      expect(result.message).toMatch(/projection|proyecci/i);
       expect(result.queueId).toBe("QUEUE-1");
     });
 
     it("usa método POST en la petición", async () => {
       const { rebuildProjection } = await import("@/services/api/waitingRoom");
-      mockFetchOk({ message: "ok", queueId: "QUEUE-1" });
+      mockFetchOk(
+        { message: "Projection rebuild initiated", queueId: "QUEUE-1" },
+        202,
+      );
       await rebuildProjection("QUEUE-1");
       const fetchMock = (global as unknown as { fetch: FetchMock }).fetch;
       expect(fetchMock.mock.calls[0][1]?.method).toBe("POST");
@@ -222,7 +248,10 @@ describe("services/api/waitingRoom", () => {
 
     it("incluye X-Idempotency-Key y X-Correlation-Id en encabezados", async () => {
       const { rebuildProjection } = await import("@/services/api/waitingRoom");
-      mockFetchOk({ message: "ok", queueId: "QUEUE-1" });
+      mockFetchOk(
+        { message: "Projection rebuild initiated", queueId: "QUEUE-1" },
+        202,
+      );
       await rebuildProjection("QUEUE-1");
       const fetchMock = (global as unknown as { fetch: FetchMock }).fetch;
       const headers = fetchMock.mock.calls[0][1]?.headers ?? {};
@@ -236,32 +265,42 @@ describe("services/api/waitingRoom", () => {
   describe("checkInPatient", () => {
     it("llama a POST con el body serializado y devuelve CommandSuccess", async () => {
       const { checkInPatient } = await import("@/services/api/waitingRoom");
-      mockFetchOk({ success: true });
+      mockFetchOk(buildCommandSuccess({ queueId: "QUEUE-1", patientId: "P1" }));
       const dto = { queueId: "QUEUE-1", patientId: "P1", actor: "nurse" };
-      const result = await checkInPatient(dto as Parameters<typeof checkInPatient>[0]);
+      const result = await checkInPatient(
+        dto as Parameters<typeof checkInPatient>[0],
+      );
       const fetchMock = (global as unknown as { fetch: FetchMock }).fetch;
       expect(fetchMock.mock.calls[0][1]?.method).toBe("POST");
-      expect(JSON.parse(fetchMock.mock.calls[0][1]?.body as string)).toMatchObject({ queueId: "QUEUE-1" });
+      expect(
+        JSON.parse(fetchMock.mock.calls[0][1]?.body as string),
+      ).toMatchObject({ queueId: "QUEUE-1" });
       expect(result).toMatchObject({ success: true });
     });
 
     it("despacha el evento rlapp:command-success tras éxito", async () => {
       const { checkInPatient } = await import("@/services/api/waitingRoom");
-      mockFetchOk({ success: true });
+      mockFetchOk(buildCommandSuccess({ queueId: "QUEUE-X", patientId: "P2" }));
       const events: Event[] = [];
       window.addEventListener("rlapp:command-success", (e) => events.push(e));
       const dto = { queueId: "QUEUE-X", patientId: "P2", actor: "nurse" };
       await checkInPatient(dto as Parameters<typeof checkInPatient>[0]);
-      window.removeEventListener("rlapp:command-success", (e) => events.push(e));
+      window.removeEventListener("rlapp:command-success", (e) =>
+        events.push(e),
+      );
       expect(events.length).toBe(1);
-      expect((events[0] as CustomEvent<{ queueId: string }>).detail.queueId).toBe("QUEUE-X");
+      expect(
+        (events[0] as CustomEvent<{ queueId: string }>).detail.queueId,
+      ).toBe("QUEUE-X");
     });
 
     it("lanza error cuando el servidor responde 400", async () => {
       const { checkInPatient } = await import("@/services/api/waitingRoom");
       mockFetchError(400, { error: "Bad Request" });
       const dto = { queueId: "QUEUE-1", patientId: "P1", actor: "nurse" };
-      await expect(checkInPatient(dto as Parameters<typeof checkInPatient>[0])).rejects.toThrow();
+      await expect(
+        checkInPatient(dto as Parameters<typeof checkInPatient>[0]),
+      ).rejects.toThrow();
     });
   });
 
@@ -269,8 +308,11 @@ describe("services/api/waitingRoom", () => {
   describe("callNextCashier", () => {
     it("llama al path correcto con método POST", async () => {
       const { callNextCashier } = await import("@/services/api/waitingRoom");
-      mockFetchOk({ success: true });
-      await callNextCashier({ queueId: "QUEUE-1", actor: "cashier" } as Parameters<typeof callNextCashier>[0]);
+      mockFetchOk(buildCommandSuccess({ patientId: "P1" }));
+      await callNextCashier({
+        queueId: "QUEUE-1",
+        actor: "cashier",
+      } as Parameters<typeof callNextCashier>[0]);
       const fetchMock = (global as unknown as { fetch: FetchMock }).fetch;
       expect(fetchMock.mock.calls[0][0]).toContain("/api/cashier/call-next");
       expect(fetchMock.mock.calls[0][1]?.method).toBe("POST");
@@ -280,9 +322,14 @@ describe("services/api/waitingRoom", () => {
   // ── activateConsultingRoom ────────────────────────────────────────────────
   describe("activateConsultingRoom", () => {
     it("convierte stationId a consultingRoomId en el body", async () => {
-      const { activateConsultingRoom } = await import("@/services/api/waitingRoom");
-      mockFetchOk({ success: true });
-      await activateConsultingRoom({ queueId: "Q1", actor: "doctor", stationId: "ROOM-1" });
+      const { activateConsultingRoom } =
+        await import("@/services/api/waitingRoom");
+      mockFetchOk(buildCommandSuccess());
+      await activateConsultingRoom({
+        queueId: "Q1",
+        actor: "doctor",
+        stationId: "ROOM-1",
+      });
       const fetchMock = (global as unknown as { fetch: FetchMock }).fetch;
       const body = JSON.parse(fetchMock.mock.calls[0][1]?.body as string);
       expect(body.consultingRoomId).toBe("ROOM-1");
@@ -290,8 +337,9 @@ describe("services/api/waitingRoom", () => {
     });
 
     it("envía consultingRoomId null cuando stationId es undefined", async () => {
-      const { activateConsultingRoom } = await import("@/services/api/waitingRoom");
-      mockFetchOk({ success: true });
+      const { activateConsultingRoom } =
+        await import("@/services/api/waitingRoom");
+      mockFetchOk(buildCommandSuccess());
       await activateConsultingRoom({ queueId: "Q1", actor: "doctor" });
       const fetchMock = (global as unknown as { fetch: FetchMock }).fetch;
       const body = JSON.parse(fetchMock.mock.calls[0][1]?.body as string);
@@ -303,7 +351,7 @@ describe("services/api/waitingRoom", () => {
   describe("markAbsent (alias → markAbsentAtCashier)", () => {
     it("delega a markAbsentAtCashier usando la ruta correcta", async () => {
       const { markAbsent } = await import("@/services/api/waitingRoom");
-      mockFetchOk({ success: true });
+      mockFetchOk(buildCommandSuccess({ patientId: "P1" }));
       await markAbsent({ queueId: "Q1", patientId: "P1", actor: "cashier" });
       const fetchMock = (global as unknown as { fetch: FetchMock }).fetch;
       expect(fetchMock.mock.calls[0][0]).toContain("/api/cashier/mark-absent");
@@ -321,7 +369,10 @@ describe("services/api/waitingRoom", () => {
       await expect(getMonitor("Q1")).rejects.toThrow();
       window.removeEventListener("rlapp:auth-invalid", listener);
       expect(events).toHaveLength(1);
-      expect(events[0].detail).toMatchObject({ reason: "unauthorized", status: 401 });
+      expect(events[0].detail).toMatchObject({
+        reason: "unauthorized",
+        status: 401,
+      });
     });
 
     it("despacha 'forbidden' cuando el servidor responde 403", async () => {
@@ -333,7 +384,10 @@ describe("services/api/waitingRoom", () => {
       await expect(getMonitor("Q1")).rejects.toThrow();
       window.removeEventListener("rlapp:auth-invalid", listener);
       expect(events).toHaveLength(1);
-      expect(events[0].detail).toMatchObject({ reason: "forbidden", status: 403 });
+      expect(events[0].detail).toMatchObject({
+        reason: "forbidden",
+        status: 403,
+      });
     });
   });
 
@@ -341,8 +395,12 @@ describe("services/api/waitingRoom", () => {
   describe("registerReception", () => {
     it("llama a POST /api/reception/register con el body correcto", async () => {
       const { registerReception } = await import("@/services/api/waitingRoom");
-      mockFetchOk({ success: true });
-      const dto = { queueId: "Q1", patientId: "P1", actor: "nurse" } as Parameters<typeof registerReception>[0];
+      mockFetchOk(buildCommandSuccess({ queueId: "Q1", patientId: "P1" }));
+      const dto = {
+        queueId: "Q1",
+        patientId: "P1",
+        actor: "nurse",
+      } as Parameters<typeof registerReception>[0];
       await registerReception(dto);
       const fetchMock = (global as unknown as { fetch: FetchMock }).fetch;
       expect(fetchMock.mock.calls[0][0]).toContain("/api/reception/register");
@@ -354,11 +412,17 @@ describe("services/api/waitingRoom", () => {
   describe("validatePayment", () => {
     it("llama a POST /api/cashier/validate-payment", async () => {
       const { validatePayment } = await import("@/services/api/waitingRoom");
-      mockFetchOk({ success: true });
-      const dto = { queueId: "Q1", patientId: "P1", actor: "cashier" } as Parameters<typeof validatePayment>[0];
+      mockFetchOk(buildCommandSuccess({ patientId: "P1" }));
+      const dto = {
+        queueId: "Q1",
+        patientId: "P1",
+        actor: "cashier",
+      } as Parameters<typeof validatePayment>[0];
       await validatePayment(dto);
       const fetchMock = (global as unknown as { fetch: FetchMock }).fetch;
-      expect(fetchMock.mock.calls[0][0]).toContain("/api/cashier/validate-payment");
+      expect(fetchMock.mock.calls[0][0]).toContain(
+        "/api/cashier/validate-payment",
+      );
     });
   });
 
@@ -366,20 +430,31 @@ describe("services/api/waitingRoom", () => {
   describe("markPaymentPending", () => {
     it("llama a POST /api/cashier/mark-payment-pending", async () => {
       const { markPaymentPending } = await import("@/services/api/waitingRoom");
-      mockFetchOk({ success: true });
-      const dto = { queueId: "Q1", patientId: "P1", actor: "cashier" } as Parameters<typeof markPaymentPending>[0];
+      mockFetchOk(buildCommandSuccess({ patientId: "P1" }));
+      const dto = {
+        queueId: "Q1",
+        patientId: "P1",
+        actor: "cashier",
+      } as Parameters<typeof markPaymentPending>[0];
       await markPaymentPending(dto);
       const fetchMock = (global as unknown as { fetch: FetchMock }).fetch;
-      expect(fetchMock.mock.calls[0][0]).toContain("/api/cashier/mark-payment-pending");
+      expect(fetchMock.mock.calls[0][0]).toContain(
+        "/api/cashier/mark-payment-pending",
+      );
     });
   });
 
   // ── markAbsentAtCashier ───────────────────────────────────────────────────
   describe("markAbsentAtCashier", () => {
     it("llama a POST /api/cashier/mark-absent", async () => {
-      const { markAbsentAtCashier } = await import("@/services/api/waitingRoom");
-      mockFetchOk({ success: true });
-      await markAbsentAtCashier({ queueId: "Q1", patientId: "P1", actor: "cashier" });
+      const { markAbsentAtCashier } =
+        await import("@/services/api/waitingRoom");
+      mockFetchOk(buildCommandSuccess({ patientId: "P1" }));
+      await markAbsentAtCashier({
+        queueId: "Q1",
+        patientId: "P1",
+        actor: "cashier",
+      });
       const fetchMock = (global as unknown as { fetch: FetchMock }).fetch;
       expect(fetchMock.mock.calls[0][0]).toContain("/api/cashier/mark-absent");
     });
@@ -389,10 +464,16 @@ describe("services/api/waitingRoom", () => {
   describe("cancelByPayment", () => {
     it("llama a POST /api/cashier/cancel-payment", async () => {
       const { cancelByPayment } = await import("@/services/api/waitingRoom");
-      mockFetchOk({ success: true });
-      await cancelByPayment({ queueId: "Q1", patientId: "P1", actor: "cashier" });
+      mockFetchOk(buildCommandSuccess({ patientId: "P1" }));
+      await cancelByPayment({
+        queueId: "Q1",
+        patientId: "P1",
+        actor: "cashier",
+      });
       const fetchMock = (global as unknown as { fetch: FetchMock }).fetch;
-      expect(fetchMock.mock.calls[0][0]).toContain("/api/cashier/cancel-payment");
+      expect(fetchMock.mock.calls[0][0]).toContain(
+        "/api/cashier/cancel-payment",
+      );
     });
   });
 
@@ -400,10 +481,12 @@ describe("services/api/waitingRoom", () => {
   describe("cancelPayment (alias → cancelByPayment)", () => {
     it("delega a cancelByPayment usando la ruta correcta", async () => {
       const { cancelPayment } = await import("@/services/api/waitingRoom");
-      mockFetchOk({ success: true });
+      mockFetchOk(buildCommandSuccess({ patientId: "P1" }));
       await cancelPayment({ queueId: "Q1", patientId: "P1", actor: "cashier" });
       const fetchMock = (global as unknown as { fetch: FetchMock }).fetch;
-      expect(fetchMock.mock.calls[0][0]).toContain("/api/cashier/cancel-payment");
+      expect(fetchMock.mock.calls[0][0]).toContain(
+        "/api/cashier/cancel-payment",
+      );
     });
   });
 
@@ -411,11 +494,17 @@ describe("services/api/waitingRoom", () => {
   describe("claimNextPatient", () => {
     it("llama a POST /api/waiting-room/claim-next", async () => {
       const { claimNextPatient } = await import("@/services/api/waitingRoom");
-      mockFetchOk({ success: true });
-      const dto = { queueId: "Q1", actor: "doctor", stationId: "ROOM-1" } as Parameters<typeof claimNextPatient>[0];
+      mockFetchOk(buildCommandSuccess({ patientId: "P1" }));
+      const dto = {
+        queueId: "Q1",
+        actor: "doctor",
+        stationId: "ROOM-1",
+      } as Parameters<typeof claimNextPatient>[0];
       await claimNextPatient(dto);
       const fetchMock = (global as unknown as { fetch: FetchMock }).fetch;
-      expect(fetchMock.mock.calls[0][0]).toContain("/api/waiting-room/claim-next");
+      expect(fetchMock.mock.calls[0][0]).toContain(
+        "/api/waiting-room/claim-next",
+      );
     });
   });
 
@@ -423,10 +512,12 @@ describe("services/api/waitingRoom", () => {
   describe("callPatient", () => {
     it("llama a POST /api/waiting-room/call-patient", async () => {
       const { callPatient } = await import("@/services/api/waitingRoom");
-      mockFetchOk({ success: true });
+      mockFetchOk(buildCommandSuccess({ patientId: "P1" }));
       await callPatient({ queueId: "Q1", patientId: "P1", actor: "doctor" });
       const fetchMock = (global as unknown as { fetch: FetchMock }).fetch;
-      expect(fetchMock.mock.calls[0][0]).toContain("/api/waiting-room/call-patient");
+      expect(fetchMock.mock.calls[0][0]).toContain(
+        "/api/waiting-room/call-patient",
+      );
     });
   });
 
@@ -434,11 +525,17 @@ describe("services/api/waitingRoom", () => {
   describe("completeAttention", () => {
     it("llama a POST /api/waiting-room/complete-attention", async () => {
       const { completeAttention } = await import("@/services/api/waitingRoom");
-      mockFetchOk({ success: true });
-      const dto = { queueId: "Q1", patientId: "P1", actor: "doctor" } as Parameters<typeof completeAttention>[0];
+      mockFetchOk(buildCommandSuccess({ patientId: "P1" }));
+      const dto = {
+        queueId: "Q1",
+        patientId: "P1",
+        actor: "doctor",
+      } as Parameters<typeof completeAttention>[0];
       await completeAttention(dto);
       const fetchMock = (global as unknown as { fetch: FetchMock }).fetch;
-      expect(fetchMock.mock.calls[0][0]).toContain("/api/waiting-room/complete-attention");
+      expect(fetchMock.mock.calls[0][0]).toContain(
+        "/api/waiting-room/complete-attention",
+      );
     });
   });
 
@@ -446,7 +543,7 @@ describe("services/api/waitingRoom", () => {
   describe("callNextMedical", () => {
     it("llama a POST /api/medical/call-next", async () => {
       const { callNextMedical } = await import("@/services/api/waitingRoom");
-      mockFetchOk({ success: true });
+      mockFetchOk(buildCommandSuccess({ patientId: "P1" }));
       await callNextMedical({ queueId: "Q1", actor: "doctor" });
       const fetchMock = (global as unknown as { fetch: FetchMock }).fetch;
       expect(fetchMock.mock.calls[0][0]).toContain("/api/medical/call-next");
@@ -456,18 +553,26 @@ describe("services/api/waitingRoom", () => {
   // ── deactivateConsultingRoom ──────────────────────────────────────────────
   describe("deactivateConsultingRoom", () => {
     it("convierte stationId a consultingRoomId y llama a POST correcto", async () => {
-      const { deactivateConsultingRoom } = await import("@/services/api/waitingRoom");
-      mockFetchOk({ success: true });
-      await deactivateConsultingRoom({ queueId: "Q1", actor: "doctor", stationId: "ROOM-2" });
+      const { deactivateConsultingRoom } =
+        await import("@/services/api/waitingRoom");
+      mockFetchOk(buildCommandSuccess());
+      await deactivateConsultingRoom({
+        queueId: "Q1",
+        actor: "doctor",
+        stationId: "ROOM-2",
+      });
       const fetchMock = (global as unknown as { fetch: FetchMock }).fetch;
-      expect(fetchMock.mock.calls[0][0]).toContain("/api/medical/consulting-room/deactivate");
+      expect(fetchMock.mock.calls[0][0]).toContain(
+        "/api/medical/consulting-room/deactivate",
+      );
       const body = JSON.parse(fetchMock.mock.calls[0][1]?.body as string);
       expect(body.consultingRoomId).toBe("ROOM-2");
     });
 
     it("envía consultingRoomId null cuando stationId es undefined", async () => {
-      const { deactivateConsultingRoom } = await import("@/services/api/waitingRoom");
-      mockFetchOk({ success: true });
+      const { deactivateConsultingRoom } =
+        await import("@/services/api/waitingRoom");
+      mockFetchOk(buildCommandSuccess());
       await deactivateConsultingRoom({ queueId: "Q1", actor: "doctor" });
       const fetchMock = (global as unknown as { fetch: FetchMock }).fetch;
       const body = JSON.parse(fetchMock.mock.calls[0][1]?.body as string);
@@ -479,10 +584,16 @@ describe("services/api/waitingRoom", () => {
   describe("startConsultation", () => {
     it("llama a POST /api/medical/start-consultation", async () => {
       const { startConsultation } = await import("@/services/api/waitingRoom");
-      mockFetchOk({ success: true });
-      await startConsultation({ queueId: "Q1", patientId: "P1", actor: "doctor" });
+      mockFetchOk(buildCommandSuccess({ patientId: "P1" }));
+      await startConsultation({
+        queueId: "Q1",
+        patientId: "P1",
+        actor: "doctor",
+      });
       const fetchMock = (global as unknown as { fetch: FetchMock }).fetch;
-      expect(fetchMock.mock.calls[0][0]).toContain("/api/medical/start-consultation");
+      expect(fetchMock.mock.calls[0][0]).toContain(
+        "/api/medical/start-consultation",
+      );
     });
   });
 
@@ -490,10 +601,16 @@ describe("services/api/waitingRoom", () => {
   describe("finishConsultation", () => {
     it("llama a POST /api/medical/finish-consultation", async () => {
       const { finishConsultation } = await import("@/services/api/waitingRoom");
-      mockFetchOk({ success: true });
-      await finishConsultation({ queueId: "Q1", patientId: "P1", actor: "doctor" });
+      mockFetchOk(buildCommandSuccess({ patientId: "P1" }));
+      await finishConsultation({
+        queueId: "Q1",
+        patientId: "P1",
+        actor: "doctor",
+      });
       const fetchMock = (global as unknown as { fetch: FetchMock }).fetch;
-      expect(fetchMock.mock.calls[0][0]).toContain("/api/medical/finish-consultation");
+      expect(fetchMock.mock.calls[0][0]).toContain(
+        "/api/medical/finish-consultation",
+      );
     });
   });
 
@@ -501,8 +618,12 @@ describe("services/api/waitingRoom", () => {
   describe("markAbsentMedical", () => {
     it("llama a POST /api/medical/mark-absent", async () => {
       const { markAbsentMedical } = await import("@/services/api/waitingRoom");
-      mockFetchOk({ success: true });
-      await markAbsentMedical({ queueId: "Q1", patientId: "P1", actor: "doctor" });
+      mockFetchOk(buildCommandSuccess({ patientId: "P1" }));
+      await markAbsentMedical({
+        queueId: "Q1",
+        patientId: "P1",
+        actor: "doctor",
+      });
       const fetchMock = (global as unknown as { fetch: FetchMock }).fetch;
       expect(fetchMock.mock.calls[0][0]).toContain("/api/medical/mark-absent");
     });

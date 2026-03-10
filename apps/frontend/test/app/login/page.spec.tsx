@@ -82,8 +82,10 @@ describe("LoginPage", () => {
 
     await user.click(screen.getByRole("button", { name: "Ingresar" }));
 
-    await waitFor(() => expect(mockSignIn).toHaveBeenCalledWith("patient", 120));
-    expect(mockRouterReplace).toHaveBeenCalledWith("/patient" === "/patient" ? "/display/QUEUE-01" : "/display/QUEUE-01");
+    await waitFor(() =>
+      expect(mockSignIn).toHaveBeenCalledWith("patient", 120, "123456"),
+    );
+    expect(mockRouterReplace).toHaveBeenCalledWith("/display/QUEUE-01");
   });
 
   it("muestra error si la identificación tiene menos de 6 caracteres", async () => {
@@ -109,7 +111,9 @@ describe("LoginPage", () => {
     await user.selectOptions(screen.getByLabelText("Rol"), "cashier");
     await user.click(screen.getByRole("button", { name: "Ingresar" }));
 
-    await waitFor(() => expect(mockSignIn).toHaveBeenCalledWith("cashier", 120));
+    await waitFor(() =>
+      expect(mockSignIn).toHaveBeenCalledWith("cashier", 120, "123456"),
+    );
     expect(mockRouterReplace).toHaveBeenCalledWith("/cashier");
   });
 
@@ -124,7 +128,7 @@ describe("LoginPage", () => {
     await user.click(screen.getByRole("button", { name: "Ingresar" }));
 
     await waitFor(() =>
-      expect(mockSignIn).toHaveBeenCalledWith("reception", 120),
+      expect(mockSignIn).toHaveBeenCalledWith("reception", 120, "123456"),
     );
     expect(mockRouterReplace).toHaveBeenCalledWith("/reception");
   });
@@ -139,7 +143,9 @@ describe("LoginPage", () => {
     await user.selectOptions(screen.getByLabelText("Rol"), "doctor");
     await user.click(screen.getByRole("button", { name: "Ingresar" }));
 
-    await waitFor(() => expect(mockSignIn).toHaveBeenCalledWith("doctor", 120));
+    await waitFor(() =>
+      expect(mockSignIn).toHaveBeenCalledWith("doctor", 120, "123456"),
+    );
     expect(mockRouterReplace).toHaveBeenCalledWith("/medical");
   });
 
@@ -153,7 +159,9 @@ describe("LoginPage", () => {
     await user.selectOptions(screen.getByLabelText("Rol"), "admin");
     await user.click(screen.getByRole("button", { name: "Ingresar" }));
 
-    await waitFor(() => expect(mockSignIn).toHaveBeenCalledWith("admin", 120));
+    await waitFor(() =>
+      expect(mockSignIn).toHaveBeenCalledWith("admin", 120, "123456"),
+    );
     expect(mockRouterReplace).toHaveBeenCalledWith("/consulting-rooms");
   });
 
@@ -191,7 +199,9 @@ describe("LoginPage", () => {
 
     await user.click(screen.getByRole("button", { name: "Ingresar" }));
 
-    await waitFor(() => expect(mockSignIn).toHaveBeenCalledWith("patient", 60));
+    await waitFor(() =>
+      expect(mockSignIn).toHaveBeenCalledWith("patient", 60, "123456"),
+    );
   });
 
   it("usa TTL de 120 cuando el valor ingresado es inválido (0 o NaN)", async () => {
@@ -207,6 +217,23 @@ describe("LoginPage", () => {
 
     await user.click(screen.getByRole("button", { name: "Ingresar" }));
 
-    await waitFor(() => expect(mockSignIn).toHaveBeenCalledWith("patient", 120));
+    await waitFor(() =>
+      expect(mockSignIn).toHaveBeenCalledWith("patient", 120, "123456"),
+    );
+  });
+
+  it("muestra el error del proveedor de autenticación cuando signIn falla", async () => {
+    const user = userEvent.setup();
+    mockSignIn.mockRejectedValueOnce(new Error("Token inválido"));
+    render(<LoginPage />);
+
+    const idInput = screen.getByPlaceholderText("Número de Identificación");
+    await user.type(idInput, "123456");
+    await user.selectOptions(screen.getByLabelText("Rol"), "cashier");
+    await user.click(screen.getByRole("button", { name: "Ingresar" }));
+
+    await waitFor(() => {
+      expect(screen.getByText("Token inválido")).toBeInTheDocument();
+    });
   });
 });

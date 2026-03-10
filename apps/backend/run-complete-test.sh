@@ -30,6 +30,13 @@ COMPOSE_FILE="$REPO_ROOT/docker-compose.yml"
 SOLUTION="$PROJECT_ROOT/RLAPP.slnx"
 LOG_DIR="/tmp/rlapp-test"
 RESULTS_FILE="$PROJECT_ROOT/test-results.log"
+POSTGRES_TEST_USER="${POSTGRES_USER:-rlapp}"
+POSTGRES_TEST_PASSWORD="${POSTGRES_PASSWORD:-change-me-postgres-password}"
+POSTGRES_TEST_DATABASE="${RLAPP_TEST_DB_NAME:-rlapp_waitingroom_test}"
+RABBITMQ_TEST_HOST="${RABBITMQ_HOST:-localhost}"
+RABBITMQ_TEST_PORT="${RABBITMQ_PORT:-5672}"
+RABBITMQ_TEST_USER="${RABBITMQ_DEFAULT_USER:-rlapp}"
+RABBITMQ_TEST_PASSWORD="${RABBITMQ_DEFAULT_PASS:-change-me-rabbitmq-password}"
 
 # Proyectos de tests individuales
 TEST_DOMAIN="$PROJECT_ROOT/src/Tests/WaitingRoom.Tests.Domain/WaitingRoom.Tests.Domain.csproj"
@@ -344,12 +351,14 @@ print_section "Paso 7 — Capa 3: Integration/Infrastructure+EndToEnd (Postgres)
 LAYER3_PASS=true
 
 if $POSTGRES_AVAILABLE; then
-  export ConnectionStrings__EventStore="Host=localhost;Port=5432;Database=rlapp_waitingroom_test;Username=rlapp;Password=rlapp_secure_password"
-  export POSTGRES_CONNECTION_STRING="Host=localhost;Port=5432;Database=rlapp_waitingroom;Username=rlapp;Password=rlapp_secure_password"
-  export RabbitMq__HostName="localhost"
-  export RabbitMq__Port="5672"
-  export RabbitMq__UserName="admin"
-  export RabbitMq__Password="admin"
+  # HUMAN CHECK: las pruebas reales deben leer la misma credencial efectiva que usa el entorno Docker/CI.
+  export ConnectionStrings__EventStore="Host=localhost;Port=5432;Database=${POSTGRES_TEST_DATABASE};Username=${POSTGRES_TEST_USER};Password=${POSTGRES_TEST_PASSWORD}"
+  export POSTGRES_CONNECTION_STRING="Host=localhost;Port=5432;Database=${POSTGRES_TEST_DATABASE};Username=${POSTGRES_TEST_USER};Password=${POSTGRES_TEST_PASSWORD}"
+  export RLAPP_INTEGRATION_EVENTSTORE_CONNECTION="$ConnectionStrings__EventStore"
+  export RabbitMq__HostName="${RABBITMQ_TEST_HOST}"
+  export RabbitMq__Port="${RABBITMQ_TEST_PORT}"
+  export RabbitMq__UserName="${RABBITMQ_TEST_USER}"
+  export RabbitMq__Password="${RABBITMQ_TEST_PASSWORD}"
 
   FILTER_L3="FullyQualifiedName~WaitingRoom.Tests.Integration.Infrastructure.|FullyQualifiedName~WaitingRoom.Tests.Integration.EndToEnd."
   run_project_tests "Integration-Postgres" "$TEST_INTEGRATION" "$FILTER_L3" || LAYER3_PASS=false

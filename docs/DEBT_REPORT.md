@@ -27,6 +27,84 @@ Este documento registra la deuda tecnica identificada, resuelta, y pendiente en 
 
 ## 2. Deuda tecnica resuelta
 
+### DT-P05: Entorno Docker de desarrollo y scripts de validacion operativa desalineados (RESUELTA)
+
+| Campo | Detalle |
+| --- | --- |
+| ID | DT-P05 |
+| Severidad | Media |
+| Categoria | DevOps / Testing |
+| Descripcion | El servicio `frontend` del compose usaba la imagen endurecida de produccion mientras arrancaba con `npm run dev`, y dos scripts operativos (`black-box` y `e2e-flow-test`) no reflejaban con precision el contrato observable de la API. |
+| Resolucion | Se cambio el servicio `frontend` para construir con `Dockerfile.dev`, se flexibilizo la asercion del `400` sin cuerpo JSON en la prueba black-box y se agrego el campo `actor` en los pasos medicos del flujo E2E. |
+| Archivos | `docker-compose.yml`, `scripts/black-box-test.sh`, `scripts/test/e2e-flow-test.sh` |
+| Branch | Sesion local actual |
+| Tests | `scripts/black-box-test.sh`, `scripts/test/smoke-test.sh`, `scripts/test/e2e-flow-test.sh` |
+
+### DT-P06: Automatizacion local y credenciales de validacion desalineadas tras la reestructuracion del repositorio (RESUELTA)
+
+| Campo | Detalle |
+| --- | --- |
+| ID | DT-P06 |
+| Severidad | Media |
+| Categoria | DevOps / Testing |
+| Descripcion | Persistian tareas VS Code con rutas antiguas, credenciales legadas en pruebas y scripts E2E que no ejercian de forma estable la emision real de JWT con los encabezados exigidos por la API. |
+| Resolucion | Se alinearon rutas locales y de CI con `apps/backend` y `apps/frontend`, se unificaron credenciales activas de PostgreSQL y RabbitMQ en scripts y plantillas, y se sustituyo la validacion JWT inline por un script versionado con login real y chequeo de autorizacion. |
+| Archivos | `.vscode/tasks.json`, `apps/backend/.env.template`, `apps/backend/start-services.sh`, `apps/backend/run-complete-test.sh`, `.github/workflows/ci.yml`, `scripts/test/e2e-flow-test.sh`, `scripts/test/jwt-live-flow-check.py`, pruebas de integracion backend |
+| Branch | Sesion local actual |
+| Tests | `dotnet test apps/backend/RLAPP.slnx --configuration Release --verbosity minimal`, `npm test -- --runInBand`, `bash scripts/test/e2e-flow-test.sh`, `python3 scripts/test/jwt-live-flow-check.py` |
+
+### DT-P02: Pruebas de contrato backend/frontend (RESUELTA)
+
+| Campo | Detalle |
+| --- | --- |
+| ID | DT-P02 |
+| Severidad | Media |
+| Categoria | Testing |
+| Descripcion | La validación de contrato existía solo del lado proveedor y no cubría de forma verificable los payloads realmente consumidos por frontend. |
+| Resolucion | Se ampliaron las pruebas de contrato del backend para endpoints de consulta y se agregó validación de runtime en frontend con `zod`, junto con pruebas consumidoras dedicadas y mocks alineados. |
+| Archivos | `apps/backend/src/Tests/WaitingRoom.Tests.Integration/Contract/ApiContractTests.cs`, `apps/frontend/src/services/api/types.ts`, `apps/frontend/src/services/api/waitingRoom.ts`, `apps/frontend/test/services/waitingRoomApi.spec.ts`, `apps/frontend/test/services/waitingRoom.contract.spec.ts`, `apps/frontend/test/mocks/handlers.ts` |
+| Branch | Sesion local actual |
+| Tests | Backend: 12 pruebas de `ApiContractTests`; frontend: 43 pruebas en `waitingRoomApi.spec.ts` y `waitingRoom.contract.spec.ts` |
+
+### DT-P01: Secrets en docker-compose.yml (RESUELTA)
+
+| Campo | Detalle |
+| --- | --- |
+| ID | DT-P01 |
+| Severidad | Media |
+| Categoria | Seguridad |
+| Descripcion | Credenciales de PostgreSQL, RabbitMQ y servicios operativos auxiliares estaban hardcodeadas en `docker-compose.yml`. |
+| Resolucion | Se externalizaron las credenciales a variables de entorno consumidas desde `.env` y se agregó `.env.example` versionado como plantilla local. |
+| Archivos | `docker-compose.yml`, `.env.example`, `README.md`, `apps/backend/README.md` |
+| Branch | Sesion local actual |
+| Tests | `docker compose --env-file .env.example config` |
+
+### DT-008: Cobertura incompleta de eventos en proyecciones operativas (ALTA)
+
+| Campo | Detalle |
+| --- | --- |
+| ID | DT-008 |
+| Severidad | Alta |
+| Categoria | Arquitectura |
+| Descripcion | El motor de proyecciones no reaccionaba a eventos operativos ya existentes en dominio (`PatientPaymentPending`, ausencias y cancelaciones), lo que podia dejar el dashboard y las consultas de cola en estados inconsistentes. |
+| Resolucion | Se implementaron y registraron handlers faltantes en el read side, incluyendo pruebas de regresion para reencolado, limpieza de siguiente turno y estados terminales. |
+| Archivos | `apps/backend/src/Services/WaitingRoom/WaitingRoom.Projections/Handlers/*.cs`, `apps/backend/src/Services/WaitingRoom/WaitingRoom.Projections/Implementations/WaitingRoomProjectionEngine.cs`, `apps/backend/src/Tests/WaitingRoom.Tests.Projections/Replay/ProjectionOperationalGapTests.cs` |
+| Branch | Sesion local actual |
+| Tests | `WaitingRoom.Tests.Projections` con 16 pruebas superadas |
+
+### DT-007: Desalineacion entre autenticacion frontend y backend (ALTA)
+
+| Campo | Detalle |
+| --- | --- |
+| ID | DT-007 |
+| Severidad | Alta |
+| Categoria | Seguridad |
+| Descripcion | El frontend simulaba sesiones locales para roles operativos y dependia del header `X-User-Role`, lo que no ejercia el flujo JWT real del backend. |
+| Resolucion | Login operacional ajustado para solicitar JWT real en `/api/auth/token`, persistir sesion con expiracion efectiva y dejar de enviar `X-User-Role` desde el frontend. |
+| Archivos | `apps/frontend/src/app/login/page.tsx`, `apps/frontend/src/context/AuthContext.tsx`, `apps/frontend/src/security/auth.ts`, `apps/frontend/src/services/api/auth.ts` |
+| Branch | Sesion local actual |
+| Tests | `login/page.spec.tsx`, `AuthContext.spec.tsx`, `auth.spec.ts` |
+
 ### DT-001: Sin autenticacion ni autorizacion (CRITICA)
 
 | Campo | Detalle |
@@ -107,26 +185,6 @@ Este documento registra la deuda tecnica identificada, resuelta, y pendiente en 
 ---
 
 ## 3. Deuda tecnica pendiente (backlog priorizado)
-
-### DT-P01: Secrets en docker-compose.yml
-
-| Campo | Detalle |
-| --- | --- |
-| Severidad | Media |
-| Categoria | Seguridad |
-| Descripcion | Contrasenas de PostgreSQL y RabbitMQ estan hardcoded en docker-compose.yml. |
-| Recomendacion | Migrar a Docker Secrets o variables de entorno desde `.env` file (excluido de git). |
-| Prioridad | Proximo sprint |
-
-### DT-P02: Pruebas de contrato (Contract Testing)
-
-| Campo | Detalle |
-| --- | --- |
-| Severidad | Media |
-| Categoria | Testing |
-| Descripcion | No existen pruebas de contrato entre API y frontend. |
-| Recomendacion | Implementar Pact o schema validation tests para asegurar compatibilidad API/frontend. |
-| Prioridad | Backlog priorizado |
 
 ### DT-P03: Observabilidad de Worker
 

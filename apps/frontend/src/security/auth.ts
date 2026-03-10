@@ -59,27 +59,9 @@ export function buildSession(role: UserRole, ttlMinutes = 120): AuthSession {
 export function getAuthHeaders(): Record<string, string> {
   const session = loadSession();
   if (!session) return {};
-  const roleHeader = mapRoleHeader(session.role);
   return {
     Authorization: `Bearer ${session.token}`,
-    ...(roleHeader ? { "X-User-Role": roleHeader } : {}),
   };
-}
-
-function mapRoleHeader(role: UserRole): string | null {
-  switch (role) {
-    case "reception":
-      return "Receptionist";
-    case "cashier":
-      return "Cashier";
-    case "doctor":
-      return "Doctor";
-    case "admin":
-      return "Admin";
-    case "patient":
-    default:
-      return null;
-  }
 }
 
 function base64UrlEncode(input: string): string {

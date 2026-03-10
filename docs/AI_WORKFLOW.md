@@ -1,3 +1,198 @@
+### 2026-03-10 — Refactor de automatización operativa y validación viva con JWT real
+
+- Actor: GitHub Copilot (GPT-5.4)
+- Task: Eliminar deriva operativa restante en tareas VS Code, credenciales de pruebas y scripts E2E para que la validación desde login hasta el último endpoint crítico use JWT reales y sea reproducible.
+- AO model: GPT-5.4
+- SA model: GPT-5.4
+
+- Archivos modificados:
+  - `.vscode/tasks.json`
+  - `apps/backend/.env.template`
+  - `apps/backend/start-services.sh`
+  - `apps/backend/run-complete-test.sh`
+  - `apps/backend/src/Tests/WaitingRoom.Tests.Integration/Infrastructure/PostgresIdempotencyStoreTests.cs`
+  - `apps/backend/src/Tests/WaitingRoom.Tests.Integration/Infrastructure/PostgresPatientIdentityRegistryTests.cs`
+  - `apps/backend/src/Tests/WaitingRoom.Tests.Integration/EndToEnd/EventDrivenPipelineE2ETests.cs`
+  - `.github/workflows/ci.yml`
+  - `scripts/test/e2e-flow-test.sh`
+  - `scripts/test/jwt-live-flow-check.py`
+  - `docs/DEBT_REPORT.md`
+
+- Acciones realizadas:
+  1. Se refactorizaron tareas locales que aún apuntaban a rutas obsoletas `rlapp-backend` y `rlapp-frontend`, incluyendo el reemplazo del chequeo JWT inline por un script versionado.
+  2. Se unificaron credenciales de PostgreSQL y RabbitMQ entre pruebas de integración, CI, plantillas locales y scripts operativos para eliminar la deriva del valor legado `rlapp_secure_password`.
+  3. Se corrigió el flujo shell E2E para solicitar JWT reales a `/api/auth/token` y se añadieron headers obligatorios de correlación e idempotencia también en la emisión de tokens.
+  4. Se creó una validación viva dedicada (`jwt-live-flow-check.py`) que cubre login operacional, autorización negativa y el flujo completo Recepción → Caja → Consulta.
+
+- Validacion ejecutada:
+  - `dotnet test apps/backend/RLAPP.slnx --configuration Release --verbosity minimal`
+  - Resultado backend: 499 pruebas superadas, 0 fallos.
+  - `npm test -- --runInBand`
+  - Resultado frontend: 815 pruebas superadas, 0 fallos.
+  - `bash scripts/test/e2e-flow-test.sh`
+  - Resultado: flujo shell E2E operativo superado.
+  - `python3 scripts/test/jwt-live-flow-check.py`
+  - Resultado: validación viva con JWT real superada (`JWT_LIVE_FLOW_OK`).
+
+### 2026-03-10 — Corrección del entorno Docker de desarrollo y estabilización de pruebas operativas
+
+- Actor: GitHub Copilot (GPT-5.4)
+- Task: Corregir la indisponibilidad del frontend en Docker, alinear los scripts de validación con el contrato observable de la API y revalidar el flujo operativo completo antes de continuar con nuevas remediaciones.
+- AO model: GPT-5.4
+- SA model: GPT-5.4
+
+- Archivos modificados:
+  - `.env` (local, no versionado)
+  - `docker-compose.yml`
+  - `scripts/black-box-test.sh`
+  - `scripts/test/e2e-flow-test.sh`
+  - `docs/DEBT_REPORT.md`
+
+- Acciones realizadas:
+  1. Se diagnosticó que el servicio `frontend` estaba construyendo con el Dockerfile endurecido de producción mientras intentaba arrancar en modo desarrollo con `npm run dev`.
+  2. Se ajustó el compose para usar `Dockerfile.dev` en el servicio `frontend`, preservando la separación entre imagen de desarrollo e imagen productiva.
+  3. Se corrigió el script de caja negra para aceptar el `400 Bad Request` sin cuerpo JSON en el escenario inválido, que es el contrato observable actual del backend.
+  4. Se corrigió el flujo E2E para enviar el campo `actor` en `start-consultation` y `finish-consultation`, en línea con los DTOs requeridos por la API.
+  5. Se generó `.env` local a partir de la plantilla versionada para que `docker compose` opere sin variables faltantes en el entorno de desarrollo.
+  6. Se reestabilizó localmente la API alineando la credencial efectiva del rol `rlapp` en PostgreSQL con la configuración usada por Docker Compose para esta validación.
+
+- Validacion ejecutada:
+  - `docker compose --env-file .env.example up -d --build frontend`
+  - `bash ./scripts/black-box-test.sh`
+  - `bash ./scripts/test/smoke-test.sh`
+  - `bash ./scripts/test/e2e-flow-test.sh`
+  - Resultado: frontend recuperado en `localhost:3001`, prueba de caja negra superada, smoke test superado y flujo E2E completo superado.
+
+### 2026-03-10 — Cierre de validación de contrato backend/frontend
+
+- Actor: GitHub Copilot (GPT-5.4)
+- Task: Cerrar la brecha de contract testing entre backend y frontend endureciendo el contrato proveedor y agregando validación de runtime en el consumidor.
+- AO model: GPT-5.4
+- SA model: GPT-5.4
+
+- Archivos modificados:
+  - `apps/backend/src/Tests/WaitingRoom.Tests.Integration/Contract/ApiContractTests.cs`
+  - `apps/frontend/src/services/api/types.ts`
+  - `apps/frontend/src/services/api/waitingRoom.ts`
+  - `apps/frontend/test/services/waitingRoomApi.spec.ts`
+  - `apps/frontend/test/services/waitingRoom.contract.spec.ts`
+  - `apps/frontend/test/mocks/handlers.ts`
+  - `docs/DEBT_REPORT.md`
+
+- Acciones realizadas:
+  1. Se amplió la suite backend de contrato para cubrir `monitor`, `queue-state`, `next-turn`, `recent-history` y `rebuild`.
+  2. Se agregó validación ligera de contrato en frontend mediante esquemas `zod` sobre respuestas exitosas críticas.
+  3. Se endurecieron los tests del cliente API y se alinearon los handlers de MSW con el contrato real del backend.
+  4. Se actualizó el backlog técnico para reflejar que la brecha ya no está pendiente.
+
+- Validacion ejecutada:
+  - `dotnet test src/Tests/WaitingRoom.Tests.Integration/WaitingRoom.Tests.Integration.csproj --configuration Release --filter ApiContractTests --verbosity normal`
+  - Resultado backend: 12 pruebas superadas, 0 fallos.
+  - `npm test -- --runInBand test/services/waitingRoomApi.spec.ts test/services/waitingRoom.contract.spec.ts`
+  - Resultado frontend: 43 pruebas superadas, 0 fallos.
+
+### 2026-03-10 — Externalización de secretos del compose raíz
+
+- Actor: GitHub Copilot (GPT-5.4)
+- Task: Retirar credenciales hardcodeadas del `docker-compose.yml` raíz y reemplazarlas por variables de entorno locales versionadas mediante una plantilla segura.
+- AO model: GPT-5.4
+- SA model: GPT-5.4
+
+- Archivos modificados:
+  - `docker-compose.yml`
+  - `.env.example`
+  - `README.md`
+  - `apps/backend/README.md`
+  - `docs/DEBT_REPORT.md`
+
+- Acciones realizadas:
+  1. Se identificaron secretos embebidos en PostgreSQL, RabbitMQ, Grafana, Seq, PgAdmin y el exporter de PostgreSQL.
+  2. Se reemplazaron dichos valores por variables de entorno interpoladas desde `.env`.
+  3. Se creó una plantilla `.env.example` para bootstrap local sin versionar secretos reales.
+  4. Se ajustó la documentación operativa para exigir la copia previa a `.env` antes de ejecutar Docker Compose.
+
+- Validacion ejecutada:
+  - `docker compose --env-file .env.example config`
+
+### 2026-03-10 — Cierre de brecha de cobertura en proyecciones operativas
+
+- Actor: GitHub Copilot (GPT-5.4)
+- Task: Completar la cobertura del read side para eventos operativos que ya existían en el dominio pero no actualizaban las proyecciones consultadas por monitor, cola y siguiente turno.
+- AO model: GPT-5.4
+- SA model: GPT-5.4
+
+- Archivos modificados:
+  - `apps/backend/src/Services/WaitingRoom/WaitingRoom.Projections/Handlers/PatientPaymentPendingProjectionHandler.cs`
+  - `apps/backend/src/Services/WaitingRoom/WaitingRoom.Projections/Handlers/PatientAbsentAtCashierProjectionHandler.cs`
+  - `apps/backend/src/Services/WaitingRoom/WaitingRoom.Projections/Handlers/PatientCancelledByPaymentProjectionHandler.cs`
+  - `apps/backend/src/Services/WaitingRoom/WaitingRoom.Projections/Handlers/PatientAbsentAtConsultationProjectionHandler.cs`
+  - `apps/backend/src/Services/WaitingRoom/WaitingRoom.Projections/Handlers/PatientCancelledByAbsenceProjectionHandler.cs`
+  - `apps/backend/src/Services/WaitingRoom/WaitingRoom.Projections/Implementations/WaitingRoomProjectionEngine.cs`
+  - `apps/backend/src/Tests/WaitingRoom.Tests.Projections/Replay/ProjectionOperationalGapTests.cs`
+  - `docs/DEBT_REPORT.md`
+  - `docs/BUSINESS_CONTEXT.md`
+
+- Acciones realizadas:
+  1. Se contrastaron los eventos reales emitidos por el agregado con los handlers registrados en el motor de proyecciones.
+  2. Se implementaron handlers faltantes para pago pendiente, ausencia en caja, cancelacion por impago, ausencia en consulta y cancelacion por ausencia.
+  3. Se registraron los nuevos handlers en `WaitingRoomProjectionEngine` para que el replay y el procesamiento incremental reflejen los estados operativos terminales e intermedios.
+  4. Se agregaron pruebas de regresion de proyecciones para validar reencolado, limpieza de `NextTurnView` y persistencia de estado operativo.
+  5. Se actualizaron artefactos documentales para reflejar que la brecha detectada ya fue mitigada.
+
+- Validacion ejecutada:
+  - `dotnet test src/Tests/WaitingRoom.Tests.Projections/WaitingRoom.Tests.Projections.csproj --configuration Release --verbosity minimal`
+  - Resultado: 16 pruebas superadas, 0 fallos.
+
+### 2026-03-10 — Alineación de autenticación real entre frontend y backend
+
+- Actor: GitHub Copilot (GPT-5.4)
+- Task: Eliminar la dependencia del header `X-User-Role` en el frontend y alinear el login de roles operativos con el endpoint real de emisión de JWT del backend.
+- AO model: GPT-5.4
+- SA model: GPT-5.4
+
+- Archivos modificados:
+  - `apps/frontend/src/app/login/page.tsx`
+  - `apps/frontend/src/context/AuthContext.tsx`
+  - `apps/frontend/src/security/auth.ts`
+  - `apps/frontend/src/services/api/auth.ts`
+  - `apps/frontend/test/app/login/page.spec.tsx`
+  - `apps/frontend/test/security/auth.spec.ts`
+  - `apps/frontend/test/security/AuthContext.spec.tsx`
+  - `docs/USER_STORIES_REFINEMENT.md`
+  - `docs/TEST_CASES_AI.md`
+  - `docs/DEBT_REPORT.md`
+
+- Acciones realizadas:
+  1. Se confirmó por código que el frontend simulaba sesiones locales para roles operativos mientras el backend esperaba JWT firmado real.
+  2. Se implementó un cliente de autenticación para consumir `/api/auth/token` y persistir sesiones operativas con expiración efectiva.
+  3. Se eliminó el envío del header `X-User-Role` desde el frontend para forzar el uso del contrato real basado en `Authorization: Bearer`.
+  4. Se ajustaron pruebas unitarias y documentación para reflejar el flujo de autenticación real.
+
+- Notas / Human checks:
+  - El fallback por `X-User-Role` permanece del lado backend para desarrollo y compatibilidad, pero ya no es usado por el frontend. // HUMAN CHECK
+
+### 2026-03-10 — Auditoría arquitectónica, QA y documentación inferida desde código
+
+- Actor: GitHub Copilot (GPT-5.4)
+- Task: Auditar la arquitectura real del repositorio, contrastar la documentación contra la implementación y generar artefactos de negocio y QA basados en el código.
+- AO model: GPT-5.4
+- SA model: GPT-5.4
+
+- Archivos creados:
+  - `docs/BUSINESS_CONTEXT.md`
+  - `docs/USER_STORIES_REFINEMENT.md`
+  - `docs/TEST_CASES_AI.md`
+
+- Acciones realizadas:
+  1. Se validó el contexto obligatorio del proyecto y la disponibilidad de herramientas de análisis.
+  2. Se inspeccionó la estructura real del backend y frontend, incluyendo solución `.slnx`, proyectos `.csproj`, entrypoints, middlewares, handlers, aggregate, persistencia, proyecciones, worker, frontend por roles y pipelines CI.
+  3. Se contrastó la documentación vigente con la implementación observada para detectar desalineaciones, duplicados y brechas.
+  4. Se reconstruyó el contexto de negocio, se infirieron historias de usuario y se generaron escenarios BDD con ajustes humanos de QA.
+
+- Notas / Human checks:
+  - No se realizaron cambios de código fuente ni de infraestructura; la intervención fue exclusivamente documental y de auditoría.
+  - Se identificaron hallazgos relevantes a validar por el equipo, especialmente la desalineación entre autenticación frontend y backend, la cobertura incompleta de eventos en proyecciones y la obsolescencia de varios documentos operativos.
+
 ### 2026-03-09 — Corrección de solución raíz para dependency submission en CI
 
 - Actor: GitHub Copilot (GPT-5.4)
@@ -852,14 +1047,17 @@ Razón: Estos tests son intensivos y validan escenarios ya verificados mediante 
 **Contexto:** El usuario solicitó ejecutar y estabilizar la Tarea J4 referida a la ejecución de las pruebas unitarias y de componente del Frontend (Jest + RTL) en el pipeline de GitHub Actions, asegurando que se ignore el directorio de pruebas E2E en Playwright y se guarden los reportes de cobertura en la ubicación adecuada.
 
 **Pasos Ejecutados:**
+
 1. **Verificación Local vs. CI:** Confirmé que la instrucción `test:component` generera exclusiones debidas en la suite E2E (`--testPathIgnorePatterns='e2e'`). Estas instrucciones ya se encontraban listas en el CLI del `package.json` de previas iteraciones de refactor local.
-2. **Generación de Reportes (`coverage`):** Analicé `jest.config.ts`, notando que exporta sus métricas hacia `.rootDir/test-results/coverage`, no la carpeta `/coverage/` cruda en la raíz del frontend. 
+2. **Generación de Reportes (`coverage`):** Analicé `jest.config.ts`, notando que exporta sus métricas hacia `.rootDir/test-results/coverage`, no la carpeta `/coverage/` cruda en la raíz del frontend.
 3. **Parche en Pipeline YAML (`ci.yml`):** Reemplacé la instrucción de subida en la fase de Github Actions, cambiando `rlapp-frontend/coverage/` por `rlapp-frontend/test-results/coverage/` como la ruta definitiva para el artefacto de resultados frontend.
 
 **Comando Principal de Test:**
+
 ```bash
 npm run test:component
 ```
+
 *Resultados locales confirmados: `Test Suites: 68 passed, 68 total`, `Tests: 815 passed, 815 total`.*
 
 ### Tarea J7: Recopilación de Evidencias de Ejecución (Re-creado desde Develop)

@@ -136,6 +136,12 @@ wait_for "RabbitMQ" curl -fsS http://localhost:15672/ || {
 
 echo ""
 
+POSTGRES_LOCAL_USER="${POSTGRES_USER:-rlapp}"
+POSTGRES_LOCAL_PASSWORD="${POSTGRES_PASSWORD:-change-me-postgres-password}"
+POSTGRES_LOCAL_DATABASE="${RLAPP_DB_NAME:-rlapp_waitingroom}"
+RABBITMQ_LOCAL_USER="${RABBITMQ_DEFAULT_USER:-rlapp}"
+RABBITMQ_LOCAL_PASSWORD="${RABBITMQ_DEFAULT_PASS:-change-me-rabbitmq-password}"
+
 # --- Paso 3: Servicios .NET locales (solo modo --local) ---------------------
 if [[ "$MODE" == "local" ]]; then
   echo -e "${YELLOW}[3/4] Iniciando servicios .NET localmente...${NC}"
@@ -151,11 +157,12 @@ if [[ "$MODE" == "local" ]]; then
   fi
 
   # Variables de entorno para conexion local
-  export ConnectionStrings__EventStore="Host=localhost;Port=5432;Database=rlapp_waitingroom;Username=rlapp;Password=rlapp_secure_password"
+  # HUMAN CHECK: se derivan credenciales desde el entorno raiz para evitar deriva entre Docker, CI y ejecucion local.
+  export ConnectionStrings__EventStore="Host=localhost;Port=5432;Database=${POSTGRES_LOCAL_DATABASE};Username=${POSTGRES_LOCAL_USER};Password=${POSTGRES_LOCAL_PASSWORD}"
   export RabbitMq__HostName="localhost"
   export RabbitMq__Port="5672"
-  export RabbitMq__UserName="admin"
-  export RabbitMq__Password="admin"
+  export RabbitMq__UserName="${RABBITMQ_LOCAL_USER}"
+  export RabbitMq__Password="${RABBITMQ_LOCAL_PASSWORD}"
   export RabbitMq__VirtualHost="/"
   export RabbitMq__ExchangeName="rlapp.events"
   export RabbitMq__ExchangeType="topic"
