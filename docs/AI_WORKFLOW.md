@@ -1,3 +1,174 @@
+# AI workflow
+
+## 2026-03-11 — Auditoría técnica completa con corrección de 4 bugs críticos
+
+- Actor: GitHub Copilot (Claude Sonnet 4.6)
+- Task: Auditoría técnica completa del repositorio para identificar y corregir todos los bugs que impidan que el stack funcione correctamente con `docker compose up --build`.
+- AO model: Claude Sonnet 4.6
+- SA model: Claude Sonnet 4.6 (x2) + Claude Haiku 4.5
+
+- Archivos modificados:
+  - `docker-compose.yml`
+  - `apps/backend/src/Services/WaitingRoom/WaitingRoom.API/appsettings.json`
+  - `apps/backend/src/Services/WaitingRoom/WaitingRoom.API/appsettings.Development.json`
+
+- Acciones realizadas:
+  1. Se ejecutó auditoría técnica completa del stack Docker, backend y configuración de infraestructura.
+  2. Se identificaron 4 bugs mediante análisis exhaustivo del código fuente y configuración.
+  3. BUG-01 (CRÍTICO): ExchangeName del Worker desalineado con la API. El Worker usaba `waiting_room_events` (appsettings.json) mientras la API publicaba en `rlapp.events` (docker-compose). El Outbox Pattern nunca despachaba mensajes. Se corrigió agregando `RabbitMq__ExchangeName: rlapp.events` y `RabbitMq__ExchangeType: topic` al worker en docker-compose.yml.
+  4. BUG-02 (MEDIA): `pg_isready -U rlapp` hardcodeado en healthcheck de postgres. Se parametrizó a `pg_isready -U ${POSTGRES_USER:-rlapp}` con fallback seguro.
+  5. BUG-03 (MEDIA): Race condition en arranque del Worker por `depends_on: api: condition: service_started`. Se cambió a `service_healthy` para garantizar que la API esté disponible antes de que el Worker inicie.
+  6. BUG-04 (MEDIA): Sección `Jwt` ausente en `appsettings.json`. Se agregó la sección explícita en `appsettings.json` y `appsettings.Development.json` con valores alineados a `JwtOptions.cs`, permitiendo sobreescritura vía variables de entorno en producción.
+
+- Validacion ejecutada:
+  - `docker compose config --quiet` — YAML válido confirmado
+  - Revisión de diffs git — cambios quirúrgicos verificados
+
+- Resultado:
+  - Outbox Pattern: alineado, Worker y API usan el mismo exchange `rlapp.events`
+  - Healthcheck: parametrizado con variable de entorno dinámica
+  - Startup: race condition eliminado, Worker espera API saludable
+  - JWT: configuración explícita y sobreescribible sin recompilar
+  - Commit: `fix(infra): corregir 4 bugs detectados en auditoría técnica completa`
+
+## 2026-03-10 — Limpieza integral de builds, normalización de `.next` y validación Docker-first
+
+- Actor: GitHub Copilot (GPT-5.4)
+- Task: Eliminar artefactos locales de build, normalizar el frontend para usar solo `.next`, reconstruir el stack completo con Docker y validar operación real de frontend, backend, base de datos y mensajería.
+- AO model: GPT-5.4
+- SA model: GPT-5.4
+
+- Archivos modificados:
+  - `apps/frontend/next.config.ts`
+  - `apps/frontend/next-env.d.ts`
+  - `apps/frontend/tsconfig.json`
+  - `apps/frontend/eslint.config.mjs`
+  - `docker-compose.yml`
+  - `apps/backend/Dockerfile`
+  - `apps/backend/src/Services/WaitingRoom/WaitingRoom.API/Endpoints/WaitingRoomQueryEndpoints.cs`
+  - `.env`
+  - `.env.example`
+  - `.vscode/tasks.json`
+  - `docs/AI_WORKFLOW.md`
+  - `docs/DEBT_REPORT.md`
+
+- Acciones realizadas:
+  1. Se inspeccionó la estructura del repositorio y se detectó deriva de builds en frontend por el uso simultáneo de `.next` y `.next-workspace`.
+  2. Se normalizó la configuración de Next.js, TypeScript, ESLint y Docker Compose para que el build operativo del frontend use únicamente `.next`.
+  3. Se eliminaron builds locales de frontend y backend, además de contenedores, volúmenes e imágenes del proyecto, y se reconstruyó el stack completo desde cero.
+  4. Se corrigió el Dockerfile del backend para usar imágenes estables de `.NET 10`, evitando la inestabilidad observada al resolver imágenes nightly.
+  5. Se corrigió el reinicio continuo de pgAdmin ajustando el correo por defecto a un dominio válido y se dejó estable el stack completo.
+  6. Se ajustaron las consultas del backend para devolver vistas vacías deterministas cuando la cola aún no tiene eventos, permitiendo pruebas manuales sobre una base limpia en Docker.
+  7. Se validó un flujo real con autenticación operativa, registro de paciente, persistencia en PostgreSQL y despacho del outbox.
+
+- Validacion ejecutada:
+  - `docker compose down --remove-orphans --volumes`
+  - `docker builder prune -af`
+  - `docker compose up -d --build`
+  - `curl http://localhost:5000/health/live`
+  - `curl http://localhost:3001`
+  - `curl http://localhost:5000/api/v1/waiting-room/QUEUE-01/queue-state`
+  - `curl http://localhost:5000/api/v1/waiting-room/QUEUE-01/monitor`
+  - `POST /api/auth/token` con `Idempotency-Key`
+  - `POST /api/reception/register` con JWT real
+  - consultas SQL a `waiting_room_events`, `waiting_room_patients` y `waiting_room_outbox`
+
+- Resultado:
+  - Stack Docker: operativo y estable.
+  - Frontend: disponible en `http://localhost:3001` y usando solo `.next`.
+  - Backend: saludable en `http://localhost:5000/health/live`.
+  - PostgreSQL: funcional, con persistencia de eventos y pacientes.
+  - Outbox: eventos en estado `Dispatched`, validando integración con worker y RabbitMQ.
+  - pgAdmin: estable en `http://localhost:5050`.
+
+## 2026-03-10 — Auditoría ejecutable backend/frontend y estabilización de compilación local
+
+- Actor: GitHub Copilot (GPT-5.4)
+- Task: Auditar el código backend y frontend mediante ejecución real de suites, corregir la estabilidad de compilación del frontend y validar la integración extremo a extremo.
+- AO model: GPT-5.4
+- SA model: GPT-5.4
+
+- Archivos modificados:
+  - `apps/frontend/src/config/env.ts`
+  - `apps/frontend/test/config/env.coverage.spec.ts`
+  - `apps/frontend/next.config.ts`
+  - `apps/frontend/tsconfig.json`
+  - `apps/frontend/eslint.config.mjs`
+  - `apps/frontend/src/context/AuthContext.tsx`
+  - `apps/frontend/src/services/api/waitingRoom.ts`
+  - `apps/frontend/test/security/AuthContext.spec.tsx`
+  - `docker-compose.yml`
+  - `docs/AI_WORKFLOW.md`
+  - `docs/DEBT_REPORT.md`
+
+- Acciones realizadas:
+  1. Se ejecutó la suite detallada del backend y se confirmó que dominio, aplicación, proyecciones e integración quedaron en verde con 499 pruebas superadas.
+  2. Se ejecutó la suite completa del frontend y se confirmó cobertura funcional vigente con 818 pruebas superadas.
+  3. Se diagnosticó una falla real de compilación local del frontend causada por artefactos de Next generados como `root` y por una validación de entorno demasiado estricta durante prerender.
+  4. Se aisló la salida de build de Next para desarrollo local, se añadió soporte de `distDir` configurable por entorno y se reservó un volumen dedicado para el runtime de desarrollo del frontend.
+  5. Se alineó `env.ts` con el comportamiento operativo ya usado en otros adaptadores del frontend, agregando fallback seguro para `NEXT_PUBLIC_API_BASE_URL` y su prueba correspondiente.
+  6. Se corrigieron los últimos incumplimientos de orden de imports detectados por ESLint y se validó nuevamente compilación, lint y flujo E2E integrado.
+
+- Validacion ejecutada:
+  - `cd apps/backend && ./run-tests-detail.sh`
+  - `cd apps/frontend && npm ci && npm test -- --runInBand`
+  - `cd apps/frontend && npm test -- --runInBand test/config/env.coverage.spec.ts`
+  - `cd apps/frontend && npx eslint src test --max-warnings=0`
+  - `cd apps/frontend && npm run build`
+  - `bash scripts/test/e2e-flow-test.sh`
+
+- Resultado:
+  - Backend: 499 pruebas superadas, 0 fallos.
+  - Frontend: 818 pruebas superadas, 0 fallos.
+  - Lint frontend: sin errores.
+  - Build frontend: exitoso.
+  - Flujo E2E Recepción → Caja → Consulta: superado.
+
+### 2026-03-10 — Validación integral de salud, endpoints, suites y flujos E2E
+
+- Actor: GitHub Copilot (GPT-5.4)
+- Task: Ejecutar una validación integral del sistema desplegado para confirmar salud operativa, disponibilidad de endpoints, suites automatizadas y flujos E2E con autenticación real.
+- AO model: GPT-5.4
+- SA model: GPT-5.4
+
+- Archivos modificados:
+  - `docs/AI_WORKFLOW.md`
+
+- Acciones realizadas:
+  1. Se verificó el estado de contenedores y la salud de servicios principales en Docker Compose.
+  2. Se validaron endpoints base de backend y frontend, incluyendo `health`, `openapi` y disponibilidad HTTP del frontend.
+  3. Se ejecutaron validaciones de autenticación real, black-box, smoke, backend completo, frontend completo, Playwright y flujos shell E2E.
+  4. Se revisaron logs recientes de API y Worker para confirmar procesamiento correcto; el único error observado correspondió a un escenario negativo esperado de paciente duplicado en black-box.
+
+- Validacion ejecutada:
+  - `docker compose ps`
+  - `docker ps -a --format 'table {{.Names}}\t{{.Status}}\t{{.Image}}'`
+  - `curl http://localhost:5000/health/live`
+  - `curl http://localhost:5000/health/ready`
+  - `curl http://localhost:5000/openapi/v1.json`
+  - `curl http://localhost:3001`
+  - `python3 scripts/test/jwt-live-flow-check.py`
+  - `bash scripts/black-box-test.sh`
+  - `bash scripts/test/smoke-test.sh`
+  - `dotnet test RLAPP.slnx --configuration Release --verbosity minimal`
+  - `npm ci && npm test -- --runInBand`
+  - `npm run test:e2e`
+  - `bash scripts/test/e2e-flow-test.sh`
+  - `bash scripts/test/e2e-test.sh`
+  - `bash scripts/test/e2e-medical.sh`
+  - `docker logs rlapp-api --tail 120`
+  - `docker logs rlapp-worker --tail 120`
+
+- Resultado:
+  - Endpoints base: HTTP 200 en `health/live`, `health/ready`, `openapi` y frontend.
+  - JWT live flow: OK.
+  - Black-box: OK.
+  - Smoke: OK con advertencias no bloqueantes de entorno de desarrollo.
+  - Backend: 499 pruebas superadas, 0 fallos.
+  - Frontend: 817 pruebas superadas, 0 fallos.
+  - Playwright: 8 pruebas superadas, 1 caso omitido.
+  - Shell E2E: 3 flujos principales superados.
+
 ### 2026-03-10 — Alineación final de login operativo, CORS diagnóstico y E2E heredadas
 
 - Actor: GitHub Copilot (GPT-5.4)
@@ -184,6 +355,43 @@
 - Validacion ejecutada:
   - `dotnet test src/Tests/WaitingRoom.Tests.Projections/WaitingRoom.Tests.Projections.csproj --configuration Release --verbosity minimal`
   - Resultado: 16 pruebas superadas, 0 fallos.
+
+### 2026-03-10 — Corrección del contrato real de login frontend-backend y validación integral viva
+
+- Actor: GitHub Copilot (GPT-5.4)
+- Task: Verificar roles, login y flujo integral frontend-backend; corregir la integración del login operativo para que funcione con el contrato JSON real emitido por la API.
+- AO model: GPT-5.4
+- SA model: GPT-5.4
+
+- Archivos modificados:
+  - `apps/frontend/src/services/api/auth.ts`
+  - `apps/frontend/test/security/api-auth.spec.ts`
+  - `docs/AI_WORKFLOW.md`
+  - `docs/DEBT_REPORT.md`
+
+- Acciones realizadas:
+  1. Se ejecutaron las suites completas de backend y frontend para establecer la línea base de calidad.
+  2. Se validó el stack Docker vivo y se reprodujo el flujo real de login desde navegador contra `http://localhost:3001` y `http://localhost:5000`.
+  3. Se detectó una desalineación real: el backend serializaba la respuesta de `/api/auth/token` en `camelCase` (`token`, `expiresIn`, `tokenType`), mientras el frontend consumía únicamente `PascalCase`.
+  4. Se corrigió el cliente de autenticación del frontend para aceptar `camelCase` real del backend y mantener compatibilidad defensiva con `PascalCase`.
+  5. Se ampliaron pruebas unitarias del cliente de autenticación y se repitieron validaciones vivas de login por rol y RBAC.
+
+- Validacion ejecutada:
+  - `dotnet test RLAPP.slnx --configuration Release --verbosity minimal`
+  - `CI=true npm test -- --runInBand --ci --reporters=default`
+  - `bash scripts/test/smoke-test.sh`
+  - `bash scripts/test/e2e-flow-test.sh`
+  - Validación Playwright ad hoc en navegador real para `patient`, `reception`, `cashier`, `doctor` y `admin`, incluyendo bloqueo RBAC de `reception` sobre `/cashier`
+
+- Resultado:
+  - Backend: 499 pruebas superadas, 0 fallos.
+  - Frontend: 818 pruebas superadas, 0 fallos.
+  - Smoke frontend-backend: OK.
+  - Flujo E2E recepción → caja → médico → fin: OK.
+  - Login vivo por los 5 roles y redirecciones por rol: OK.
+
+- Notas / Human checks:
+  - La corrección mantiene compatibilidad con respuestas `PascalCase` para reducir riesgo frente a proxies, mocks o serializadores alternos. // HUMAN CHECK
 
 ### 2026-03-10 — Alineación de autenticación real entre frontend y backend
 

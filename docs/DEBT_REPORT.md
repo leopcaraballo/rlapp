@@ -1,7 +1,7 @@
 # Reporte de Deuda Tecnica — RLAPP
 
 > **Versión:** 1.0.0
-> **Última actualización:** 2026-03-10
+> **Última actualización:** 2026-03-11
 > **Responsable:** Equipo de desarrollo RLAPP
 > **Estado global:** Deuda tecnica significativamente reducida tras 6 fases de hardening
 
@@ -26,6 +26,45 @@ Este documento registra la deuda tecnica identificada, resuelta, y pendiente en 
 ---
 
 ## 2. Deuda tecnica resuelta
+
+### DT-P10: Auditoría técnica completa — 4 bugs críticos resueltos (RESUELTA)
+
+| Campo | Detalle |
+| --- | --- |
+| ID | DT-P10 |
+| Severidad | Alta |
+| Categoria | DevOps / Backend / Integracion |
+| Descripcion | Auditoría técnica completa identificó 4 bugs: BUG-01 (CRÍTICO) ExchangeName del Worker desalineado con la API rompiendo el Outbox Pattern completamente; BUG-02 usuario hardcodeado en pg_isready rompiendo el healthcheck si POSTGRES_USER cambia; BUG-03 race condition en arranque del Worker (service_started vs service_healthy); BUG-04 sección Jwt ausente en appsettings.json forzando uso de defaults hardcodeados no sobreescribibles. |
+| Resolucion | BUG-01: Agregar RabbitMq__ExchangeName: rlapp.events y RabbitMq__ExchangeType: topic al worker en docker-compose.yml para alinear con la API. BUG-02: Cambiar pg_isready -U rlapp por pg_isready -U ${POSTGRES_USER:-rlapp} con fallback seguro. BUG-03: Cambiar condition de service_started a service_healthy en depends_on del worker eliminando el race condition. BUG-04: Agregar sección Jwt explícita a appsettings.json y appsettings.Development.json alineada con JwtOptions.cs. |
+| Archivos | `docker-compose.yml`, `apps/backend/src/Services/WaitingRoom/WaitingRoom.API/appsettings.json`, `apps/backend/src/Services/WaitingRoom/WaitingRoom.API/appsettings.Development.json` |
+| Branch | `feature/frontend-backend-full-alignment` |
+| Tests | `docker compose config --quiet`, `docker compose up --build` |
+
+### DT-P09: Arranque Docker-first inconsistente por deriva de `.next`, pgAdmin inestable y cola vacía no tolerada por la UI (RESUELTA)
+
+| Campo | Detalle |
+| --- | --- |
+| ID | DT-P09 |
+| Severidad | Alta |
+| Categoria | DevOps / Integracion |
+| Descripcion | Un arranque limpio del proyecto no era completamente reproducible solo con Docker porque el frontend convivía con rutas de build heredadas (`.next-workspace`), pgAdmin reiniciaba por una configuración inválida de correo y la UI podía recibir `404` al consultar una cola aún sin eventos. |
+| Resolucion | Se normalizó el frontend para usar solo `.next`, se alinearon Compose y tareas de limpieza con ese directorio, se cambiaron las imágenes del backend a `.NET 10` estable, se corrigió el correo por defecto de pgAdmin y se ajustaron las consultas del backend para responder con vistas vacías deterministas sobre una base limpia. |
+| Archivos | `apps/frontend/next.config.ts`, `apps/frontend/next-env.d.ts`, `apps/frontend/tsconfig.json`, `apps/frontend/eslint.config.mjs`, `docker-compose.yml`, `apps/backend/Dockerfile`, `apps/backend/src/Services/WaitingRoom/WaitingRoom.API/Endpoints/WaitingRoomQueryEndpoints.cs`, `.env`, `.env.example`, `.vscode/tasks.json` |
+| Branch | Sesion local actual |
+| Tests | `docker compose up -d --build`, `curl http://localhost:5000/health/live`, `curl http://localhost:3001`, `POST /api/auth/token`, `POST /api/reception/register`, consultas SQL de verificación en PostgreSQL |
+
+### DT-P08: Compilación local del frontend vulnerable a artefactos root y a validación rígida de entorno (RESUELTA)
+
+| Campo | Detalle |
+| --- | --- |
+| ID | DT-P08 |
+| Severidad | Media |
+| Categoria | DevEx / Frontend |
+| Descripcion | La compilación local del frontend podía fallar por dos causas acumuladas: artefactos de Next generados por contenedores con permisos `root` sobre el workspace y una exigencia estricta de `NEXT_PUBLIC_API_BASE_URL` durante prerender, aun cuando la base por defecto del proyecto era `http://localhost:5000`. |
+| Resolucion | Se configuró un `distDir` configurable por entorno, se aisló el runtime de desarrollo del frontend en un volumen dedicado de Docker Compose, y se alineó `env.ts` con un fallback seguro para `NEXT_PUBLIC_API_BASE_URL`, respaldado por pruebas. |
+| Archivos | `apps/frontend/next.config.ts`, `apps/frontend/tsconfig.json`, `apps/frontend/eslint.config.mjs`, `apps/frontend/src/config/env.ts`, `apps/frontend/test/config/env.coverage.spec.ts`, `docker-compose.yml` |
+| Branch | Sesion local actual |
+| Tests | `npm test -- --runInBand test/config/env.coverage.spec.ts`, `npx eslint src test --max-warnings=0`, `npm run build`, `bash scripts/test/e2e-flow-test.sh` |
 
 ### DT-P07: Contrato final de login operativo y E2E heredadas desalineadas (RESUELTA)
 
@@ -91,6 +130,19 @@ Este documento registra la deuda tecnica identificada, resuelta, y pendiente en 
 | Archivos | `docker-compose.yml`, `.env.example`, `README.md`, `apps/backend/README.md` |
 | Branch | Sesion local actual |
 | Tests | `docker compose --env-file .env.example config` |
+
+### DT-009: Contrato JSON de autenticacion no alineado con el backend real (ALTA)
+
+| Campo | Detalle |
+| --- | --- |
+| ID | DT-009 |
+| Severidad | Alta |
+| Categoria | Integracion |
+| Descripcion | El frontend esperaba la respuesta de `/api/auth/token` en `PascalCase` (`Token`, `ExpiresIn`, `TokenType`), pero la API en ejecucion serializaba el contrato real en `camelCase` (`token`, `expiresIn`, `tokenType`), impidiendo el login operativo vivo aunque las suites unitarias pasaran. |
+| Resolucion | Se alineó el cliente de autenticación del frontend con el contrato real del backend, soportando `camelCase` como formato principal y `PascalCase` como compatibilidad defensiva; además se ajustaron las pruebas para cubrir ambos formatos. |
+| Archivos | `apps/frontend/src/services/api/auth.ts`, `apps/frontend/test/security/api-auth.spec.ts` |
+| Branch | Sesion local actual |
+| Tests | `dotnet test RLAPP.slnx --configuration Release --verbosity minimal`, `CI=true npm test -- --runInBand --ci --reporters=default`, `bash scripts/test/smoke-test.sh`, `bash scripts/test/e2e-flow-test.sh`, validación Playwright viva de login y RBAC |
 
 ### DT-008: Cobertura incompleta de eventos en proyecciones operativas (ALTA)
 
