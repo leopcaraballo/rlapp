@@ -40,7 +40,7 @@ cp .env.example .env
 ```
 
 ```bash
-docker compose up -d
+docker compose up --build
 ```
 
 Servicios relevantes:

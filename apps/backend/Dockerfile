@@ -1,9 +1,9 @@
 # Backend multi-service Dockerfile (API / Worker)
-# HUMAN CHECK: uses .NET 10.0 nightly images; align with TargetFramework net10.0
+# HUMAN CHECK: usa imágenes estables de .NET 10 para reducir fallos de red y variabilidad de nightly en builds locales.
 # Hardened: non-root user, HEALTHCHECK, minimal attack surface
 
 # ---------- Build stage ----------
-FROM mcr.microsoft.com/dotnet/nightly/sdk:10.0 AS build
+FROM mcr.microsoft.com/dotnet/sdk:10.0 AS build
 WORKDIR /src
 
 # Build arguments
@@ -18,7 +18,7 @@ RUN dotnet restore ${PROJECT}
 RUN dotnet publish ${PROJECT} -c Release -o /app/publish --no-restore
 
 # ---------- Runtime stage ----------
-FROM mcr.microsoft.com/dotnet/nightly/aspnet:10.0 AS final
+FROM mcr.microsoft.com/dotnet/aspnet:10.0 AS final
 WORKDIR /app
 
 # HUMAN CHECK: mantener metadatos actualizados para trazabilidad de imagen en CI/CD

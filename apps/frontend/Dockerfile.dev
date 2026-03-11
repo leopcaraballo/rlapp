@@ -3,13 +3,12 @@
 # El puerto 3000 dentro del contenedor coincide con el mapeo en docker-compose.yml
 # Hardened: HEALTHCHECK directive, minimal packages
 # =============================================================================
-FROM node:20-slim
+FROM node:22-alpine3.21
 
 WORKDIR /app
 
-# Install wget for healthcheck (node:20-slim doesn't include curl or wget)
-RUN apt-get update && apt-get install -y --no-install-recommends wget \
-    && rm -rf /var/lib/apt/lists/*
+# Install wget for healthcheck and libc compatibility for Next.js dependencies
+RUN apk add --no-cache wget libc6-compat
 
 COPY package*.json ./
 

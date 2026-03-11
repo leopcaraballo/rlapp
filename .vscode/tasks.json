@@ -339,13 +339,208 @@
 			"isBackground": false
 		},
 		{
-			"label": "e2e-flow-shell-temp",
+			"label": "clean-local-build-artifacts",
 			"type": "shell",
-			"command": "bash",
-			"args": [
-				"scripts/test/e2e-flow-test.sh"
-			],
+			"command": "find apps/backend -type d \\( -name bin -o -name obj -o -name TestResults \\) -prune -exec rm -rf {} + && find apps/backend -type f \\( -name '*.trx' -o -name 'coverage.cobertura.xml' \\) -delete && docker run --rm -v \"$PWD/apps/frontend:/workspace\" alpine:3.20 sh -c 'rm -rf /workspace/.next /workspace/coverage /workspace/test-results /workspace/playwright-report /workspace/tmp'",
 			"isBackground": false
+		},
+		{
+			"label": "inspect-project-images",
+			"type": "shell",
+			"command": "docker images --format '{{.Repository}} {{.Tag}} {{.ID}}' | grep -E '(^rlapp|/rlapp|rlapp-)' || true",
+			"isBackground": false
+		},
+		{
+			"label": "purge-project-docker-builds",
+			"type": "shell",
+			"command": "docker images --format '{{.Repository}} {{.ID}}' | awk '$1 ~ /(^rlapp|\\/rlapp|rlapp-)/ {print $2}' | sort -u | xargs -r docker rmi -f && docker builder prune -af",
+			"isBackground": false
+		},
+		{
+			"label": "verify-local-build-clean",
+			"type": "shell",
+			"command": "printf 'Backend residuals:\\n' && find apps/backend -type d \\( -name bin -o -name obj -o -name TestResults \\) | head -n 20 && printf '\\nFrontend residuals:\\n' && find apps/frontend -maxdepth 1 -type d \\( -name .next -o -name coverage -o -name test-results -o -name playwright-report -o -name tmp \\)",
+			"isBackground": false
+		},
+		{
+			"label": "clean-backend-build-artifacts-fixed",
+			"type": "shell",
+			"command": "find apps/backend -depth \\( -type d -name bin -o -type d -name obj -o -type d -name TestResults \\) -exec rm -rf {} + && find apps/backend -type f \\( -name '*.trx' -o -name 'coverage.cobertura.xml' \\) -delete",
+			"isBackground": false
+		},
+		{
+			"label": "verify-build-clean-counts",
+			"type": "shell",
+			"command": "printf 'backend_dirs=' && find apps/backend -type d \\( -name bin -o -name obj -o -name TestResults \\) | wc -l && printf 'frontend_dirs=' && find apps/frontend -maxdepth 1 -type d \\( -name .next -o -name coverage -o -name test-results -o -name playwright-report -o -name tmp \\) | wc -l",
+			"isBackground": false
+		},
+		{
+			"label": "frontend-production-build",
+			"type": "shell",
+			"command": "cd apps/frontend && npm run build",
+			"isBackground": false,
+			"problemMatcher": [],
+			"group": "build"
+		},
+		{
+			"label": "frontend-production-build-temp",
+			"type": "shell",
+			"command": "cd apps/frontend && NEXT_DIST_DIR=/tmp/rlapp-frontend-next-build npm run build",
+			"isBackground": false,
+			"problemMatcher": [],
+			"group": "build"
+		},
+		{
+			"label": "frontend-production-build-alt",
+			"type": "shell",
+			"command": "cd apps/frontend && rm -rf .next-build && NEXT_DIST_DIR=.next-build npm run build",
+			"isBackground": false,
+			"problemMatcher": [],
+			"group": "build"
+		},
+		{
+			"label": "frontend-production-build-alt-2",
+			"type": "shell",
+			"command": "cd apps/frontend && rm -rf .next-build && NEXT_DIST_DIR=.next-build npm run build",
+			"isBackground": false,
+			"problemMatcher": [],
+			"group": "build"
+		},
+		{
+			"label": "frontend-targeted-tests",
+			"type": "shell",
+			"command": "cd apps/frontend && npm test -- --runInBand test/config/env.coverage.spec.ts test/lib/httpClient.proxi.coverage.spec.ts test/security/api-auth.spec.ts test/services/waitingRoomSignalR.spec.ts test/infrastructure/signalRAdapter.spec.ts",
+			"isBackground": false,
+			"problemMatcher": [],
+			"group": "test"
+		},
+		{
+			"label": "frontend-signalr-adapter-test",
+			"type": "shell",
+			"command": "cd apps/frontend && npm test -- --runInBand test/infrastructure/signalRAdapter.spec.ts --verbose",
+			"isBackground": false,
+			"problemMatcher": [],
+			"group": "test"
+		},
+		{
+			"label": "frontend-signalr-adapter-test-2",
+			"type": "shell",
+			"command": "cd apps/frontend && npm test -- --runInBand test/infrastructure/signalRAdapter.spec.ts --verbose",
+			"isBackground": false,
+			"problemMatcher": [],
+			"group": "test"
+		},
+		{
+			"label": "frontend-targeted-tests-2",
+			"type": "shell",
+			"command": "cd apps/frontend && npm test -- --runInBand test/config/env.coverage.spec.ts test/lib/httpClient.proxi.coverage.spec.ts test/security/api-auth.spec.ts test/services/waitingRoomSignalR.spec.ts test/infrastructure/signalRAdapter.spec.ts",
+			"isBackground": false,
+			"problemMatcher": [],
+			"group": "test"
+		},
+		{
+			"label": "frontend-waitingroom-signalr-test",
+			"type": "shell",
+			"command": "cd apps/frontend && npm test -- --runInBand test/services/waitingRoomSignalR.spec.ts --verbose",
+			"isBackground": false,
+			"problemMatcher": [],
+			"group": "test"
+		},
+		{
+			"label": "docker-compose-config-audit",
+			"type": "shell",
+			"command": "docker compose config",
+			"isBackground": false,
+			"problemMatcher": [],
+			"group": "test"
+		},
+		{
+			"label": "docker-compose-up-build-detached-audit",
+			"type": "shell",
+			"command": "docker compose up --build -d",
+			"isBackground": false,
+			"problemMatcher": [],
+			"group": "test"
+		},
+		{
+			"label": "docker-compose-up-build-detached-audit-2",
+			"type": "shell",
+			"command": "docker compose up --build -d",
+			"isBackground": false,
+			"problemMatcher": [],
+			"group": "test"
+		},
+		{
+			"label": "docker-logs-frontend-tail",
+			"type": "shell",
+			"command": "docker logs rlapp-frontend --tail 120",
+			"isBackground": false,
+			"problemMatcher": [],
+			"group": "test"
+		},
+		{
+			"label": "frontend-production-build-alt-3",
+			"type": "shell",
+			"command": "cd apps/frontend && rm -rf .next-build && NEXT_DIST_DIR=.next-build npm run build",
+			"isBackground": false,
+			"problemMatcher": [],
+			"group": "build"
+		},
+		{
+			"label": "docker-compose-up-build-detached-audit-3",
+			"type": "shell",
+			"command": "docker compose up --build -d",
+			"isBackground": false,
+			"problemMatcher": [],
+			"group": "test"
+		},
+		{
+			"label": "docker-build-frontend-tail",
+			"type": "shell",
+			"command": "set -o pipefail && docker compose build frontend 2>&1 | tail -n 80",
+			"isBackground": false,
+			"problemMatcher": [],
+			"group": "test"
+		},
+		{
+			"label": "docker-up-frontend-only-tail",
+			"type": "shell",
+			"command": "set -o pipefail && docker compose up --build -d frontend 2>&1 | tail -n 80",
+			"isBackground": false,
+			"problemMatcher": [],
+			"group": "test"
+		},
+		{
+			"label": "docker-compose-ps-tail",
+			"type": "shell",
+			"command": "docker compose ps",
+			"isBackground": false,
+			"problemMatcher": [],
+			"group": "test"
+		},
+		{
+			"label": "frontend-http-check",
+			"type": "shell",
+			"command": "curl -I http://localhost:3001",
+			"isBackground": false,
+			"problemMatcher": [],
+			"group": "test"
+		},
+		{
+			"label": "docker-up-frontend-only-tail-2",
+			"type": "shell",
+			"command": "set -o pipefail && docker compose up --build -d frontend 2>&1 | tail -n 60",
+			"isBackground": false,
+			"problemMatcher": [],
+			"group": "test"
+		},
+		{
+			"label": "frontend-http-get-check",
+			"type": "shell",
+			"command": "curl -s -o /dev/null -w '%{http_code}\\n' http://localhost:3001 && curl -I -s http://localhost:3001 | head -n 1",
+			"isBackground": false,
+			"problemMatcher": [],
+			"group": "test"
 		}
 	]
 }

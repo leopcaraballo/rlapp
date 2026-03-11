@@ -108,6 +108,15 @@ export interface ValidatePaymentDto {
   paymentReference?: string | null;
 }
 
+/** DTO para marcar pago pendiente — sincronizado con backend MarkPaymentPendingDto. */
+export interface MarkPaymentPendingDto {
+  queueId: string;
+  patientId: string;
+  actor: string;
+  /** Razon por la que el pago queda pendiente. */
+  reason?: string | null;
+}
+
 export interface ClaimNextPatientDto {
   queueId: string;
   actor: string;

@@ -27,6 +27,19 @@ Este documento registra la deuda tecnica identificada, resuelta, y pendiente en 
 
 ## 2. Deuda tecnica resuelta
 
+### DT-P11: Arranque Docker-first del sistema completo desalineado entre frontend, backend y Compose (RESUELTA)
+
+| Campo | Detalle |
+| --- | --- |
+| ID | DT-P11 |
+| Severidad | Alta |
+| Categoria | DevOps / Integracion / Frontend |
+| Descripcion | El stack principal no estaba realmente alineado con el objetivo operativo `docker compose up --build`: el frontend del compose principal seguia en modo desarrollo, existian URLs hardcodeadas a `localhost`, la activacion del proxy de Next.js no estaba resuelta correctamente, el backend mantenia CORS y metadatos OpenAPI acoplados a entorno local y la documentacion oficial no describia el flujo Docker-first real. |
+| Resolucion | Se transformo el compose principal para usar un frontend productivo standalone, se centralizo la resolucion de URLs publicas e internas del frontend, se agrego `src/proxy.ts` para activar correctamente el proxy de Next.js, se removieron includes efimeros de TypeScript, se parametrizaron `PublicApi:BaseUrl` y `Cors:AllowedOrigins` en backend, se movieron servicios operativos secundarios al perfil `ops` y se reescribio la documentacion principal para usar `docker compose up --build` como comando oficial. |
+| Archivos | `docker-compose.yml`, `.env.example`, `README.md`, `apps/backend/README.md`, `apps/backend/src/Services/WaitingRoom/WaitingRoom.API/Program.cs`, `apps/backend/src/Services/WaitingRoom/WaitingRoom.API/appsettings.json`, `apps/backend/src/Services/WaitingRoom/WaitingRoom.API/appsettings.Development.json`, `apps/frontend/Dockerfile`, `apps/frontend/Dockerfile.dev`, `apps/frontend/next.config.ts`, `apps/frontend/tsconfig.json`, `apps/frontend/src/config/env.ts`, `apps/frontend/src/infrastructure/adapters/HttpCommandAdapter.ts`, `apps/frontend/src/infrastructure/adapters/SignalRAdapter.ts`, `apps/frontend/src/lib/httpClient.ts`, `apps/frontend/src/proxi.ts`, `apps/frontend/src/proxy.ts`, `apps/frontend/src/services/api/auth.ts`, `apps/frontend/src/services/api/waitingRoom.ts`, `apps/frontend/src/services/signalr/waitingRoomSignalR.ts` |
+| Branch | Sesion local actual |
+| Tests | `docker compose config`, reconstruccion Docker del stack principal, verificacion de salud de contenedores, `dotnet test` backend con 499 pruebas superadas, pruebas dirigidas de frontend/SignalR, `python3 scripts/test/jwt-live-flow-check.py` con resultado OK |
+
 ### DT-P10: Auditoría técnica completa — 4 bugs críticos resueltos (RESUELTA)
 
 | Campo | Detalle |
@@ -250,6 +263,16 @@ Este documento registra la deuda tecnica identificada, resuelta, y pendiente en 
 ---
 
 ## 3. Deuda tecnica pendiente (backlog priorizado)
+
+### DT-P12: Verificacion final del perfil de vulnerabilidades de la imagen frontend
+
+| Campo | Detalle |
+| --- | --- |
+| Severidad | Media |
+| Categoria | Seguridad / DevOps |
+| Descripcion | Tras los cambios de base image y endurecimiento del contenedor frontend, sigue pendiente una verificacion final y trazable del perfil de vulnerabilidades efectivo de la imagen resultante para confirmar si los hallazgos del editor corresponden a una advertencia desactualizada o a vulnerabilidades reales pendientes. |
+| Recomendacion | Ejecutar un escaneo reproducible de la imagen final construida por Compose y registrar el resultado con fecha, version base y severidades observadas. |
+| Prioridad | Backlog |
 
 ### DT-P03: Observabilidad de Worker
 

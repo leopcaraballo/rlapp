@@ -7,6 +7,7 @@
  *   Medical:          POST /api/medical/{call-next|start-consultation|finish-consultation|mark-absent}
  *   Consulting rooms: POST /api/medical/consulting-room/{activate|deactivate}
  */
+import { getApiBaseUrl } from "@/config/env";
 import { getAuthHeaders } from "@/security/auth";
 import { dispatchAuthInvalid } from "@/security/authEvents";
 
@@ -29,10 +30,6 @@ import type {
 import { translateApiError } from "../../services/api/errorTranslations";
 import type { ApiError } from "../../services/api/types";
 
-const API_BASE = (
-  process.env.NEXT_PUBLIC_API_BASE_URL || "http://localhost:5000"
-).replace(/\/$/, "");
-
 function correlationId(): string {
   return typeof crypto !== "undefined" && crypto.randomUUID
     ? crypto.randomUUID()
@@ -53,7 +50,7 @@ function baseHeaders(): Record<string, string> {
 }
 
 async function post<T>(path: string, body: unknown): Promise<T> {
-  const res = await fetch(`${API_BASE}${path}`, {
+  const res = await fetch(`${getApiBaseUrl()}${path}`, {
     method: "POST",
     headers: {
       ...baseHeaders(),

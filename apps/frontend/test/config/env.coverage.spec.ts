@@ -5,15 +5,19 @@ describe("env config", () => {
     jest.resetModules();
   });
 
-  it("throws when required variables are missing", async () => {
+  it("uses fallback when NEXT_PUBLIC_API_BASE_URL is missing", async () => {
     delete process.env.NEXT_PUBLIC_API_BASE_URL;
     delete process.env.NEXT_PUBLIC_WS_URL;
 
-    await expect(
-      jest.isolateModulesAsync(async () => {
-        await import(modulePath);
-      }),
-    ).rejects.toThrow(/Missing env variable/);
+    let loadedEnv: { env: { API_BASE_URL: string } };
+
+    await jest.isolateModulesAsync(async () => {
+      loadedEnv = (await import(modulePath)) as {
+        env: { API_BASE_URL: string };
+      };
+    });
+
+    expect(loadedEnv!.env.API_BASE_URL).toBe("http://localhost:5000");
   });
 
   it("exports values when env is set", async () => {
@@ -39,7 +43,9 @@ describe("env config", () => {
 
     let loadedEnv: { env: { WS_URL: string | null } };
     await jest.isolateModulesAsync(async () => {
-      loadedEnv = (await import(modulePath)) as { env: { WS_URL: string | null } };
+      loadedEnv = (await import(modulePath)) as {
+        env: { WS_URL: string | null };
+      };
     });
     expect(loadedEnv!.env.WS_URL).toBeNull();
   });
@@ -50,7 +56,9 @@ describe("env config", () => {
 
     let loadedEnv: { env: { WS_DISABLED: boolean } };
     await jest.isolateModulesAsync(async () => {
-      loadedEnv = (await import(modulePath)) as { env: { WS_DISABLED: boolean } };
+      loadedEnv = (await import(modulePath)) as {
+        env: { WS_DISABLED: boolean };
+      };
     });
     expect(loadedEnv!.env.WS_DISABLED).toBe(true);
     delete process.env.NEXT_PUBLIC_WS_DISABLED;
@@ -62,7 +70,9 @@ describe("env config", () => {
 
     let loadedEnv: { env: { DEFAULT_QUEUE_ID: string } };
     await jest.isolateModulesAsync(async () => {
-      loadedEnv = (await import(modulePath)) as { env: { DEFAULT_QUEUE_ID: string } };
+      loadedEnv = (await import(modulePath)) as {
+        env: { DEFAULT_QUEUE_ID: string };
+      };
     });
     expect(loadedEnv!.env.DEFAULT_QUEUE_ID).toBe("QUEUE-01");
   });

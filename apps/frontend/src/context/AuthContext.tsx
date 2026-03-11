@@ -1,7 +1,8 @@
 "use client";
 
-import React, {
+import {
   createContext,
+  ReactNode,
   useCallback,
   useContext,
   useEffect,
@@ -16,8 +17,8 @@ import {
   saveSession,
   type UserRole,
 } from "@/security/auth";
-import { requestOperationalSession } from "@/services/api/auth";
 import { AUTH_CHANGED_EVENT, AUTH_INVALID_EVENT } from "@/security/authEvents";
+import { requestOperationalSession } from "@/services/api/auth";
 
 type AuthContextValue = {
   session: AuthSession | null;
@@ -34,7 +35,7 @@ type AuthContextValue = {
 
 const AuthContext = createContext<AuthContextValue | null>(null);
 
-export function AuthProvider({ children }: { children: React.ReactNode }) {
+export function AuthProvider({ children }: { children: ReactNode }) {
   const [session, setSession] = useState<AuthSession | null>(null);
   const [ready, setReady] = useState(false);
 

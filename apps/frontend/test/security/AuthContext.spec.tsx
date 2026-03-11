@@ -5,13 +5,13 @@ import React from "react";
 
 import { AuthProvider, useAuth } from "@/context/AuthContext";
 import * as authModule from "@/security/auth";
-import { requestOperationalSession } from "@/services/api/auth";
 import {
   AUTH_CHANGED_EVENT,
   AUTH_INVALID_EVENT,
   dispatchAuthChanged,
   dispatchAuthInvalid,
 } from "@/security/authEvents";
+import { requestOperationalSession } from "@/services/api/auth";
 
 jest.mock("@/services/api/auth", () => ({
   requestOperationalSession: jest.fn(),

@@ -1,5 +1,64 @@
 # AI workflow
 
+## 2026-03-11 — Alineación Docker-first del stack completo y validación extremo a extremo
+
+- Actor: GitHub Copilot (GPT-5.4)
+- Task: Ejecutar una auditoría técnica integral del repositorio, corregir la configuración necesaria para que el sistema arranque con `docker compose up --build` y validar el flujo completo frontend → backend → base de datos → worker.
+- AO model: GPT-5.4
+- SA model: GPT-5.4
+
+- Archivos modificados:
+  - `docker-compose.yml`
+  - `.env.example`
+  - `README.md`
+  - `apps/backend/README.md`
+  - `apps/backend/src/Services/WaitingRoom/WaitingRoom.API/Program.cs`
+  - `apps/backend/src/Services/WaitingRoom/WaitingRoom.API/appsettings.json`
+  - `apps/backend/src/Services/WaitingRoom/WaitingRoom.API/appsettings.Development.json`
+  - `apps/frontend/Dockerfile`
+  - `apps/frontend/Dockerfile.dev`
+  - `apps/frontend/next.config.ts`
+  - `apps/frontend/tsconfig.json`
+  - `apps/frontend/src/config/env.ts`
+  - `apps/frontend/src/infrastructure/adapters/HttpCommandAdapter.ts`
+  - `apps/frontend/src/infrastructure/adapters/SignalRAdapter.ts`
+  - `apps/frontend/src/lib/httpClient.ts`
+  - `apps/frontend/src/proxi.ts`
+  - `apps/frontend/src/proxy.ts`
+  - `apps/frontend/src/services/api/auth.ts`
+  - `apps/frontend/src/services/api/waitingRoom.ts`
+  - `apps/frontend/src/services/signalr/waitingRoomSignalR.ts`
+  - `.gitignore`
+  - `docs/AI_WORKFLOW.md`
+  - `docs/DEBT_REPORT.md`
+
+- Acciones realizadas:
+  1. Se auditó la configuración de Docker Compose, backend ASP.NET Core y frontend Next.js para identificar impedimentos reales de arranque Docker-first.
+  2. Se reemplazó el servicio `frontend` de modo desarrollo por un runtime productivo basado en build standalone, eliminando mounts y comandos de desarrollo del compose principal.
+  3. Se separaron las URLs públicas del navegador y la URL interna entre contenedores, centralizando la resolución en `env.ts` y propagándola a clientes HTTP y SignalR.
+  4. Se corrigió la activación del proxy de Next.js con `src/proxy.ts`, manteniendo compatibilidad con la lógica existente en `src/proxi.ts`.
+  5. Se eliminó la dependencia de tipos generados efímeros en `tsconfig.json`, permitiendo builds reproducibles dentro de Docker.
+  6. Se volvió configurable la URL pública OpenAPI y la lista de orígenes CORS del backend, evitando el acoplamiento rígido a `localhost`.
+  7. Se movieron servicios operativos no esenciales al perfil `ops`, de modo que el comando base `docker compose up --build` levante únicamente el stack funcional principal.
+  8. Se alineó la documentación principal para declarar `docker compose up --build` como flujo oficial de arranque.
+  9. Se ignoraron artefactos temporales locales de build del frontend en `apps/frontend/tmp/` para mantener limpio el estado del repositorio.
+
+- Validacion ejecutada:
+  - `docker compose config`
+  - reconstrucción completa del frontend y del stack principal con Docker
+  - verificación de salud de `api`, `frontend`, `postgres`, `rabbitmq` y `worker`
+  - `dotnet test` de backend con 499 pruebas superadas
+  - pruebas dirigidas de frontend y SignalR afectadas por la refactorización
+  - `python3 scripts/test/jwt-live-flow-check.py` con resultado `JWT_LIVE_FLOW_OK`
+  - comprobación HTTP del frontend con `GET /` respondiendo `200`
+
+- Resultado:
+  - El stack principal quedó operativo con `docker compose up --build`.
+  - El frontend quedó desacoplado de `localhost` hardcodeado y puede resolver backend correctamente tanto desde navegador como desde contenedor.
+  - El backend publica OpenAPI y CORS mediante configuración, reduciendo deriva entre local y Docker.
+  - El flujo vivo con JWT real quedó validado de extremo a extremo.
+  - La respuesta `HEAD /` del frontend continuó devolviendo `405`, pero se clasificó como observación no bloqueante al no afectar el arranque, la salud del servicio ni el flujo funcional validado. // HUMAN CHECK
+
 ## 2026-03-11 — Auditoría técnica completa con corrección de 4 bugs críticos
 
 - Actor: GitHub Copilot (Claude Sonnet 4.6)

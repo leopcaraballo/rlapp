@@ -47,6 +47,20 @@ export function clearSession(): void {
   dispatchAuthChanged();
 }
 
+/**
+ * Genera una sesion local (offline/demo) con un token NO validable por el backend.
+ *
+ * ADVERTENCIA: El token generado usa `alg: "none"` y NO sera aceptado por
+ * endpoints protegidos del backend (devolvera 401). Usar SOLO para:
+ * - Modo offline/demo sin conexion al backend.
+ * - Tests de frontend que mockean las respuestas HTTP.
+ *
+ * Para acceder a endpoints protegidos, usar `requestOperationalSession()` de
+ * `@/services/api/auth.ts`, que obtiene un JWT real firmado por el backend.
+ *
+ * // HUMAN CHECK — Validar que ningun flujo de produccion use esta funcion
+ * para acceder a endpoints protegidos del backend.
+ */
 export function buildSession(role: UserRole, ttlMinutes = 120): AuthSession {
   const exp = Date.now() + ttlMinutes * 60 * 1000;
   return {

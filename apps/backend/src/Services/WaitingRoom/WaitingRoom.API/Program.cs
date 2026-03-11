@@ -1,3 +1,4 @@
+using Microsoft.AspNetCore.SignalR;
 using Scalar.AspNetCore;
 using Microsoft.AspNetCore.OpenApi;
 using Microsoft.OpenApi;
@@ -69,6 +70,16 @@ var connectionString = builder.Configuration.GetConnectionString("EventStore")
 
 var rabbitMqOptions = new RabbitMqOptions();
 builder.Configuration.GetSection("RabbitMq").Bind(rabbitMqOptions);
+var publicApiBaseUrl = builder.Configuration["PublicApi:BaseUrl"] ?? "http://localhost:5000";
+var corsAllowedOrigins = builder.Configuration["Cors:AllowedOrigins"]?
+    .Split(',', StringSplitOptions.RemoveEmptyEntries | StringSplitOptions.TrimEntries)
+    ??
+    [
+        "http://localhost:3000",
+        "http://127.0.0.1:3000",
+        "http://localhost:3001",
+        "http://127.0.0.1:3001"
+    ];
 
 // ==============================================================================
 // DEPENDENCY INJECTION — Composition Root (Hexagonal Architecture)
@@ -173,7 +184,7 @@ services.AddOpenApi(options =>
         // // HUMAN CHECK — Ajustar los servidores segun el entorno de despliegue real
         document.Servers =
         [
-            new OpenApiServer { Url = "http://localhost:5204", Description = "Desarrollo local" }
+            new OpenApiServer { Url = publicApiBaseUrl, Description = "Base URL configurada" }
         ];
 
         return Task.CompletedTask;
@@ -186,11 +197,7 @@ services.AddCors(options =>
     options.AddPolicy("FrontendDev", policy =>
     {
         policy
-            .WithOrigins(
-                "http://localhost:3000",
-                "http://127.0.0.1:3000",
-                "http://localhost:3001",
-                "http://127.0.0.1:3001")
+            .WithOrigins(corsAllowedOrigins)
             .AllowAnyHeader()
             .AllowAnyMethod()
             .AllowCredentials();
@@ -321,7 +328,12 @@ app.MapHub<WaitingRoomHub>("/ws/waiting-room");
 var commandGroup = app.MapGroup(string.Empty)
     .AddEndpointFilterFactory(RequestValidationFilter.Factory);
 
-static async Task ProjectQueueAsync(
+// Resolve singletons for SignalR broadcasting after projection rebuild
+var hubContext = app.Services.GetRequiredService<IHubContext<WaitingRoomHub>>();
+var projectionContext = app.Services.GetRequiredService<IWaitingRoomProjectionContext>();
+
+// HUMAN CHECK — ProjectQueueAsync ahora también notifica a clients SignalR tras reconstruir las proyecciones.
+async Task ProjectQueueAsync(
     IProjection projection,
     IEventStore eventStore,
     string queueId,
@@ -329,6 +341,32 @@ static async Task ProjectQueueAsync(
 {
     var queueEvents = await eventStore.GetEventsAsync(queueId, cancellationToken);
     await projection.ProcessEventsAsync(queueEvents, cancellationToken);
+
+    // Broadcast updated views to SignalR clients (best-effort, non-critical)
+    try
+    {
+        var clients = hubContext.Clients.All;
+
+        var monitor = await projectionContext.GetMonitorViewAsync(queueId, cancellationToken);
+        if (monitor is not null)
+            await clients.SendAsync("MonitorUpdated", monitor, cancellationToken);
+
+        var queueState = await projectionContext.GetQueueStateViewAsync(queueId, cancellationToken);
+        if (queueState is not null)
+            await clients.SendAsync("QueueStateUpdated", queueState, cancellationToken);
+
+        var nextTurn = await projectionContext.GetNextTurnViewAsync(queueId, cancellationToken);
+        await clients.SendAsync("NextTurn", nextTurn, cancellationToken);
+
+        var recentHistory = await projectionContext.GetRecentAttentionHistoryAsync(queueId, 20, cancellationToken);
+        await clients.SendAsync("RecentHistoryUpdated", recentHistory, cancellationToken);
+    }
+    catch (Exception ex)
+    {
+        app.Logger.LogWarning(ex,
+            "Error broadcasting SignalR notification for queue {QueueId}. Non-critical, command succeeded.",
+            queueId);
+    }
 }
 
 // ==============================================================================

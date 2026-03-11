@@ -9,7 +9,7 @@ jest.mock("@/lib/httpClient", () => ({
 }));
 
 jest.mock("@/config/env", () => ({
-  env: { API_BASE_URL: "http://api.test" },
+  env: { API_BASE_URL: "http://api.test", DEFAULT_QUEUE_ID: "QUEUE-01" },
 }));
 
 import { httpGet, httpPost } from "@/lib/httpClient";
@@ -20,21 +20,58 @@ const mockPost = httpPost as jest.Mock;
 beforeEach(() => jest.clearAllMocks());
 
 describe("HttpAppointmentRepository", () => {
-  it("getAppointments llama a httpGet con la URL correcta", async () => {
-    mockGet.mockResolvedValue([{ id: "1" }]);
+  it("getAppointments llama a httpGet con la URL de queue-state", async () => {
+    mockGet.mockResolvedValue({
+      patientsInQueue: [
+        {
+          patientId: "P-001",
+          patientName: "Juan",
+          priority: "Medium",
+          checkInTime: "2026-01-01T10:00:00Z",
+          waitTimeMinutes: 2,
+        },
+      ],
+    });
     const repo = new HttpAppointmentRepository();
     const result = await repo.getAppointments();
-    expect(mockGet).toHaveBeenCalledWith("http://api.test/appointments");
-    expect(result).toEqual([{ id: "1" }]);
+    expect(mockGet).toHaveBeenCalledWith(
+      expect.stringContaining("/api/v1/waiting-room/QUEUE-01/queue-state"),
+    );
+    expect(result).toEqual([
+      expect.objectContaining({
+        id: "P-001",
+        fullName: "Juan",
+        status: "waiting",
+      }),
+    ]);
   });
 
-  it("createAppointment llama a httpPost con la URL y el DTO", async () => {
-    mockPost.mockResolvedValue({ id: "42" });
+  it("createAppointment llama a httpPost con /api/reception/register y DTO mapeado", async () => {
+    mockPost.mockResolvedValue({
+      success: true,
+      message: "OK",
+      patientId: "12345",
+    });
     const repo = new HttpAppointmentRepository();
-    const dto = { fullName: "Juan", idCard: 12345, priority: "Medium" as const };
+    const dto = {
+      fullName: "Juan",
+      idCard: 12345,
+      priority: "Medium" as const,
+    };
     const result = await repo.createAppointment(dto);
-    expect(mockPost).toHaveBeenCalledWith("http://api.test/appointments", dto);
-    expect(result).toEqual({ id: "42" });
+    expect(mockPost).toHaveBeenCalledWith(
+      expect.stringContaining("/api/reception/register"),
+      expect.objectContaining({
+        patientId: "12345",
+        patientName: "Juan",
+        priority: "Medium",
+        consultationType: "General",
+        actor: "reception",
+      }),
+    );
+    expect(result).toEqual(
+      expect.objectContaining({ id: "12345", status: "accepted" }),
+    );
   });
 
   it("propaga el error de httpGet", async () => {
@@ -46,6 +83,8 @@ describe("HttpAppointmentRepository", () => {
   it("propaga el error de httpPost", async () => {
     mockPost.mockRejectedValue(new Error("Error al crear"));
     const repo = new HttpAppointmentRepository();
-    await expect(repo.createAppointment({ fullName: "x", idCard: 1, priority: "Low" })).rejects.toThrow("Error al crear");
+    await expect(
+      repo.createAppointment({ fullName: "x", idCard: 1, priority: "Low" }),
+    ).rejects.toThrow("Error al crear");
   });
 });

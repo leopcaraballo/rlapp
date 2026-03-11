@@ -168,7 +168,7 @@ services:
         condition: service_healthy
     # SECURITY: Worker healthcheck (process alive)
     healthcheck:
-      test: ["CMD-SHELL", "pgrep -f 'dotnet' || exit 1"]
+      test: ["CMD-SHELL", "kill -0 1 || exit 1"]
       interval: 15s
       timeout: 5s
       retries: 5
@@ -198,33 +198,28 @@ services:
   frontend:
     build:
       context: ./apps/frontend
-      # HUMAN CHECK: este servicio usa la imagen de desarrollo porque monta el codigo fuente y arranca con `npm run dev`; en produccion debe mantenerse el Dockerfile endurecido de runtime.
-      dockerfile: Dockerfile.dev
+      dockerfile: Dockerfile
+      args:
+        NEXT_PUBLIC_API_BASE_URL: ${FRONTEND_PUBLIC_API_BASE_URL:-http://localhost:5000}
+        NEXT_PUBLIC_WS_URL: ${FRONTEND_PUBLIC_WS_URL:-http://localhost:5000}
     container_name: rlapp-frontend
     environment:
-      NEXT_PUBLIC_API_BASE_URL: http://localhost:5000
-      NEXT_PUBLIC_WS_URL: http://localhost:5000
+      NEXT_PUBLIC_API_BASE_URL: ${FRONTEND_PUBLIC_API_BASE_URL:-http://localhost:5000}
+      NEXT_PUBLIC_WS_URL: ${FRONTEND_PUBLIC_WS_URL:-http://localhost:5000}
       NEXT_PUBLIC_WS_DISABLED: "false"
-      NODE_ENV: development
+      INTERNAL_API_BASE_URL: ${FRONTEND_INTERNAL_API_BASE_URL:-http://api:8080}
+      NODE_ENV: production
     ports:
       - "3001:3000"
-    volumes:
-      - ./apps/frontend:/app:delegated
-      - frontend_node_modules:/app/node_modules
-      - frontend_next_build:/app/.next
-    working_dir: /app
-    command: ["npm", "run", "dev", "--", "-p", "3000", "-H", "0.0.0.0"]
     depends_on:
       api:
         condition: service_healthy
-    healthcheck:
-      test: ["CMD-SHELL", "wget -q --spider http://localhost:3000/ || exit 1"]
-      interval: 15s
-      timeout: 10s
-      retries: 12
     networks:
       - rlapp-network
-    # SECURITY: Privilege controls (read_only disabled for dev hot-reload)
+    # SECURITY: Privilege controls para runtime productivo endurecido
+    read_only: true
+    tmpfs:
+      - /tmp:size=64M
     security_opt:
       - no-new-privileges:true
     deploy:
@@ -239,6 +234,7 @@ services:
   # Prometheus
   # ---------------------------------------------------------------------------
   prometheus:
+    profiles: ["ops"]
     image: prom/prometheus:latest
     container_name: rlapp-prometheus
     command:
@@ -286,6 +282,7 @@ services:
   # Grafana (puerto 3002 para no colisionar con frontend 3001)
   # ---------------------------------------------------------------------------
   grafana:
+    profiles: ["ops"]
     image: grafana/grafana:latest
     container_name: rlapp-grafana
     environment:
@@ -323,6 +320,7 @@ services:
   # Seq — Structured Logging
   # ---------------------------------------------------------------------------
   seq:
+    profiles: ["ops"]
     image: datalust/seq:latest
     container_name: rlapp-seq
     environment:
@@ -355,6 +353,7 @@ services:
   # PgAdmin — PostgreSQL UI
   # ---------------------------------------------------------------------------
   pgadmin:
+    profiles: ["ops"]
     image: dpage/pgadmin4:latest
     container_name: rlapp-pgadmin
     environment:
@@ -383,6 +382,7 @@ services:
   # PostgreSQL Exporter — Metricas de PostgreSQL para Prometheus
   # ---------------------------------------------------------------------------
   postgres_exporter:
+    profiles: ["ops"]
     image: prometheuscommunity/postgres-exporter:latest
     container_name: rlapp-postgres-exporter
     environment:

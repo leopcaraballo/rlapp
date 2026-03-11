@@ -28,31 +28,57 @@ describe("HttpAppointmentAdapter", () => {
     (global as any).fetch = jest.fn();
   });
 
-  it("fetches appointments successfully", async () => {
+  it("fetches appointments from queue-state endpoint and maps to Appointment[]", async () => {
     const { HttpAppointmentAdapter } =
       await import("@/infrastructure/adapters/HttpAppointmentAdapter");
 
     (fetch as jest.Mock).mockResolvedValue({
       ok: true,
-      json: async () => [{ id: "1" }],
+      json: async () => ({
+        patientsInQueue: [
+          {
+            patientId: "P-001",
+            patientName: "Juan Perez",
+            priority: "High",
+            checkInTime: "2026-01-01T10:00:00Z",
+            waitTimeMinutes: 5,
+          },
+        ],
+      }),
       status: 200,
     });
 
     const adapter = new HttpAppointmentAdapter();
     const data = await adapter.getAppointments();
 
-    expect(data).toEqual([{ id: "1" }]);
-    expect(fetch).toHaveBeenCalledWith("http://api.test/appointments");
+    expect(data).toEqual([
+      expect.objectContaining({
+        id: "P-001",
+        fullName: "Juan Perez",
+        status: "waiting",
+        priority: "High",
+      }),
+    ]);
+    expect(fetch).toHaveBeenCalledWith(
+      expect.stringContaining("/api/v1/waiting-room/"),
+      expect.objectContaining({ headers: expect.any(Object) }),
+    );
   });
 
-  it("returns appointment creation response on success", async () => {
+  it("returns appointment creation response on success via /api/reception/register", async () => {
     const { HttpAppointmentAdapter } =
       await import("@/infrastructure/adapters/HttpAppointmentAdapter");
 
     (fetch as jest.Mock).mockResolvedValue({
       ok: true,
-      status: 201,
-      json: async () => ({ id: "42" }),
+      status: 200,
+      json: async () => ({
+        success: true,
+        message: "Paciente registrado",
+        correlationId: "abc",
+        eventCount: 1,
+        patientId: "99",
+      }),
     });
 
     const adapter = new HttpAppointmentAdapter();
@@ -62,9 +88,14 @@ describe("HttpAppointmentAdapter", () => {
       priority: "High",
     });
 
-    expect(response).toEqual({ id: "42" });
+    expect(response).toEqual(
+      expect.objectContaining({
+        id: "99",
+        status: "accepted",
+      }),
+    );
     expect(fetch).toHaveBeenCalledWith(
-      "http://api.test/appointments",
+      expect.stringContaining("/api/reception/register"),
       expect.objectContaining({
         method: "POST",
       }),

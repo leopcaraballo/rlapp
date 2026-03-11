@@ -33,9 +33,9 @@ describe("api/auth.ts", () => {
       ok: true,
       text: async () =>
         JSON.stringify({
-          Token: "jwt-operativo",
-          ExpiresIn: 7200,
-          TokenType: "Bearer",
+          token: "jwt-operativo",
+          expiresIn: 7200,
+          tokenType: "Bearer",
         }),
     } as Response);
 
@@ -66,11 +66,28 @@ describe("api/auth.ts", () => {
   it("debe propagar el mensaje del backend cuando la autenticacion falla", async () => {
     fetchMock.mockResolvedValue({
       ok: false,
-      text: async () => JSON.stringify({ Error: "Rol invalido" }),
+      text: async () => JSON.stringify({ error: "Rol invalido" }),
     } as Response);
 
     await expect(
       requestOperationalSession("cashier", "87654321"),
     ).rejects.toThrow("Rol invalido");
+  });
+
+  it("debe aceptar respuestas en PascalCase por compatibilidad", async () => {
+    fetchMock.mockResolvedValue({
+      ok: true,
+      text: async () =>
+        JSON.stringify({
+          Token: "jwt-operativo-pascal",
+          ExpiresIn: 3600,
+          TokenType: "Bearer",
+        }),
+    } as Response);
+
+    const session = await requestOperationalSession("reception", "11223344");
+
+    expect(session.token).toBe("jwt-operativo-pascal");
+    expect(session.role).toBe("reception");
   });
 });

@@ -1,5 +1,7 @@
 # Etapa 1: Base image
-FROM node:20-bookworm-slim AS base
+FROM node:22-alpine3.21 AS base
+
+RUN apk add --no-cache libc6-compat
 
 # Etapa 2: Dependencias
 FROM base AS deps
@@ -19,6 +21,9 @@ ENV NEXT_TELEMETRY_DISABLED=1
 ARG NEXT_PUBLIC_API_BASE_URL="http://localhost:5000"
 ENV NEXT_PUBLIC_API_BASE_URL=$NEXT_PUBLIC_API_BASE_URL
 
+ARG NEXT_PUBLIC_WS_URL="http://localhost:5000"
+ENV NEXT_PUBLIC_WS_URL=$NEXT_PUBLIC_WS_URL
+
 RUN npm run build
 
 # Etapa 4: Runtime final (Producción, Rootless)
@@ -33,8 +38,8 @@ RUN rm -rf /usr/local/lib/node_modules/npm \
     && rm -f /usr/local/bin/npm /usr/local/bin/npx
 
 # Crear usuario y grupo no-root por seguridad (Principio de mínimo privilegio)
-RUN addgroup --system --gid 1001 nodejs \
-    && adduser --system --uid 1001 nextjs
+RUN addgroup -S -g 1001 nodejs \
+    && adduser -S -u 1001 -G nodejs nextjs
 
 # Configurar carpetas estáticas y permisos standalone
 COPY --from=builder /app/public ./public
@@ -52,6 +57,9 @@ USER nextjs
 EXPOSE 3000
 ENV PORT=3000
 ENV HOSTNAME="0.0.0.0"
+
+HEALTHCHECK --interval=20s --timeout=5s --start-period=30s --retries=5 \
+    CMD node -e "fetch('http://127.0.0.1:3000').then((response) => process.exit(response.ok ? 0 : 1)).catch(() => process.exit(1))"
 
 # server.js es generado por next build en el output standalone
 CMD ["node", "server.js"]

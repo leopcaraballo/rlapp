@@ -1,4 +1,9 @@
-import { HttpTransportType, HubConnection, HubConnectionBuilder, LogLevel } from "@microsoft/signalr";
+import {
+  HttpTransportType,
+  HubConnection,
+  HubConnectionBuilder,
+  LogLevel,
+} from "@microsoft/signalr";
 
 import { env } from "@/config/env";
 import { Appointment } from "@/domain/Appointment";
@@ -22,7 +27,9 @@ export class SignalRAdapter implements RealTimePort {
   connect(): void {
     // Salida rápida si SignalR está deshabilitado por variable de entorno
     if (env.WS_DISABLED) {
-      console.info("SignalRAdapter: deshabilitado por NEXT_PUBLIC_WS_DISABLED.");
+      console.info(
+        "SignalRAdapter: deshabilitado por NEXT_PUBLIC_WS_DISABLED.",
+      );
       return;
     }
 
@@ -36,12 +43,15 @@ export class SignalRAdapter implements RealTimePort {
       this.connected = false;
     }
 
-    const base = env.WS_URL || "http://localhost:5000";
-    const url = `${base.replace(/\/$/, '')}/ws/waiting-room`;
+    const base = env.WS_URL ?? env.API_BASE_URL ?? "http://localhost:5000";
+    const url = `${base.replace(/\/$/, "")}/ws/waiting-room`;
 
     const conn = new HubConnectionBuilder()
       .withUrl(url, {
-        transport: HttpTransportType.WebSockets | HttpTransportType.ServerSentEvents | HttpTransportType.LongPolling,
+        transport:
+          HttpTransportType.WebSockets |
+          HttpTransportType.ServerSentEvents |
+          HttpTransportType.LongPolling,
         // withCredentials requerido porque el backend usa AllowCredentials() en la política CORS.
         withCredentials: true,
       })
@@ -79,16 +89,19 @@ export class SignalRAdapter implements RealTimePort {
       else if (err != null) this.onErrorCb?.(new Error(String(err)));
     });
 
-    void conn.start().then(() => {
-      // Ignorar si esta generación ya fue superada por un disconnect/connect posterior
-      if (gen !== this.generation) return;
-      this.connected = true;
-      this.onConnectCb?.();
-    }).catch((err?: unknown) => {
-      if (gen !== this.generation) return;
-      if (err instanceof Error) this.onErrorCb?.(err);
-      else this.onErrorCb?.(new Error(String(err)));
-    });
+    void conn
+      .start()
+      .then(() => {
+        // Ignorar si esta generación ya fue superada por un disconnect/connect posterior
+        if (gen !== this.generation) return;
+        this.connected = true;
+        this.onConnectCb?.();
+      })
+      .catch((err?: unknown) => {
+        if (gen !== this.generation) return;
+        if (err instanceof Error) this.onErrorCb?.(err);
+        else this.onErrorCb?.(new Error(String(err)));
+      });
   }
 
   disconnect(): void {

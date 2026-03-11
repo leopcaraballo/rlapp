@@ -1,5 +1,6 @@
 import { getAuthHeaders } from "@/security/auth";
 import { dispatchAuthInvalid } from "@/security/authEvents";
+import { getApiBaseUrl } from "@/config/env";
 
 import { translateApiError } from "./errorTranslations";
 import {
@@ -9,6 +10,7 @@ import {
   ClaimNextPatientDto,
   CommandSuccess,
   CompleteAttentionDto,
+  MarkPaymentPendingDto,
   NextTurnView,
   parseCommandSuccess,
   parseNextTurnView,
@@ -17,14 +19,11 @@ import {
   parseRecentAttentionHistory,
   parseWaitingRoomMonitorView,
   QueueStateView,
-  RecentAttentionRecordView,
   RebuildProjectionResponse,
+  RecentAttentionRecordView,
   ValidatePaymentDto,
   WaitingRoomMonitorView,
 } from "./types";
-
-const API_BASE =
-  process.env.NEXT_PUBLIC_API_BASE_URL || "http://localhost:5000";
 
 function correlationId() {
   return typeof crypto !== "undefined" && crypto.randomUUID
@@ -67,6 +66,10 @@ async function handleResponse<T>(res: Response): Promise<T> {
   }
 }
 
+function apiUrl(path: string) {
+  return `${getApiBaseUrl()}${path}`;
+}
+
 function baseHeaders() {
   return {
     "Content-Type": "application/json",
@@ -87,7 +90,7 @@ export async function getMonitor(
   queueId: string,
 ): Promise<WaitingRoomMonitorView> {
   const res = await fetch(
-    `${API_BASE}/api/v1/waiting-room/${encodeURIComponent(queueId)}/monitor`,
+    apiUrl(`/api/v1/waiting-room/${encodeURIComponent(queueId)}/monitor`),
     { headers: baseHeaders() },
   );
   return parseWaitingRoomMonitorView(
@@ -97,7 +100,7 @@ export async function getMonitor(
 
 export async function getQueueState(queueId: string): Promise<QueueStateView> {
   const res = await fetch(
-    `${API_BASE}/api/v1/waiting-room/${encodeURIComponent(queueId)}/queue-state`,
+    apiUrl(`/api/v1/waiting-room/${encodeURIComponent(queueId)}/queue-state`),
     { headers: baseHeaders() },
   );
   return parseQueueStateView(await handleResponse<QueueStateView>(res));
@@ -107,7 +110,7 @@ export async function getNextTurn(
   queueId: string,
 ): Promise<NextTurnView | null> {
   const res = await fetch(
-    `${API_BASE}/api/v1/waiting-room/${encodeURIComponent(queueId)}/next-turn`,
+    apiUrl(`/api/v1/waiting-room/${encodeURIComponent(queueId)}/next-turn`),
     { headers: baseHeaders() },
   );
   // 404 es normal cuando no hay turno activo (cola vacía o nadie llamado)
@@ -120,7 +123,9 @@ export async function getRecentHistory(
   limit = 20,
 ): Promise<RecentAttentionRecordView[]> {
   const res = await fetch(
-    `${API_BASE}/api/v1/waiting-room/${encodeURIComponent(queueId)}/recent-history?limit=${limit}`,
+    apiUrl(
+      `/api/v1/waiting-room/${encodeURIComponent(queueId)}/recent-history?limit=${limit}`,
+    ),
     { headers: baseHeaders() },
   );
   return parseRecentAttentionHistory(
@@ -132,7 +137,7 @@ export async function rebuildProjection(
   queueId: string,
 ): Promise<RebuildProjectionResponse> {
   const res = await fetch(
-    `${API_BASE}/api/v1/waiting-room/${encodeURIComponent(queueId)}/rebuild`,
+    apiUrl(`/api/v1/waiting-room/${encodeURIComponent(queueId)}/rebuild`),
     { method: "POST", headers: commandHeaders() },
   );
   return parseRebuildProjectionResponse(
@@ -142,7 +147,7 @@ export async function rebuildProjection(
 
 // Command endpoints (write operations)
 async function postCommand<T>(path: string, dto: T): Promise<CommandSuccess> {
-  const res = await fetch(`${API_BASE}${path}`, {
+  const res = await fetch(apiUrl(path), {
     method: "POST",
     headers: commandHeaders(),
     body: JSON.stringify(dto),
@@ -185,9 +190,9 @@ export async function validatePayment(
 }
 
 export async function markPaymentPending(
-  dto: ValidatePaymentDto,
+  dto: MarkPaymentPendingDto,
 ): Promise<CommandSuccess> {
-  return postCommand<ValidatePaymentDto>(
+  return postCommand<MarkPaymentPendingDto>(
     `/api/cashier/mark-payment-pending`,
     dto,
   );
@@ -255,6 +260,7 @@ export async function cancelPayment(dto: {
 export async function callNextMedical(dto: {
   queueId: string;
   actor: string;
+  stationId?: string | null;
 }): Promise<CommandSuccess> {
   return postCommand<typeof dto>(`/api/medical/call-next`, dto);
 }

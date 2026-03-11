@@ -93,12 +93,9 @@ public static class WaitingRoomQueryEndpoints
         {
             var view = await context.GetMonitorViewAsync(queueId, cancellationToken);
 
+            // HUMAN CHECK: un arranque limpio en Docker no debe romper la UI si la cola aun no tiene eventos; se expone una vista vacía determinista.
             if (view == null)
-                return Results.NotFound(new ErrorResponse
-                {
-                    Error = $"Queue monitor not found for {queueId}",
-                    StatusCode = 404
-                });
+                return Results.Ok(CreateEmptyMonitorView(queueId));
 
             return Results.Ok(view);
         }
@@ -130,12 +127,9 @@ public static class WaitingRoomQueryEndpoints
         {
             var view = await context.GetQueueStateViewAsync(queueId, cancellationToken);
 
+            // HUMAN CHECK: se retorna estado vacío por defecto para permitir caja negra manual sin datos precargados ni proyecciones iniciales.
             if (view == null)
-                return Results.NotFound(new ErrorResponse
-                {
-                    Error = $"Queue state not found for {queueId}",
-                    StatusCode = 404
-                });
+                return Results.Ok(CreateEmptyQueueStateView(queueId));
 
             return Results.Ok(view);
         }
@@ -226,6 +220,32 @@ public static class WaitingRoomQueryEndpoints
             return Results.InternalServerError();
         }
     }
+
+    private static WaitingRoomMonitorView CreateEmptyMonitorView(string queueId) =>
+        new()
+        {
+            QueueId = queueId,
+            TotalPatientsWaiting = 0,
+            HighPriorityCount = 0,
+            NormalPriorityCount = 0,
+            LowPriorityCount = 0,
+            LastPatientCheckedInAt = null,
+            AverageWaitTimeMinutes = 0,
+            UtilizationPercentage = 0,
+            ProjectedAt = DateTimeOffset.UtcNow
+        };
+
+    private static QueueStateView CreateEmptyQueueStateView(string queueId) =>
+        new()
+        {
+            QueueId = queueId,
+            CurrentCount = 0,
+            MaxCapacity = 50,
+            IsAtCapacity = false,
+            AvailableSpots = 50,
+            PatientsInQueue = [],
+            ProjectedAt = DateTimeOffset.UtcNow
+        };
 
     /// <summary>
     /// POST /api/v1/waiting-room/{queueId}/rebuild

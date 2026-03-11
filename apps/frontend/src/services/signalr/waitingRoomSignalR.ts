@@ -1,6 +1,13 @@
-import { HttpTransportType, HubConnection, HubConnectionBuilder, HubConnectionState, LogLevel } from "@microsoft/signalr";
+import {
+  HttpTransportType,
+  HubConnection,
+  HubConnectionBuilder,
+  HubConnectionState,
+  LogLevel,
+} from "@microsoft/signalr";
+import { getSignalRBaseUrl } from "@/config/env";
 
-const WS_BASE = (process.env.NEXT_PUBLIC_WS_URL || process.env.NEXT_PUBLIC_API_BASE_URL || "http://localhost:5000").replace(/\/$/, "");
+const WS_BASE = getSignalRBaseUrl();
 
 /** Si es true, todos los intentos de conectar se omiten silenciosamente. */
 
@@ -31,7 +38,9 @@ async function startWithRetry(
   const base = 1000;
   while (attempt < maxAttempts) {
     if (!isActive()) {
-      throw new Error("SignalR: conexión detenida externamente, se abortan los reintentos.");
+      throw new Error(
+        "SignalR: conexión detenida externamente, se abortan los reintentos.",
+      );
     }
     try {
       await conn.start();
@@ -39,16 +48,23 @@ async function startWithRetry(
     } catch (err: unknown) {
       attempt++;
       if (!isActive()) {
-        throw new Error("SignalR: conexión detenida externamente durante reintento, se aborta.");
+        throw new Error(
+          "SignalR: conexión detenida externamente durante reintento, se aborta.",
+        );
       }
       if (attempt >= maxAttempts) break;
       const delay = base * Math.pow(2, attempt - 1);
       const errMsg = err instanceof Error ? err.message : String(err);
-      console.warn(`SignalR: intento ${attempt}/${maxAttempts} fallido, reintentando en ${delay}ms —`, errMsg);
+      console.warn(
+        `SignalR: intento ${attempt}/${maxAttempts} fallido, reintentando en ${delay}ms —`,
+        errMsg,
+      );
       await new Promise<void>((r) => setTimeout(r, delay));
     }
   }
-  throw new Error(`SignalR: no se pudo establecer la conexión tras ${maxAttempts} reintentos.`);
+  throw new Error(
+    `SignalR: no se pudo establecer la conexión tras ${maxAttempts} reintentos.`,
+  );
 }
 
 /**
@@ -59,16 +75,22 @@ async function startWithRetry(
  * El polling REST sigue siendo la fuente primaria de datos;
  * SignalR actúa como canal de baja latencia cuando el servidor emite eventos.
  */
-export async function connect(queueId: string, handlers: WaitingRoomHandlers = {}): Promise<HubConnection | null> {
+export async function connect(
+  queueId: string,
+  handlers: WaitingRoomHandlers = {},
+): Promise<HubConnection | null> {
   // Salida rápida si SignalR está deshabilitado por variable de entorno
   if (process.env.NEXT_PUBLIC_WS_DISABLED === "true") {
-    console.info("SignalR: deshabilitado por NEXT_PUBLIC_WS_DISABLED. Usando solo polling REST.");
+    console.info(
+      "SignalR: deshabilitado por NEXT_PUBLIC_WS_DISABLED. Usando solo polling REST.",
+    );
     return null;
   }
 
   // Reutilizar conexión activa; descartar si está en estado caído/deteniendo
   if (connection) {
-    const state = (connection as unknown as { state?: HubConnectionState }).state;
+    const state = (connection as unknown as { state?: HubConnectionState })
+      .state;
     if (
       state === HubConnectionState.Connected ||
       state === HubConnectionState.Connecting ||
@@ -84,7 +106,10 @@ export async function connect(queueId: string, handlers: WaitingRoomHandlers = {
   const url = `${WS_BASE}/ws/waiting-room`;
   const newConn = new HubConnectionBuilder()
     .withUrl(url, {
-      transport: HttpTransportType.WebSockets | HttpTransportType.ServerSentEvents | HttpTransportType.LongPolling,
+      transport:
+        HttpTransportType.WebSockets |
+        HttpTransportType.ServerSentEvents |
+        HttpTransportType.LongPolling,
       // withCredentials requerido porque el backend usa AllowCredentials() en la política CORS
       withCredentials: true,
       headers: { "X-Queue-Id": queueId },
@@ -97,10 +122,16 @@ export async function connect(queueId: string, handlers: WaitingRoomHandlers = {
 
   // ─── Registrar manejadores de eventos push del servidor ───
   // Estos se activarán cuando el backend soporte notificaciones push.
-  newConn.on("MonitorUpdated", (payload: unknown) => handlers.onMonitor?.(payload));
-  newConn.on("QueueStateUpdated", (payload: unknown) => handlers.onQueueState?.(payload));
+  newConn.on("MonitorUpdated", (payload: unknown) =>
+    handlers.onMonitor?.(payload),
+  );
+  newConn.on("QueueStateUpdated", (payload: unknown) =>
+    handlers.onQueueState?.(payload),
+  );
   newConn.on("NextTurn", (payload: unknown) => handlers.onNextTurn?.(payload));
-  newConn.on("RecentHistoryUpdated", (payload: unknown) => handlers.onRecentHistory?.(payload));
+  newConn.on("RecentHistoryUpdated", (payload: unknown) =>
+    handlers.onRecentHistory?.(payload),
+  );
 
   // Evento genérico de actualización de proyección (emitido tras rebuild u otros cambios)
   newConn.on("projectionUpdated", (payload: unknown) => {
@@ -109,11 +140,20 @@ export async function connect(queueId: string, handlers: WaitingRoomHandlers = {
   });
 
   // Manejadores genéricos
-  newConn.on("Message", (payload: unknown) => handlers.onAny?.("Message", payload));
-  newConn.on("Receive", (ev: string, payload: unknown) => handlers.onAny?.(ev, payload));
+  newConn.on("Message", (payload: unknown) =>
+    handlers.onAny?.("Message", payload),
+  );
+  newConn.on("Receive", (ev: string, payload: unknown) =>
+    handlers.onAny?.(ev, payload),
+  );
 
   newConn.onreconnecting((err?: unknown) => {
-    const msg = err instanceof Error ? err.message : err != null ? String(err) : "reconectando";
+    const msg =
+      err instanceof Error
+        ? err.message
+        : err != null
+          ? String(err)
+          : "reconectando";
     console.warn("SignalR reconectando:", msg);
   });
 
@@ -165,6 +205,7 @@ export function getActiveQueueId(): string | null {
 
 export function isConnected(): boolean {
   if (!connection) return false;
-  const connState = (connection as unknown as { state?: HubConnectionState }).state;
+  const connState = (connection as unknown as { state?: HubConnectionState })
+    .state;
   return connState === HubConnectionState.Connected;
 }

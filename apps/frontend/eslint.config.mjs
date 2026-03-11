@@ -35,7 +35,10 @@ const eslintConfig = defineConfig([
     },
     rules: {
       ...tsPlugin.configs.recommended.rules,
-      "@typescript-eslint/no-unused-vars": ["error", { "argsIgnorePattern": "^_" }],
+      "@typescript-eslint/no-unused-vars": [
+        "error",
+        { argsIgnorePattern: "^_" },
+      ],
       "simple-import-sort/imports": "error",
       "simple-import-sort/exports": "error",
     },
@@ -62,17 +65,20 @@ const eslintConfig = defineConfig([
     plugins: {
       "@typescript-eslint": tsPlugin,
       "simple-import-sort": simpleImportSort,
-      "jest": jestPlugin,
+      jest: jestPlugin,
     },
     rules: {
       ...tsPlugin.configs.recommended.rules,
       "simple-import-sort/imports": "error",
       "simple-import-sort/exports": "error",
       "@typescript-eslint/no-explicit-any": "off",
-      "@typescript-eslint/no-unused-vars": ["error", {
-        "argsIgnorePattern": "^_",
-        "varsIgnorePattern": "^_",
-      }],
+      "@typescript-eslint/no-unused-vars": [
+        "error",
+        {
+          argsIgnorePattern: "^_",
+          varsIgnorePattern: "^_",
+        },
+      ],
       "jest/no-disabled-tests": "warn",
     },
   },

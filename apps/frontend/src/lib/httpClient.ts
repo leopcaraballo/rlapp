@@ -13,6 +13,21 @@
 
 type CircuitState = "CLOSED" | "OPEN" | "HALF_OPEN";
 
+type HttpErrorCode =
+  | "CIRCUIT_OPEN"
+  | "RATE_LIMIT"
+  | "SERVER_ERROR"
+  | "HTTP_ERROR"
+  | "TIMEOUT"
+  | "UNEXPECTED_HTTP_ERROR";
+
+class HttpRequestError extends Error {
+  constructor(public readonly code: HttpErrorCode) {
+    super(code);
+    this.name = "HttpRequestError";
+  }
+}
+
 class CircuitBreaker {
   private state: CircuitState = "CLOSED";
   private failures = 0;
@@ -81,7 +96,7 @@ async function request<T>(
   const circuit = getCircuit(url);
 
   if (!circuit.canRequest()) {
-    throw new Error("CIRCUIT_OPEN");
+    throw new HttpRequestError("CIRCUIT_OPEN");
   }
 
   for (let attempt = 0; attempt <= retries; attempt++) {
@@ -97,29 +112,30 @@ async function request<T>(
       clearTimeout(id);
 
       if (!res.ok) {
-        if (res.status === 429) throw new Error("RATE_LIMIT");
-        if (res.status >= 500) throw new Error("SERVER_ERROR");
-        throw new Error("HTTP_ERROR");
+        if (res.status === 429) throw new HttpRequestError("RATE_LIMIT");
+        if (res.status >= 500) throw new HttpRequestError("SERVER_ERROR");
+        throw new HttpRequestError("HTTP_ERROR");
       }
 
-      // eslint-disable-next-line @typescript-eslint/no-explicit-any
-      const data = (await res.json()) as any;
+      const data: T = (await res.json()) as T;
 
       circuit.success();
       return data;
-      // eslint-disable-next-line @typescript-eslint/no-explicit-any
-    } catch (err: any) {
+    } catch (err: unknown) {
       clearTimeout(id);
 
       /**
        * TIMEOUT → retry
        */
-      if (err.name === "AbortError") {
+      if (err instanceof Error && err.name === "AbortError") {
         if (attempt === retries) {
           circuit.fail();
-          throw new Error("TIMEOUT");
+          throw new HttpRequestError("TIMEOUT");
         }
-      } else if (err.message === "SERVER_ERROR") {
+      } else if (
+        err instanceof HttpRequestError &&
+        err.code === "SERVER_ERROR"
+      ) {
         /**
          * SERVER ERROR → retry + breaker
          */
@@ -127,7 +143,7 @@ async function request<T>(
           circuit.fail();
           throw err;
         }
-      } else if (err.message === "RATE_LIMIT") {
+      } else if (err instanceof HttpRequestError && err.code === "RATE_LIMIT") {
         /**
          * RATE LIMIT → no retry agresivo
          */
@@ -150,7 +166,7 @@ async function request<T>(
     }
   }
 
-  throw new Error("UNEXPECTED_HTTP_ERROR");
+  throw new HttpRequestError("UNEXPECTED_HTTP_ERROR");
 }
 
 /**

@@ -1,6 +1,27 @@
 import type { NextRequest } from "next/server";
 import { NextResponse } from "next/server";
 
+function normalizeUrl(url: string) {
+  return url.replace(/\/$/, "");
+}
+
+function getConnectSources() {
+  const publicApiBaseUrl = normalizeUrl(
+    process.env.NEXT_PUBLIC_API_BASE_URL || "http://localhost:5000",
+  );
+  const publicWsBaseUrl = normalizeUrl(
+    process.env.NEXT_PUBLIC_WS_URL || publicApiBaseUrl,
+  );
+
+  return [
+    "'self'",
+    publicApiBaseUrl,
+    publicWsBaseUrl,
+    "http://api:8080",
+    "ws://api:8080",
+  ];
+}
+
 function getClientIP(req: NextRequest): string {
   const forwarded = req.headers.get("x-forwarded-for");
   if (forwarded) return forwarded.split(",")[0].trim();
@@ -49,7 +70,7 @@ export function middleware(req: NextRequest) {
   /**
    * Bloqueo de métodos peligrosos
    */
-  const allowed = ["GET", "POST", "OPTIONS"];
+  const allowed = ["GET", "HEAD", "POST", "OPTIONS"];
   if (!allowed.includes(req.method)) {
     return NextResponse.json(
       { message: "Method not allowed" },
@@ -79,7 +100,7 @@ export function middleware(req: NextRequest) {
       "script-src 'self' 'unsafe-inline'",
       "style-src 'self' 'unsafe-inline'",
       "img-src 'self' data:",
-      "connect-src 'self' http://localhost:5000 http://api:8080 ws://localhost:5000 ws://api:8080",
+      `connect-src ${getConnectSources().join(" ")}`,
       "frame-ancestors 'none'",
       "base-uri 'self'",
       "form-action 'self'",
