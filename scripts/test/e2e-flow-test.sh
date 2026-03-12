@@ -21,63 +21,21 @@ PATIENT_ID="TEST-E2E-$TS"
 CORR_ID="e2e-corr-$TS"
 IDEM_KEY="e2e-idem-$TS"
 
-# Generar token local para cada rol
-gen_token() {
-  local role="$1"
-  python3 -c "
-import base64, json, time
-def b64url(s):
-    return base64.b64encode(s.encode()).decode().rstrip('=').replace('+','-').replace('/','_')
-header = b64url(json.dumps({'alg':'none','typ':'JWT'}))
-exp = int((time.time() + 7200) * 1000)
-payload = b64url(json.dumps({'role':'$role','exp':exp}))
-print(f'{header}.{payload}.local')
-"
-}
+request_token() {
+  local user_id="$1"
+  local user_name="$2"
+  local role="$3"
+  local token_suffix
+  token_suffix=$(echo "${role}" | tr '[:upper:]' '[:lower:]')
 
-# Headers por rol
-reception_headers() {
-  local token
-  token=$(gen_token "reception")
-  echo "-H 'Authorization: Bearer $token' -H 'X-User-Role: Receptionist'"
-}
-
-cashier_headers() {
-  local token
-  token=$(gen_token "cashier")
-  echo "-H 'Authorization: Bearer $token' -H 'X-User-Role: Cashier'"
-}
-
-doctor_headers() {
-  local token
-  token=$(gen_token "doctor")
-  echo "-H 'Authorization: Bearer $token' -H 'X-User-Role: Doctor'"
-}
-
-call_api() {
-  local method="$1"
-  local path="$2"
-  local role_header_auth="$3"
-  local role_header_role="$4"
-  local body="$5"
-
-  local result
-  result=$(curl -s -w "\n%{http_code}" -X "$method" \
-    "${API}${path}" \
+  local response
+  response=$(curl -sfS -X POST "${API}/api/auth/token" \
     -H "Content-Type: application/json" \
-    -H "X-Correlation-Id: ${CORR_ID}-$(date +%N)" \
-    -H "Idempotency-Key: ${IDEM_KEY}-$(date +%N)" \
-    -H "Authorization: Bearer $role_header_auth" \
-    -H "X-User-Role: $role_header_role" \
-    -d "$body")
+    -H "X-Correlation-Id: ${CORR_ID}-auth-${token_suffix}" \
+    -H "Idempotency-Key: ${IDEM_KEY}-auth-${token_suffix}" \
+    -d "{\"userId\":\"${user_id}\",\"userName\":\"${user_name}\",\"role\":\"${role}\"}")
 
-  local http_code
-  http_code=$(echo "$result" | tail -1)
-  local body_response
-  body_response=$(echo "$result" | head -n -1)
-
-  echo "  HTTP $http_code — ${body_response:0:200}"
-  echo "$http_code"
+  echo "$response" | python3 -c 'import json,sys; print(json.load(sys.stdin)["token"])'
 }
 
 log() { echo ""; echo ">>> $1"; }
@@ -90,10 +48,11 @@ echo " Paciente ID: $PATIENT_ID"
 echo " Cola: $QUEUE_ID"
 echo "=============================================="
 
-# Generar tokens
-RECEPT_TOKEN=$(gen_token "reception")
-CASHIER_TOKEN=$(gen_token "cashier")
-DOCTOR_TOKEN=$(gen_token "doctor")
+# // HUMAN CHECK: este flujo valida autenticacion operacional real con JWT emitido por la API.
+# Se elimina deliberadamente la dependencia del header de compatibilidad X-User-Role.
+RECEPT_TOKEN=$(request_token "reception-e2e" "Recepcion E2E" "Receptionist")
+CASHIER_TOKEN=$(request_token "cashier-e2e" "Caja E2E" "Cashier")
+DOCTOR_TOKEN=$(request_token "doctor-e2e" "Doctor E2E" "Doctor")
 
 # =============================================================================
 # PASO 1: RECEPCIÓN — Registrar paciente
@@ -105,7 +64,6 @@ RESPONSE=$(curl -s -w "\n%{http_code}" -X POST "${API}/api/reception/register" \
   -H "X-Correlation-Id: ${CORR_ID}-1" \
   -H "Idempotency-Key: ${IDEM_KEY}-1" \
   -H "Authorization: Bearer ${RECEPT_TOKEN}" \
-  -H "X-User-Role: Receptionist" \
   -d "{\"queueId\":\"${QUEUE_ID}\",\"patientId\":\"${PATIENT_ID}\",\"patientName\":\"Paciente E2E Test\",\"priority\":\"Medium\",\"consultationType\":\"General\",\"age\":35,\"isPregnant\":false,\"notes\":\"Test E2E\",\"actor\":\"reception\"}")
 
 HTTP_CODE=$(echo "$RESPONSE" | tail -1)
@@ -141,7 +99,6 @@ RESPONSE=$(curl -s -w "\n%{http_code}" -X POST "${API}/api/cashier/call-next" \
   -H "X-Correlation-Id: ${CORR_ID}-3" \
   -H "Idempotency-Key: ${IDEM_KEY}-3" \
   -H "Authorization: Bearer ${CASHIER_TOKEN}" \
-  -H "X-User-Role: Cashier" \
   -d "{\"queueId\":\"${QUEUE_ID}\",\"actor\":\"cajero\"}")
 
 HTTP_CODE=$(echo "$RESPONSE" | tail -1)
@@ -180,7 +137,6 @@ if [[ -n "$CASHIER_PATIENT_ID" ]]; then
     -H "X-Correlation-Id: ${CORR_ID}-4" \
     -H "Idempotency-Key: ${IDEM_KEY}-4" \
     -H "Authorization: Bearer ${CASHIER_TOKEN}" \
-    -H "X-User-Role: Cashier" \
     -d "{\"queueId\":\"${QUEUE_ID}\",\"patientId\":\"${CASHIER_PATIENT_ID}\",\"actor\":\"cajero\",\"paymentReference\":\"REF-E2E-${TS}\"}")
 
   HTTP_CODE=$(echo "$RESPONSE" | tail -1)
@@ -208,7 +164,6 @@ RESPONSE=$(curl -s -w "\n%{http_code}" -X POST "${API}/api/medical/consulting-ro
   -H "X-Correlation-Id: ${CORR_ID}-5" \
   -H "Idempotency-Key: ${IDEM_KEY}-5" \
   -H "Authorization: Bearer ${DOCTOR_TOKEN}" \
-  -H "X-User-Role: Doctor" \
   -d "{\"queueId\":\"${QUEUE_ID}\",\"consultingRoomId\":\"${ROOM_ID}\",\"actor\":\"doctor\"}")
 
 HTTP_CODE=$(echo "$RESPONSE" | tail -1)
@@ -233,7 +188,6 @@ RESPONSE=$(curl -s -w "\n%{http_code}" -X POST "${API}/api/medical/call-next" \
   -H "X-Correlation-Id: ${CORR_ID}-6" \
   -H "Idempotency-Key: ${IDEM_KEY}-6" \
   -H "Authorization: Bearer ${DOCTOR_TOKEN}" \
-  -H "X-User-Role: Doctor" \
   -d "{\"queueId\":\"${QUEUE_ID}\",\"actor\":\"doctor\",\"stationId\":\"${ROOM_ID}\"}")
 
 HTTP_CODE=$(echo "$RESPONSE" | tail -1)
@@ -262,8 +216,7 @@ if [[ -n "$MEDICAL_PATIENT_ID" ]]; then
     -H "X-Correlation-Id: ${CORR_ID}-7" \
     -H "Idempotency-Key: ${IDEM_KEY}-7" \
     -H "Authorization: Bearer ${DOCTOR_TOKEN}" \
-    -H "X-User-Role: Doctor" \
-    -d "{\"queueId\":\"${QUEUE_ID}\",\"patientId\":\"${MEDICAL_PATIENT_ID}\"}")
+    -d "{\"queueId\":\"${QUEUE_ID}\",\"patientId\":\"${MEDICAL_PATIENT_ID}\",\"actor\":\"doctor\"}")
 
   HTTP_CODE=$(echo "$RESPONSE" | tail -1)
   BODY=$(echo "$RESPONSE" | head -n -1)
@@ -287,8 +240,7 @@ if [[ -n "$MEDICAL_PATIENT_ID" ]]; then
     -H "X-Correlation-Id: ${CORR_ID}-8" \
     -H "Idempotency-Key: ${IDEM_KEY}-8" \
     -H "Authorization: Bearer ${DOCTOR_TOKEN}" \
-    -H "X-User-Role: Doctor" \
-    -d "{\"queueId\":\"${QUEUE_ID}\",\"patientId\":\"${MEDICAL_PATIENT_ID}\",\"outcome\":\"Consulta completada exitosamente en prueba E2E\"}")
+    -d "{\"queueId\":\"${QUEUE_ID}\",\"patientId\":\"${MEDICAL_PATIENT_ID}\",\"actor\":\"doctor\",\"outcome\":\"Consulta completada exitosamente en prueba E2E\"}")
 
   HTTP_CODE=$(echo "$RESPONSE" | tail -1)
   BODY=$(echo "$RESPONSE" | head -n -1)

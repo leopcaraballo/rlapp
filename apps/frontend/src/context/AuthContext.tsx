@@ -16,6 +16,7 @@ import {
   saveSession,
   type UserRole,
 } from "@/security/auth";
+import { requestOperationalSession } from "@/services/api/auth";
 import { AUTH_CHANGED_EVENT, AUTH_INVALID_EVENT } from "@/security/authEvents";
 
 type AuthContextValue = {
@@ -23,7 +24,11 @@ type AuthContextValue = {
   role: UserRole | null;
   isAuthenticated: boolean;
   ready: boolean;
-  signIn: (role: UserRole, ttlMinutes?: number) => void;
+  signIn: (
+    role: UserRole,
+    ttlMinutes?: number,
+    idCard?: string,
+  ) => Promise<void>;
   signOut: () => void;
 };
 
@@ -68,11 +73,18 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
     };
   }, []);
 
-  const signIn = useCallback((role: UserRole, ttlMinutes = 120) => {
-    const next = buildSession(role, ttlMinutes);
-    saveSession(next);
-    setSession(next);
-  }, []);
+  const signIn = useCallback(
+    async (role: UserRole, ttlMinutes = 120, idCard?: string) => {
+      const next =
+        role === "patient"
+          ? buildSession(role, ttlMinutes)
+          : await requestOperationalSession(role, idCard ?? "", ttlMinutes);
+
+      saveSession(next);
+      setSession(next);
+    },
+    [],
+  );
 
   const signOut = useCallback(() => {
     clearSession();

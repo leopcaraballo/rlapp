@@ -21,6 +21,14 @@ Los objetivos soportados son:
 
 ## Comandos más usados
 
+Antes de ejecutar Docker Compose por primera vez desde la raíz:
+
+```bash
+cp .env.example .env
+```
+
+Después, ajuste las credenciales locales de `.env` según su entorno.
+
 Inicio:
 
 - `./start.sh all --build`
@@ -52,6 +60,7 @@ Estado y logs:
 Para levantar todo el proyecto en Docker desde la raíz:
 
 ```bash
+cp .env.example .env
 ./start.sh all --build
 ```
 

@@ -70,7 +70,9 @@ public sealed class EventDrivenPipelineE2ETests : IAsyncLifetime
     {
         _testConnectionString =
             Environment.GetEnvironmentVariable("RLAPP_INTEGRATION_EVENTSTORE_CONNECTION")
-            ?? "Host=localhost;Port=5432;Database=rlapp_waitingroom_test;Username=rlapp;Password=rlapp_secure_password";
+            // HUMAN CHECK: este fallback manual existe para ejecucion local controlada y debe permanecer
+            // sincronizado con el entorno Docker/CI para evitar falsos negativos por drift de credenciales.
+            ?? "Host=localhost;Port=5432;Database=rlapp_waitingroom_test;Username=rlapp;Password=change-me-postgres-password";
 
         // Build service provider for test
         var services = new ServiceCollection();

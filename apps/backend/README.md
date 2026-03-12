@@ -33,6 +33,12 @@ Capas y módulos principales:
 
 ## Ejecución con Docker Compose (raíz del monorepo)
 
+Antes del primer arranque, copie la plantilla de entorno en la raíz del repositorio:
+
+```bash
+cp .env.example .env
+```
+
 ```bash
 docker compose up -d
 ```

@@ -1,3 +1,5 @@
+import { z } from "zod";
+
 import type { AppointmentPriority } from "../../domain/Appointment";
 import type { ConsultationType } from "../../domain/patient/ConsultationType";
 
@@ -16,6 +18,11 @@ export interface CommandSuccess {
   eventCount: number;
   patientId?: string;
   queueId?: string;
+}
+
+export interface RebuildProjectionResponse {
+  message: string;
+  queueId: string;
 }
 
 export interface WaitingRoomMonitorView {
@@ -113,4 +120,143 @@ export interface CompleteAttentionDto {
   actor: string;
   outcome?: string | null;
   notes?: string | null;
+}
+
+const nonEmptyStringSchema = z.string().min(1);
+const nullableStringSchema = z.string().nullable();
+
+export const commandSuccessSchema = z.object({
+  success: z.boolean(),
+  message: nonEmptyStringSchema,
+  correlationId: nonEmptyStringSchema,
+  eventCount: z.number(),
+  patientId: z.string().optional(),
+  queueId: z.string().optional(),
+});
+
+export const rebuildProjectionResponseSchema = z.object({
+  message: nonEmptyStringSchema,
+  queueId: nonEmptyStringSchema,
+});
+
+export const waitingRoomMonitorViewSchema = z.object({
+  queueId: nonEmptyStringSchema,
+  totalPatientsWaiting: z.number(),
+  highPriorityCount: z.number(),
+  urgentPriorityCount: z.number().optional(),
+  normalPriorityCount: z.number(),
+  lowPriorityCount: z.number(),
+  lastPatientCheckedInAt: nullableStringSchema,
+  averageWaitTimeMinutes: z.number(),
+  utilizationPercentage: z.number(),
+  projectedAt: nonEmptyStringSchema,
+});
+
+export const patientInQueueSchema = z.object({
+  patientId: nonEmptyStringSchema,
+  patientName: nonEmptyStringSchema,
+  priority: nonEmptyStringSchema,
+  checkInTime: nonEmptyStringSchema,
+  waitTimeMinutes: z.number(),
+});
+
+export const queueStateViewSchema = z.object({
+  queueId: nonEmptyStringSchema,
+  currentCount: z.number(),
+  maxCapacity: z.number(),
+  isAtCapacity: z.boolean(),
+  availableSpots: z.number(),
+  patientsInQueue: z.array(patientInQueueSchema),
+  projectedAt: nonEmptyStringSchema,
+});
+
+export const nextTurnViewSchema = z.object({
+  queueId: nonEmptyStringSchema,
+  patientId: nonEmptyStringSchema,
+  patientName: nonEmptyStringSchema,
+  priority: nonEmptyStringSchema,
+  consultationType: nonEmptyStringSchema,
+  status: nonEmptyStringSchema,
+  claimedAt: nullableStringSchema,
+  calledAt: nullableStringSchema,
+  stationId: nullableStringSchema,
+  projectedAt: nonEmptyStringSchema,
+});
+
+export const recentAttentionRecordViewSchema = z.object({
+  queueId: nonEmptyStringSchema,
+  patientId: nonEmptyStringSchema,
+  patientName: nonEmptyStringSchema,
+  priority: nonEmptyStringSchema,
+  consultationType: nonEmptyStringSchema,
+  completedAt: nonEmptyStringSchema,
+  outcome: z.string().nullable().optional(),
+  notes: z.string().nullable().optional(),
+});
+
+export const recentAttentionHistorySchema = z.array(
+  recentAttentionRecordViewSchema,
+);
+
+function buildContractError(contractName: string, result: z.ZodError): Error {
+  const issue = result.issues[0];
+  const path = issue?.path.length ? issue.path.join(".") : "payload";
+  return new Error(
+    `Contrato inválido en ${contractName}: ${path} ${issue?.message ?? "no cumple el esquema esperado"}`,
+  );
+}
+
+function validateContract<T>(
+  contractName: string,
+  schema: z.ZodType<T>,
+  payload: unknown,
+): T {
+  const result = schema.safeParse(payload);
+  if (!result.success) {
+    throw buildContractError(contractName, result.error);
+  }
+
+  return result.data;
+}
+
+export function parseCommandSuccess(payload: unknown): CommandSuccess {
+  return validateContract("CommandSuccess", commandSuccessSchema, payload);
+}
+
+export function parseRebuildProjectionResponse(
+  payload: unknown,
+): RebuildProjectionResponse {
+  return validateContract(
+    "RebuildProjectionResponse",
+    rebuildProjectionResponseSchema,
+    payload,
+  );
+}
+
+export function parseWaitingRoomMonitorView(
+  payload: unknown,
+): WaitingRoomMonitorView {
+  return validateContract(
+    "WaitingRoomMonitorView",
+    waitingRoomMonitorViewSchema,
+    payload,
+  );
+}
+
+export function parseQueueStateView(payload: unknown): QueueStateView {
+  return validateContract("QueueStateView", queueStateViewSchema, payload);
+}
+
+export function parseNextTurnView(payload: unknown): NextTurnView {
+  return validateContract("NextTurnView", nextTurnViewSchema, payload);
+}
+
+export function parseRecentAttentionHistory(
+  payload: unknown,
+): RecentAttentionRecordView[] {
+  return validateContract(
+    "RecentAttentionHistory",
+    recentAttentionHistorySchema,
+    payload,
+  );
 }

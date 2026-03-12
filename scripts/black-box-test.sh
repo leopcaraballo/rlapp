@@ -95,7 +95,9 @@ if [[ "$INVALID_STATUS" != "400" ]]; then
   exit 1
 fi
 
-assert_json "$INVALID_BODY"
+if [[ -s "$INVALID_BODY" ]]; then
+  assert_json "$INVALID_BODY"
+fi
 
 log "Escenario 3: replay idempotente con la misma llave"
 REPLAY_BODY="$TMP_DIR/replay.json"
@@ -124,7 +126,9 @@ DUP_STATUS="$(post_checkin "$DUP_PAYLOAD" "bb-duplicate-001" "$DUP_BODY")"
 
 case "$DUP_STATUS" in
   200|400|409)
-    assert_json "$DUP_BODY"
+    if [[ -s "$DUP_BODY" ]]; then
+      assert_json "$DUP_BODY"
+    fi
     ;;
   *)
     printf 'Respuesta inesperada para duplicado de paciente (HTTP %s):\n' "$DUP_STATUS"

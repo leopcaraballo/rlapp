@@ -12,8 +12,8 @@ services:
     image: postgres:16-alpine
     container_name: rlapp-postgres
     environment:
-      POSTGRES_USER: rlapp
-      POSTGRES_PASSWORD: rlapp_secure_password
+      POSTGRES_USER: ${POSTGRES_USER}
+      POSTGRES_PASSWORD: ${POSTGRES_PASSWORD}
       POSTGRES_INITDB_ARGS: "-c max_connections=200"
     ports:
       - "5432:5432"
@@ -47,9 +47,9 @@ services:
     image: rabbitmq:3.12-management-alpine
     container_name: rlapp-rabbitmq
     environment:
-      RABBITMQ_DEFAULT_USER: rlapp
-      RABBITMQ_DEFAULT_PASS: rlapp_rabbit_password
-      RABBITMQ_DEFAULT_VHOST: "/"
+      RABBITMQ_DEFAULT_USER: ${RABBITMQ_DEFAULT_USER}
+      RABBITMQ_DEFAULT_PASS: ${RABBITMQ_DEFAULT_PASS}
+      RABBITMQ_DEFAULT_VHOST: ${RABBITMQ_DEFAULT_VHOST}
       RABBITMQ_ENABLED_PLUGINS_FILE: /etc/rabbitmq/enabled_plugins
     ports:
       - "5672:5672"
@@ -95,12 +95,13 @@ services:
     environment:
       ASPNETCORE_ENVIRONMENT: Production
       ASPNETCORE_HTTP_PORTS: 8080
-      ConnectionStrings__EventStore: Host=postgres;Port=5432;Database=rlapp_waitingroom;Username=rlapp;Password=rlapp_secure_password;Timeout=60;CommandTimeout=600
+      # HUMAN CHECK: estas credenciales deben provenir de `.env` local o del gestor de secretos del entorno objetivo.
+      ConnectionStrings__EventStore: Host=postgres;Port=5432;Database=${RLAPP_DB_NAME};Username=${POSTGRES_USER};Password=${POSTGRES_PASSWORD};Timeout=60;CommandTimeout=600
       RabbitMq__HostName: rabbitmq
       RabbitMq__Port: 5672
-      RabbitMq__UserName: rlapp
-      RabbitMq__Password: rlapp_rabbit_password
-      RabbitMq__VirtualHost: /
+      RabbitMq__UserName: ${RABBITMQ_DEFAULT_USER}
+      RabbitMq__Password: ${RABBITMQ_DEFAULT_PASS}
+      RabbitMq__VirtualHost: ${RABBITMQ_DEFAULT_VHOST}
       RabbitMq__ExchangeName: rlapp.events
       RabbitMq__ExchangeType: topic
     ports:
@@ -149,12 +150,13 @@ services:
     container_name: rlapp-worker
     environment:
       DOTNET_ENVIRONMENT: Production
-      ConnectionStrings__EventStore: Host=postgres;Port=5432;Database=rlapp_waitingroom;Username=rlapp;Password=rlapp_secure_password;Timeout=60;CommandTimeout=600
+      # HUMAN CHECK: estas credenciales deben provenir de `.env` local o del gestor de secretos del entorno objetivo.
+      ConnectionStrings__EventStore: Host=postgres;Port=5432;Database=${RLAPP_DB_NAME};Username=${POSTGRES_USER};Password=${POSTGRES_PASSWORD};Timeout=60;CommandTimeout=600
       RabbitMq__HostName: rabbitmq
       RabbitMq__Port: 5672
-      RabbitMq__UserName: rlapp
-      RabbitMq__Password: rlapp_rabbit_password
-      RabbitMq__VirtualHost: /
+      RabbitMq__UserName: ${RABBITMQ_DEFAULT_USER}
+      RabbitMq__Password: ${RABBITMQ_DEFAULT_PASS}
+      RabbitMq__VirtualHost: ${RABBITMQ_DEFAULT_VHOST}
     depends_on:
       postgres:
         condition: service_healthy
@@ -194,7 +196,8 @@ services:
   frontend:
     build:
       context: ./apps/frontend
-      dockerfile: Dockerfile
+      # HUMAN CHECK: este servicio usa la imagen de desarrollo porque monta el codigo fuente y arranca con `npm run dev`; en produccion debe mantenerse el Dockerfile endurecido de runtime.
+      dockerfile: Dockerfile.dev
     container_name: rlapp-frontend
     environment:
       NEXT_PUBLIC_API_BASE_URL: http://localhost:5000
@@ -283,8 +286,8 @@ services:
     image: grafana/grafana:latest
     container_name: rlapp-grafana
     environment:
-      GF_SECURITY_ADMIN_USER: admin
-      GF_SECURITY_ADMIN_PASSWORD: admin123
+      GF_SECURITY_ADMIN_USER: ${GRAFANA_ADMIN_USER}
+      GF_SECURITY_ADMIN_PASSWORD: ${GRAFANA_ADMIN_PASSWORD}
       GF_INSTALL_PLUGINS: grafana-clock-panel,grafana-simple-json-datasource
       GF_USERS_ALLOW_SIGN_UP: "false"
     ports:
@@ -321,7 +324,7 @@ services:
     container_name: rlapp-seq
     environment:
       ACCEPT_EULA: "Y"
-      SEQ_FIRSTRUN_ADMINPASSWORD: "admin123"
+      SEQ_FIRSTRUN_ADMINPASSWORD: ${SEQ_ADMIN_PASSWORD}
     ports:
       - "5341:80"
       - "8081:80"
@@ -352,8 +355,8 @@ services:
     image: dpage/pgadmin4:latest
     container_name: rlapp-pgadmin
     environment:
-      PGADMIN_DEFAULT_EMAIL: admin@rlapp.com
-      PGADMIN_DEFAULT_PASSWORD: admin123
+      PGADMIN_DEFAULT_EMAIL: ${PGADMIN_DEFAULT_EMAIL}
+      PGADMIN_DEFAULT_PASSWORD: ${PGADMIN_DEFAULT_PASSWORD}
     ports:
       - "5050:80"
     volumes:
@@ -380,7 +383,7 @@ services:
     image: prometheuscommunity/postgres-exporter:latest
     container_name: rlapp-postgres-exporter
     environment:
-      DATA_SOURCE_NAME: "postgresql://rlapp:rlapp_secure_password@postgres:5432/rlapp_waitingroom?sslmode=disable"
+      DATA_SOURCE_NAME: "postgresql://${POSTGRES_USER}:${POSTGRES_PASSWORD}@postgres:5432/${RLAPP_DB_NAME}?sslmode=disable"
     ports:
       - "9187:9187"
     depends_on:

@@ -5,12 +5,17 @@ import React from "react";
 
 import { AuthProvider, useAuth } from "@/context/AuthContext";
 import * as authModule from "@/security/auth";
+import { requestOperationalSession } from "@/services/api/auth";
 import {
   AUTH_CHANGED_EVENT,
   AUTH_INVALID_EVENT,
   dispatchAuthChanged,
   dispatchAuthInvalid,
 } from "@/security/authEvents";
+
+jest.mock("@/services/api/auth", () => ({
+  requestOperationalSession: jest.fn(),
+}));
 
 // Mock localStorage
 const localStorageMock = (() => {
@@ -48,20 +53,31 @@ function TestComponent() {
         {auth.isAuthenticated ? "Authenticated" : "Not authenticated"}
       </div>
       <div data-testid="auth-role">{auth.role || "No role"}</div>
-      <button onClick={() => auth.signIn("patient", 120)}>
+      <button onClick={() => void auth.signIn("patient", 120, "123456")}>
         Sign In Patient
       </button>
-      <button onClick={() => auth.signIn("doctor", 60)}>Sign In Doctor</button>
+      <button onClick={() => void auth.signIn("doctor", 60, "654321")}>
+        Sign In Doctor
+      </button>
       <button onClick={() => auth.signOut()}>Sign Out</button>
     </div>
   );
 }
+
+const mockRequestOperationalSession = jest.mocked(requestOperationalSession);
 
 describe("AuthContext.tsx — Authentication Provider and Hook", () => {
   beforeEach(() => {
     localStorageMock.clear();
     jest.clearAllMocks();
     jest.useFakeTimers();
+    mockRequestOperationalSession.mockImplementation(
+      async (role, _idCard, ttlMinutes = 120) => ({
+        token: `server-token-${role}`,
+        role,
+        exp: Date.now() + ttlMinutes * 60_000,
+      }),
+    );
   });
 
   afterEach(async () => {
@@ -212,7 +228,7 @@ describe("AuthContext.tsx — Authentication Provider and Hook", () => {
       });
     });
 
-    it("should respect custom TTL parameter", () => {
+    it("should respect custom TTL parameter", async () => {
       const TestComponentWithTTL = () => {
         const auth = useAuth();
 
@@ -220,7 +236,7 @@ describe("AuthContext.tsx — Authentication Provider and Hook", () => {
 
         return (
           <button
-            onClick={() => auth.signIn("admin", 60)}
+            onClick={() => void auth.signIn("admin", 60, "999999")}
             data-testid="custom-ttl-btn"
           >
             Sign In with 60min
@@ -239,6 +255,10 @@ describe("AuthContext.tsx — Authentication Provider and Hook", () => {
         screen.getByTestId("custom-ttl-btn").click();
       });
 
+      await waitFor(() => {
+        expect(localStorageMock.getItem("rlapp_auth")).not.toBeNull();
+      });
+
       const stored = localStorageMock.getItem("rlapp_auth");
       const session = JSON.parse(stored!) as authModule.AuthSession;
 
@@ -247,6 +267,26 @@ describe("AuthContext.tsx — Authentication Provider and Hook", () => {
 
       expect(session.exp).toBeGreaterThanOrEqual(expectedMinExp);
       expect(session.exp).toBeLessThanOrEqual(expectedMaxExp);
+    });
+
+    it("should request backend token for operational roles", async () => {
+      render(
+        <AuthProvider>
+          <TestComponent />
+        </AuthProvider>,
+      );
+
+      act(() => {
+        screen.getByText("Sign In Doctor").click();
+      });
+
+      await waitFor(() => {
+        expect(mockRequestOperationalSession).toHaveBeenCalledWith(
+          "doctor",
+          "654321",
+          60,
+        );
+      });
     });
 
     it("should update role when signing in with different role", async () => {

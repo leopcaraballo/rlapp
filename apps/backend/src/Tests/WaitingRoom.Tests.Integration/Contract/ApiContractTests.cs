@@ -280,6 +280,166 @@ public sealed class ApiContractTests : IClassFixture<WaitingRoomApiFactory>
     }
 
     // ============================================================
+    // CTR-008: Monitor query response structure
+    // ============================================================
+
+    [Fact]
+    public async Task CTR008_MonitorResponse_ContainsRequiredFields()
+    {
+        var queueId = await CheckInAndGetQueueIdAsync("CTR-008-PAT", "Monitor Contract");
+
+        var response = await _client.GetAsync($"/api/v1/waiting-room/{queueId}/monitor");
+        var result = await DeserializeAsync(response);
+
+        response.StatusCode.Should().Be(HttpStatusCode.OK);
+        result.TryGetProperty("queueId", out var queueIdProp).Should().BeTrue();
+        queueIdProp.GetString().Should().Be(queueId);
+        result.TryGetProperty("totalPatientsWaiting", out var totalProp).Should().BeTrue();
+        totalProp.ValueKind.Should().Be(JsonValueKind.Number);
+        result.TryGetProperty("highPriorityCount", out var highPriorityProp).Should().BeTrue();
+        highPriorityProp.ValueKind.Should().Be(JsonValueKind.Number);
+        result.TryGetProperty("normalPriorityCount", out var normalPriorityProp).Should().BeTrue();
+        normalPriorityProp.ValueKind.Should().Be(JsonValueKind.Number);
+        result.TryGetProperty("lowPriorityCount", out var lowPriorityProp).Should().BeTrue();
+        lowPriorityProp.ValueKind.Should().Be(JsonValueKind.Number);
+        result.TryGetProperty("averageWaitTimeMinutes", out var waitProp).Should().BeTrue();
+        waitProp.ValueKind.Should().Be(JsonValueKind.Number);
+        result.TryGetProperty("utilizationPercentage", out var utilizationProp).Should().BeTrue();
+        utilizationProp.ValueKind.Should().Be(JsonValueKind.Number);
+        result.TryGetProperty("projectedAt", out var projectedAtProp).Should().BeTrue();
+        projectedAtProp.GetString().Should().NotBeNullOrWhiteSpace();
+    }
+
+    // ============================================================
+    // CTR-009: Queue-state query response structure
+    // ============================================================
+
+    [Fact]
+    public async Task CTR009_QueueStateResponse_ContainsRequiredFields()
+    {
+        var queueId = await CheckInAndGetQueueIdAsync("CTR-009-PAT", "Queue State Contract");
+
+        var response = await _client.GetAsync($"/api/v1/waiting-room/{queueId}/queue-state");
+        var result = await DeserializeAsync(response);
+
+        response.StatusCode.Should().Be(HttpStatusCode.OK);
+        result.TryGetProperty("queueId", out var queueIdProp).Should().BeTrue();
+        queueIdProp.GetString().Should().Be(queueId);
+        result.TryGetProperty("currentCount", out var currentCountProp).Should().BeTrue();
+        currentCountProp.ValueKind.Should().Be(JsonValueKind.Number);
+        result.TryGetProperty("maxCapacity", out var maxCapacityProp).Should().BeTrue();
+        maxCapacityProp.ValueKind.Should().Be(JsonValueKind.Number);
+        result.TryGetProperty("isAtCapacity", out var isAtCapacityProp).Should().BeTrue();
+        isAtCapacityProp.ValueKind.Should().BeOneOf(JsonValueKind.True, JsonValueKind.False);
+        result.TryGetProperty("availableSpots", out var availableSpotsProp).Should().BeTrue();
+        availableSpotsProp.ValueKind.Should().Be(JsonValueKind.Number);
+        result.TryGetProperty("patientsInQueue", out var patientsProp).Should().BeTrue();
+        patientsProp.ValueKind.Should().Be(JsonValueKind.Array);
+        patientsProp.GetArrayLength().Should().BeGreaterThan(0);
+
+        var firstPatient = patientsProp.EnumerateArray().First();
+        firstPatient.TryGetProperty("patientId", out var patientIdProp).Should().BeTrue();
+        patientIdProp.GetString().Should().NotBeNullOrWhiteSpace();
+        firstPatient.TryGetProperty("patientName", out var patientNameProp).Should().BeTrue();
+        patientNameProp.GetString().Should().NotBeNullOrWhiteSpace();
+        firstPatient.TryGetProperty("priority", out var priorityProp).Should().BeTrue();
+        priorityProp.GetString().Should().NotBeNullOrWhiteSpace();
+        firstPatient.TryGetProperty("checkInTime", out var checkInTimeProp).Should().BeTrue();
+        checkInTimeProp.GetString().Should().NotBeNullOrWhiteSpace();
+        firstPatient.TryGetProperty("waitTimeMinutes", out var waitTimeProp).Should().BeTrue();
+        waitTimeProp.ValueKind.Should().Be(JsonValueKind.Number);
+        result.TryGetProperty("projectedAt", out var projectedAtProp).Should().BeTrue();
+        projectedAtProp.GetString().Should().NotBeNullOrWhiteSpace();
+    }
+
+    // ============================================================
+    // CTR-010: Next-turn query response structure
+    // ============================================================
+
+    [Fact]
+    public async Task CTR010_NextTurnResponse_ContainsRequiredFields()
+    {
+        var queueId = await CheckInAndGetQueueIdAsync("CTR-010-PAT", "Next Turn Contract");
+
+        var response = await _client.GetAsync($"/api/v1/waiting-room/{queueId}/next-turn");
+        var result = await DeserializeAsync(response);
+
+        response.StatusCode.Should().Be(HttpStatusCode.OK);
+        result.TryGetProperty("queueId", out var queueIdProp).Should().BeTrue();
+        queueIdProp.GetString().Should().Be(queueId);
+        result.TryGetProperty("patientId", out var patientIdProp).Should().BeTrue();
+        patientIdProp.GetString().Should().NotBeNullOrWhiteSpace();
+        result.TryGetProperty("patientName", out var patientNameProp).Should().BeTrue();
+        patientNameProp.GetString().Should().NotBeNullOrWhiteSpace();
+        result.TryGetProperty("priority", out var priorityProp).Should().BeTrue();
+        priorityProp.GetString().Should().NotBeNullOrWhiteSpace();
+        result.TryGetProperty("consultationType", out var consultationTypeProp).Should().BeTrue();
+        consultationTypeProp.GetString().Should().NotBeNullOrWhiteSpace();
+        result.TryGetProperty("status", out var statusProp).Should().BeTrue();
+        statusProp.GetString().Should().NotBeNullOrWhiteSpace();
+        result.TryGetProperty("projectedAt", out var projectedAtProp).Should().BeTrue();
+        projectedAtProp.GetString().Should().NotBeNullOrWhiteSpace();
+    }
+
+    // ============================================================
+    // CTR-011: Recent-history query response structure
+    // ============================================================
+
+    [Fact]
+    public async Task CTR011_RecentHistoryResponse_ContainsRequiredFields()
+    {
+        var (queueId, patientId) = await CompleteAlternativeFlowAsync(
+            "CTR-011-PAT",
+            "History Contract");
+
+        var response = await _client.GetAsync(
+            $"/api/v1/waiting-room/{queueId}/recent-history?limit=5");
+        var result = await DeserializeAsync(response);
+
+        response.StatusCode.Should().Be(HttpStatusCode.OK);
+        result.ValueKind.Should().Be(JsonValueKind.Array);
+        result.GetArrayLength().Should().BeGreaterThan(0);
+
+        var firstRecord = result.EnumerateArray().First();
+        firstRecord.TryGetProperty("queueId", out var queueIdProp).Should().BeTrue();
+        queueIdProp.GetString().Should().Be(queueId);
+        firstRecord.TryGetProperty("patientId", out var patientIdProp).Should().BeTrue();
+        patientIdProp.GetString().Should().Be(patientId);
+        firstRecord.TryGetProperty("patientName", out var patientNameProp).Should().BeTrue();
+        patientNameProp.GetString().Should().NotBeNullOrWhiteSpace();
+        firstRecord.TryGetProperty("priority", out var priorityProp).Should().BeTrue();
+        priorityProp.GetString().Should().NotBeNullOrWhiteSpace();
+        firstRecord.TryGetProperty("consultationType", out var consultationTypeProp).Should().BeTrue();
+        consultationTypeProp.GetString().Should().NotBeNullOrWhiteSpace();
+        firstRecord.TryGetProperty("completedAt", out var completedAtProp).Should().BeTrue();
+        completedAtProp.GetString().Should().NotBeNullOrWhiteSpace();
+    }
+
+    // ============================================================
+    // CTR-012: Rebuild query response structure
+    // ============================================================
+
+    [Fact]
+    public async Task CTR012_RebuildResponse_ReturnsAcceptedContract()
+    {
+        var queueId = await CheckInAndGetQueueIdAsync("CTR-012-PAT", "Rebuild Contract");
+
+        var request = new HttpRequestMessage(
+            HttpMethod.Post,
+            $"/api/v1/waiting-room/{queueId}/rebuild");
+        request.Headers.Add("Idempotency-Key", Guid.NewGuid().ToString("D"));
+
+        var response = await _client.SendAsync(request);
+        var result = await DeserializeAsync(response);
+
+        response.StatusCode.Should().Be(HttpStatusCode.Accepted);
+        result.TryGetProperty("message", out var messageProp).Should().BeTrue();
+        messageProp.GetString().Should().NotBeNullOrWhiteSpace();
+        result.TryGetProperty("queueId", out var queueIdProp).Should().BeTrue();
+        queueIdProp.GetString().Should().Be(queueId);
+    }
+
+    // ============================================================
     // Helpers
     // ============================================================
 
@@ -310,6 +470,83 @@ public sealed class ApiContractTests : IClassFixture<WaitingRoomApiFactory>
             "Receptionist");
         var result = await DeserializeAsync(response);
         return result.GetProperty("queueId").GetString()!;
+    }
+
+    private async Task<(string QueueId, string PatientId)> CompleteAlternativeFlowAsync(
+        string patientId,
+        string patientName)
+    {
+        var queueId = await CheckInAndGetQueueIdAsync(patientId, patientName);
+
+        var activateResponse = await PostWithAuthAsync(
+            "/api/medical/consulting-room/activate",
+            new ActivateConsultingRoomDto
+            {
+                QueueId = queueId,
+                ConsultingRoomId = "CONS-CTR-01",
+                Actor = "doctor-ctr"
+            },
+            "Doctor");
+        activateResponse.StatusCode.Should().Be(HttpStatusCode.OK);
+
+        var cashierResponse = await PostWithAuthAsync(
+            "/api/cashier/call-next",
+            new CallNextCashierDto
+            {
+                QueueId = queueId,
+                Actor = "cashier-ctr"
+            },
+            "Cashier");
+        cashierResponse.StatusCode.Should().Be(HttpStatusCode.OK);
+        var cashierResult = await DeserializeAsync(cashierResponse);
+        var claimedPatientId = cashierResult.GetProperty("patientId").GetString()!;
+
+        var paymentResponse = await PostWithAuthAsync(
+            "/api/cashier/validate-payment",
+            new ValidatePaymentDto
+            {
+                QueueId = queueId,
+                PatientId = claimedPatientId,
+                Actor = "cashier-ctr"
+            },
+            "Cashier");
+        paymentResponse.StatusCode.Should().Be(HttpStatusCode.OK);
+
+        var claimResponse = await PostWithAuthAsync(
+            "/api/waiting-room/claim-next",
+            new ClaimNextPatientDto
+            {
+                QueueId = queueId,
+                Actor = "doctor-ctr",
+                StationId = "CONS-CTR-01"
+            },
+            "Doctor");
+        claimResponse.StatusCode.Should().Be(HttpStatusCode.OK);
+
+        var callResponse = await PostWithAuthAsync(
+            "/api/waiting-room/call-patient",
+            new CallPatientDto
+            {
+                QueueId = queueId,
+                PatientId = claimedPatientId,
+                Actor = "doctor-ctr"
+            },
+            "Doctor");
+        callResponse.StatusCode.Should().Be(HttpStatusCode.OK);
+
+        var completeResponse = await PostWithAuthAsync(
+            "/api/waiting-room/complete-attention",
+            new CompleteAttentionDto
+            {
+                QueueId = queueId,
+                PatientId = claimedPatientId,
+                Actor = "doctor-ctr",
+                Outcome = "Alta medica"
+            },
+            "Doctor");
+        completeResponse.StatusCode.Should().Be(HttpStatusCode.OK);
+
+        return (queueId, claimedPatientId);
     }
 
     private static async Task<JsonElement> DeserializeAsync(HttpResponseMessage response)

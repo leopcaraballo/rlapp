@@ -18,7 +18,9 @@ public sealed class PostgresPatientIdentityRegistryTests : IAsyncLifetime
     {
         _connectionString =
             Environment.GetEnvironmentVariable("RLAPP_INTEGRATION_EVENTSTORE_CONNECTION")
-            ?? "Host=localhost;Port=5432;Database=rlapp_waitingroom_test;Username=rlapp;Password=rlapp_secure_password";
+            // HUMAN CHECK: el fallback local se mantiene solo como red de seguridad para ejecucion manual,
+            // pero debe reflejar exactamente la configuracion vigente del entorno operativo de pruebas.
+            ?? "Host=localhost;Port=5432;Database=rlapp_waitingroom_test;Username=rlapp;Password=change-me-postgres-password";
     }
 
     public async Task InitializeAsync()

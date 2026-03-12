@@ -23,7 +23,9 @@ public class PostgresIdempotencyStoreTests : IAsyncLifetime
     public PostgresIdempotencyStoreTests()
     {
         _connectionString = Environment.GetEnvironmentVariable("POSTGRES_CONNECTION_STRING")
-            ?? "Host=localhost;Port=5432;Database=rlapp_waitingroom;Username=rlapp;Password=rlapp_secure_password";
+            // HUMAN CHECK: se conserva un fallback local para evitar friccion en pruebas reales,
+            // pero se alinea con la credencial vigente del stack Docker y con la base de datos de pruebas.
+            ?? "Host=localhost;Port=5432;Database=rlapp_waitingroom_test;Username=rlapp;Password=change-me-postgres-password";
     }
 
     public async Task InitializeAsync()
