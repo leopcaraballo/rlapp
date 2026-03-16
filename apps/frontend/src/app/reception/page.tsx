@@ -1,6 +1,5 @@
 "use client";
 import { zodResolver } from "@hookform/resolvers/zod";
-import { useRouter } from "next/navigation";
 import React, { useState } from "react";
 import { useForm } from "react-hook-form";
 import * as z from "zod";
@@ -52,13 +51,13 @@ const CheckInSchema = z.object({
 type CheckInForm = z.infer<typeof CheckInSchema>;
 
 export default function ReceptionPage() {
-  const router = useRouter();
   const [submitting, setSubmitting] = useState(false);
   const alert = useAlert();
 
   const {
     register,
     handleSubmit,
+    reset,
     formState: { errors },
   } = useForm<CheckInForm>({
     resolver: zodResolver(CheckInSchema),
@@ -95,11 +94,9 @@ export default function ReceptionPage() {
         actor: "reception",
       });
 
-      if (result.queueId) {
-        router.push(`/waiting-room/${encodeURIComponent(result.queueId)}`);
-      } else {
-        router.push("/dashboard");
-      }
+      const turnInfo = result.turnNumber ? ` — Turno #${result.turnNumber}` : '';
+      alert.showSuccess(`Paciente registrado exitosamente${turnInfo}`);
+      reset();
     } catch (e: unknown) {
       const msg = e instanceof Error ? e.message : String(e);
       alert.showError(msg ?? "Error al registrar check-in");

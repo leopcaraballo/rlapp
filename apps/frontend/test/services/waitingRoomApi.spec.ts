@@ -355,7 +355,7 @@ describe("services/api/waitingRoom", () => {
     it("llama a POST /api/cashier/validate-payment", async () => {
       const { validatePayment } = await import("@/services/api/waitingRoom");
       mockFetchOk({ success: true });
-      const dto = { queueId: "Q1", patientId: "P1", actor: "cashier" } as Parameters<typeof validatePayment>[0];
+      const dto = { queueId: "Q1", patientId: "P1", actor: "cashier", paymentReference: "PAY-TEST-001" } as Parameters<typeof validatePayment>[0];
       await validatePayment(dto);
       const fetchMock = (global as unknown as { fetch: FetchMock }).fetch;
       expect(fetchMock.mock.calls[0][0]).toContain("/api/cashier/validate-payment");
@@ -367,7 +367,7 @@ describe("services/api/waitingRoom", () => {
     it("llama a POST /api/cashier/mark-payment-pending", async () => {
       const { markPaymentPending } = await import("@/services/api/waitingRoom");
       mockFetchOk({ success: true });
-      const dto = { queueId: "Q1", patientId: "P1", actor: "cashier" } as Parameters<typeof markPaymentPending>[0];
+      const dto = { queueId: "Q1", patientId: "P1", actor: "cashier", paymentReference: "PAY-TEST-001" } as Parameters<typeof markPaymentPending>[0];
       await markPaymentPending(dto);
       const fetchMock = (global as unknown as { fetch: FetchMock }).fetch;
       expect(fetchMock.mock.calls[0][0]).toContain("/api/cashier/mark-payment-pending");
@@ -435,7 +435,7 @@ describe("services/api/waitingRoom", () => {
     it("llama a POST /api/waiting-room/complete-attention", async () => {
       const { completeAttention } = await import("@/services/api/waitingRoom");
       mockFetchOk({ success: true });
-      const dto = { queueId: "Q1", patientId: "P1", actor: "doctor" } as Parameters<typeof completeAttention>[0];
+      const dto = { queueId: "Q1", patientId: "P1", actor: "doctor", outcome: "Diagnóstico completado" } as Parameters<typeof completeAttention>[0];
       await completeAttention(dto);
       const fetchMock = (global as unknown as { fetch: FetchMock }).fetch;
       expect(fetchMock.mock.calls[0][0]).toContain("/api/waiting-room/complete-attention");

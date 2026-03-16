@@ -24,7 +24,7 @@ export default function DisplayPage({ params }: Props) {
         {nextTurn ? (
           <>
             <div className={styles.callLabel}>Turno llamado</div>
-            <div className={styles.callName}>{nextTurn.patientName}</div>
+            <div className={styles.callName}>Turno #{nextTurn.turnNumber}</div>
             {nextTurn.stationId && (
               <div className={styles.callStation}>
                 Diríjase al consultorio{" "}
@@ -44,7 +44,7 @@ export default function DisplayPage({ params }: Props) {
           <ol className={styles.patientList}>
             {queueState.patientsInQueue.slice(0, 8).map((p) => (
               <li key={p.patientId} className={styles.patientItem}>
-                <span className={styles.patientName}>{p.patientName}</span>
+                <span className={styles.patientName}>Turno #{p.turnNumber}</span>
                 <span className={styles.patientPriority}>{p.priority}</span>
               </li>
             ))}

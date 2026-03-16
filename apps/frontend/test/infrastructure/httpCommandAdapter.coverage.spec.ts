@@ -81,14 +81,14 @@ describe("HttpCommandAdapter", () => {
   // ─── validatePayment ────────────────────────────────────────────────────
   it("validatePayment POST /api/cashier/validate-payment", async () => {
     mockFetchOk();
-    await adapter.validatePayment({ queueId: "q1", patientId: "p1", actor: "caja" });
+    await adapter.validatePayment({ queueId: "q1", patientId: "p1", actor: "caja", paymentReference: "PAY-TEST-001" });
     expect(fetch).toHaveBeenCalledWith(expect.stringContaining("/api/cashier/validate-payment"), expect.any(Object));
   });
 
   // ─── markPaymentPending ─────────────────────────────────────────────────
   it("markPaymentPending POST /api/cashier/mark-payment-pending", async () => {
     mockFetchOk();
-    await adapter.markPaymentPending({ queueId: "q1", patientId: "p1", actor: "caja" });
+    await adapter.markPaymentPending({ queueId: "q1", patientId: "p1", actor: "caja", paymentReference: "PAY-TEST-001" });
     expect(fetch).toHaveBeenCalledWith(expect.stringContaining("/api/cashier/mark-payment-pending"), expect.any(Object));
   });
 
@@ -123,7 +123,7 @@ describe("HttpCommandAdapter", () => {
   // ─── completeAttention ──────────────────────────────────────────────────
   it("completeAttention POST /api/medical/finish-consultation", async () => {
     mockFetchOk();
-    await adapter.completeAttention({ queueId: "q1", patientId: "p1", actor: "doctor" });
+    await adapter.completeAttention({ queueId: "q1", patientId: "p1", actor: "doctor", outcome: "Diagnóstico completado" });
     expect(fetch).toHaveBeenCalledWith(expect.stringContaining("/api/medical/finish-consultation"), expect.any(Object));
   });
 

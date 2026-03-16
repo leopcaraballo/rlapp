@@ -16,6 +16,7 @@ export interface CommandSuccess {
   eventCount: number;
   patientId?: string;
   queueId?: string;
+  turnNumber?: number;
 }
 
 export interface WaitingRoomMonitorView {
@@ -38,6 +39,7 @@ export interface PatientInQueueDto {
   priority: string;
   checkInTime: string; // ISO
   waitTimeMinutes: number;
+  turnNumber: number;
 }
 
 export interface QueueStateView {
@@ -54,6 +56,7 @@ export interface NextTurnView {
   queueId: string;
   patientId: string;
   patientName: string;
+  turnNumber: number;
   priority: string;
   consultationType: string;
   status: string;
@@ -98,7 +101,7 @@ export interface ValidatePaymentDto {
   queueId: string;
   patientId: string;
   actor: string;
-  paymentReference?: string | null;
+  paymentReference: string;
 }
 
 export interface ClaimNextPatientDto {
@@ -111,6 +114,6 @@ export interface CompleteAttentionDto {
   queueId: string;
   patientId: string;
   actor: string;
-  outcome?: string | null;
+  outcome: string;
   notes?: string | null;
 }

@@ -1,5 +1,5 @@
-import AppointmentRegistrationForm from "@/components/AppointmentRegistrationForm/AppointmentRegistrationForm";
+import { redirect } from "next/navigation";
 
 export default function RegistrationPage() {
-  return <AppointmentRegistrationForm />;
+  redirect("/reception");
 }
