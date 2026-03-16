@@ -15,5 +15,8 @@ public sealed record ValidatePaymentDto
     [Required]
     [MinLength(1)]
     public required string Actor { get; init; }
-    public string? PaymentReference { get; init; }
+
+    [Required]
+    [MinLength(1)]
+    public required string PaymentReference { get; init; }
 }

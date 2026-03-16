@@ -222,7 +222,7 @@ public sealed class ApiResponseTimeTests : IClassFixture<WaitingRoomApiFactory>
             {
                 QueueId = queueId, ConsultingRoomId = "PERF-CONS",
                 Actor = "coordinator-perf"
-            }, "Doctor");
+            }, "Admin");
 
         // Paso 3: Caja — llamar
         var cashierResp = await PostWithAuthAsync(

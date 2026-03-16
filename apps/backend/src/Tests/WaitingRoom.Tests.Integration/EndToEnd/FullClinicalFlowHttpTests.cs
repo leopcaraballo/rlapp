@@ -78,7 +78,7 @@ public sealed class FullClinicalFlowHttpTests : IClassFixture<WaitingRoomApiFact
 
         var activateResponse = await SendPostAsync(
             "/api/medical/consulting-room/activate", activateDto,
-            additionalHeaders: new Dictionary<string, string> { ["X-User-Role"] = "Doctor" });
+            additionalHeaders: new Dictionary<string, string> { ["X-User-Role"] = "Admin" });
 
         activateResponse.StatusCode.Should().Be(HttpStatusCode.OK);
         var activateResult = await DeserializeAsync(activateResponse);
@@ -418,7 +418,7 @@ public sealed class FullClinicalFlowHttpTests : IClassFixture<WaitingRoomApiFact
                 ConsultingRoomId = "CONS-MED-01",
                 Actor = "coordinator-02"
             },
-            additionalHeaders: new Dictionary<string, string> { ["X-User-Role"] = "Doctor" });
+            additionalHeaders: new Dictionary<string, string> { ["X-User-Role"] = "Admin" });
 
         // Caja: llamar + validar pago
         var cashierResult = await DeserializeAsync(
@@ -502,7 +502,7 @@ public sealed class FullClinicalFlowHttpTests : IClassFixture<WaitingRoomApiFact
                 ConsultingRoomId = "CONS-DEACT-01",
                 Actor = "coordinator-03"
             },
-            additionalHeaders: new Dictionary<string, string> { ["X-User-Role"] = "Doctor" });
+            additionalHeaders: new Dictionary<string, string> { ["X-User-Role"] = "Admin" });
 
         activateResponse.StatusCode.Should().Be(HttpStatusCode.OK);
 
@@ -515,7 +515,7 @@ public sealed class FullClinicalFlowHttpTests : IClassFixture<WaitingRoomApiFact
                 ConsultingRoomId = "CONS-DEACT-01",
                 Actor = "coordinator-03"
             },
-            additionalHeaders: new Dictionary<string, string> { ["X-User-Role"] = "Doctor" });
+            additionalHeaders: new Dictionary<string, string> { ["X-User-Role"] = "Admin" });
 
         deactivateResponse.StatusCode.Should().Be(HttpStatusCode.OK);
         var result = await DeserializeAsync(deactivateResponse);
@@ -553,7 +553,7 @@ public sealed class FullClinicalFlowHttpTests : IClassFixture<WaitingRoomApiFact
                 ConsultingRoomId = "CONS-ALT-01",
                 Actor = "coordinator-alt"
             },
-            additionalHeaders: new Dictionary<string, string> { ["X-User-Role"] = "Doctor" });
+            additionalHeaders: new Dictionary<string, string> { ["X-User-Role"] = "Admin" });
 
         // Caja
         var cashierResult = await DeserializeAsync(
@@ -569,7 +569,8 @@ public sealed class FullClinicalFlowHttpTests : IClassFixture<WaitingRoomApiFact
             {
                 QueueId = queueId,
                 PatientId = patientId,
-                Actor = "cashier-alt"
+                Actor = "cashier-alt",
+                PaymentReference = "PAY-ALT-001"
             },
             additionalHeaders: new Dictionary<string, string> { ["X-User-Role"] = "Cashier" });
 

@@ -398,7 +398,8 @@ commandGroup.MapPost("/api/waiting-room/check-in", async (
         Message = "Patient checked in successfully",
         CorrelationId = correlationId,
         EventCount = eventCount,
-        QueueId = queueId
+        QueueId = queueId,
+        TurnNumber = handler.LastTurnNumber
     });
 })
 .WithName("CheckInPatient")
@@ -450,7 +451,8 @@ commandGroup.MapPost("/api/reception/register", async (
         Message = "Patient registered successfully",
         CorrelationId = correlationId,
         EventCount = eventCount,
-        QueueId = queueId
+        QueueId = queueId,
+        TurnNumber = handler.LastTurnNumber
     });
 })
 .WithName("RegisterPatientReception")
@@ -755,7 +757,7 @@ commandGroup.MapPost("/api/medical/consulting-room/activate", async (
 .WithTags("Medical")
 .WithSummary("Activar consultorio medico")
 .WithDescription("Marca un consultorio como disponible para recibir pacientes. Genera evento ConsultingRoomActivated.")
-.AddEndpointFilter<DoctorOnlyFilter>()
+.AddEndpointFilter<AdminOnlyFilter>()
 .Accepts<ActivateConsultingRoomDto>("application/json")
 .Produces(200)
 .Produces(400)
@@ -797,7 +799,7 @@ commandGroup.MapPost("/api/medical/consulting-room/deactivate", async (
 .WithTags("Medical")
 .WithSummary("Desactivar consultorio medico")
 .WithDescription("Marca un consultorio como no disponible. Los pacientes no seran asignados a este consultorio hasta reactivacion.")
-.AddEndpointFilter<DoctorOnlyFilter>()
+.AddEndpointFilter<AdminOnlyFilter>()
 .Accepts<DeactivateConsultingRoomDto>("application/json")
 .Produces(200)
 .Produces(400)

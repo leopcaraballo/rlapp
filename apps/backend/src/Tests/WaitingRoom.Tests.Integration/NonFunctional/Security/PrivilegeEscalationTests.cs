@@ -114,7 +114,9 @@ public sealed class PrivilegeEscalationTests : IClassFixture<WaitingRoomApiFacto
     [Theory]
     [InlineData("/api/waiting-room/check-in")]
     [InlineData("/api/reception/register")]
-    public async Task SEC_PRIV_004_Doctor_CannotAccessReceptionEndpoints(string endpoint)
+    [InlineData("/api/medical/consulting-room/activate")]
+    [InlineData("/api/medical/consulting-room/deactivate")]
+    public async Task SEC_PRIV_004_Doctor_CannotAccessReceptionOrAdminEndpoints(string endpoint)
     {
         var request = CreateRequest(endpoint, "Doctor");
 

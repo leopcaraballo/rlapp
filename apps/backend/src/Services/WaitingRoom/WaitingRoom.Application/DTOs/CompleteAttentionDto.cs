@@ -15,6 +15,9 @@ public sealed record CompleteAttentionDto
     [Required]
     [MinLength(1)]
     public required string Actor { get; init; }
-    public string? Outcome { get; init; }
+
+    [Required]
+    [MinLength(1)]
+    public required string Outcome { get; init; }
     public string? Notes { get; init; }
 }
