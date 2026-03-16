@@ -202,6 +202,7 @@ public sealed class RabbitMqEventPublisherTests
             Priority = "Normal",
             ConsultationType = "General",
             QueuePosition = 1,
+            TurnNumber = 1,
             CheckInTime = DateTime.UtcNow,
             Metadata = new EventMetadata
             {

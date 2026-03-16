@@ -51,6 +51,11 @@ public sealed record PatientCheckedIn : DomainEvent
     public required int QueuePosition { get; init; }
 
     /// <summary>
+    /// Sequential turn number assigned at check-in (1-based).
+    /// </summary>
+    public required int TurnNumber { get; init; }
+
+    /// <summary>
     /// Timestamp when check-in occurred.
     /// </summary>
     public required DateTime CheckInTime { get; init; }
@@ -81,5 +86,8 @@ public sealed record PatientCheckedIn : DomainEvent
 
         if (QueuePosition < 0)
             throw new InvalidOperationException("QueuePosition cannot be negative");
+
+        if (TurnNumber <= 0)
+            throw new InvalidOperationException("TurnNumber must be positive");
     }
 }

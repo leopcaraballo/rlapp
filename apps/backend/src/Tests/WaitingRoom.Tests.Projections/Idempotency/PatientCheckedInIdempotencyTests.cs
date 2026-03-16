@@ -199,6 +199,7 @@ public sealed class PatientCheckedInIdempotencyTests
             Priority = priority,
             ConsultationType = "General",
             QueuePosition = 0,
+            TurnNumber = 1,
             CheckInTime = DateTime.UtcNow,
             Metadata = new EventMetadata
             {

@@ -16,6 +16,7 @@ public sealed class WaitingPatient
     public string? Notes { get; }
     public DateTime CheckInTime { get; }
     public int QueuePosition { get; }
+    public int TurnNumber { get; }
 
     public WaitingPatient(
         PatientId patientId,
@@ -24,6 +25,7 @@ public sealed class WaitingPatient
         ConsultationType consultationType,
         DateTime checkInTime,
         int queuePosition,
+        int turnNumber,
         string? notes = null)
     {
         if (string.IsNullOrWhiteSpace(patientName))
@@ -35,12 +37,16 @@ public sealed class WaitingPatient
         if (queuePosition < 0)
             throw new DomainException("QueuePosition cannot be negative");
 
+        if (turnNumber <= 0)
+            throw new DomainException("TurnNumber must be positive");
+
         PatientId = patientId ?? throw new ArgumentNullException(nameof(patientId));
         PatientName = patientName.Trim();
         Priority = priority ?? throw new ArgumentNullException(nameof(priority));
         ConsultationType = consultationType ?? throw new ArgumentNullException(nameof(consultationType));
         CheckInTime = checkInTime;
         QueuePosition = queuePosition;
+        TurnNumber = turnNumber;
         Notes = notes;
     }
 

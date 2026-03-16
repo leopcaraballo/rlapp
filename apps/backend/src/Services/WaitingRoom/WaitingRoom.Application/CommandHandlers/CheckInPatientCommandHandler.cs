@@ -5,6 +5,7 @@ using WaitingRoom.Application.Commands;
 using WaitingRoom.Application.Ports;
 using WaitingRoom.Domain.Aggregates;
 using WaitingRoom.Domain.Commands;
+using WaitingRoom.Domain.Events;
 using WaitingRoom.Domain.ValueObjects;
 
 /// <summary>
@@ -33,6 +34,7 @@ public sealed class CheckInPatientCommandHandler
     private readonly IPatientIdentityRegistry _patientIdentityRegistry;
 
     public string? LastGeneratedQueueId { get; private set; }
+    public int? LastTurnNumber { get; private set; }
 
     public CheckInPatientCommandHandler(
         IEventStore eventStore,
@@ -127,6 +129,9 @@ public sealed class CheckInPatientCommandHandler
 
         // Execute domain operation with single parameter
         queue.CheckInPatient(request);
+
+        var checkedInEvent = queue.UncommittedEvents.OfType<PatientCheckedIn>().FirstOrDefault();
+        LastTurnNumber = checkedInEvent?.TurnNumber;
 
         // STEP 3: Persist events atomically
         // All new events (in UncommittedEvents) are saved in single transaction

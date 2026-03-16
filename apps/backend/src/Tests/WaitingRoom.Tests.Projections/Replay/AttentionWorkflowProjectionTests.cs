@@ -52,6 +52,7 @@ public sealed class AttentionWorkflowProjectionTests
         Priority = "high",
         ConsultationType = "General",
         QueuePosition = 0,
+        TurnNumber = 1,
         CheckInTime = DateTime.UtcNow,
         Metadata = NewMetadata(queueId)
     };

@@ -40,4 +40,9 @@ public sealed record PatientInQueueDto
     /// Optional consultation notes.
     /// </summary>
     public string? Notes { get; init; }
+
+    /// <summary>
+    /// Sequential turn number assigned at check-in (1-based).
+    /// </summary>
+    public required int TurnNumber { get; init; }
 }

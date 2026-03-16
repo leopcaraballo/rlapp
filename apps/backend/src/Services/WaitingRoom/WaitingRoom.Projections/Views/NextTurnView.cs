@@ -8,6 +8,7 @@ public sealed record NextTurnView
     public required string Priority { get; init; }
     public required string ConsultationType { get; init; }
     public required string Status { get; init; }
+    public required int TurnNumber { get; init; }
     public DateTime? ClaimedAt { get; init; }
     public DateTime? CalledAt { get; init; }
     public string? StationId { get; init; }

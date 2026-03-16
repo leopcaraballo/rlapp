@@ -26,6 +26,7 @@ public class PatientCheckedInTests
             Priority = priority,
             ConsultationType = consultationType,
             QueuePosition = queuePosition,
+            TurnNumber = 1,
             CheckInTime = DateTime.UtcNow
         };
     }
@@ -79,6 +80,7 @@ public class PatientCheckedInTests
             Priority = "High",
             ConsultationType = "General",
             QueuePosition = 0,
+            TurnNumber = 1,
             CheckInTime = DateTime.UtcNow
         };
 
@@ -115,6 +117,7 @@ public class PatientCheckedInTests
             Priority = "High",
             ConsultationType = "General",
             QueuePosition = 0,
+            TurnNumber = 1,
             CheckInTime = now
         };
 
@@ -127,6 +130,7 @@ public class PatientCheckedInTests
             Priority = "High",
             ConsultationType = "General",
             QueuePosition = 0,
+            TurnNumber = 1,
             CheckInTime = now
         };
 

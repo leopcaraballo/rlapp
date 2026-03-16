@@ -30,6 +30,7 @@ public sealed class EventSerializationRoundtripTests
             Priority = "Alta",
             ConsultationType = "Especialista",
             QueuePosition = 3,
+            TurnNumber = 1,
             CheckInTime = DateTime.UtcNow,
             Metadata = CreateMetadata()
         };
@@ -149,6 +150,7 @@ public sealed class EventSerializationRoundtripTests
             Priority = "Normal",
             ConsultationType = "General",
             QueuePosition = 1,
+            TurnNumber = 1,
             CheckInTime = DateTime.UtcNow,
             Metadata = CreateMetadata()
         };

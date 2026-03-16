@@ -37,4 +37,9 @@ public sealed record PatientInQueueDto
     /// Calculated projection field (CheckInTime to now).
     /// </summary>
     public required int WaitTimeMinutes { get; init; }
+
+    /// <summary>
+    /// Sequential turn number assigned at check-in (1-based).
+    /// </summary>
+    public required int TurnNumber { get; init; }
 }

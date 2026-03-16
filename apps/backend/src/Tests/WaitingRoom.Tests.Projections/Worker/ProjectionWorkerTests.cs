@@ -48,6 +48,7 @@ public class ProjectionWorkerTests
             Priority = "High",
             ConsultationType = "General",
             QueuePosition = 0,
+            TurnNumber = 1,
             CheckInTime = DateTime.UtcNow,
             Metadata = EventMetadata.CreateNew("queue-1", "test")
         };

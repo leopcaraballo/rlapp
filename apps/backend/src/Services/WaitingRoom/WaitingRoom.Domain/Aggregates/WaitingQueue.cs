@@ -49,6 +49,7 @@ public sealed class WaitingQueue : AggregateRoot
     private readonly Dictionary<string, int> _cashierAbsenceRetries = new(StringComparer.OrdinalIgnoreCase);
     private readonly Dictionary<string, int> _consultationAbsenceRetries = new(StringComparer.OrdinalIgnoreCase);
     private readonly HashSet<string> _activeConsultingRooms = new(StringComparer.OrdinalIgnoreCase);
+    private int _nextTurnNumber;
 
     /// <summary>
     /// When queue was created.
@@ -127,6 +128,7 @@ public sealed class WaitingQueue : AggregateRoot
 
         // Calculate queue position (could be priority-based in future)
         int queuePosition = Patients.Count;
+        int turnNumber = ++_nextTurnNumber;
 
         // Create and raise event
         var @event = new PatientCheckedIn
@@ -139,6 +141,7 @@ public sealed class WaitingQueue : AggregateRoot
             ConsultationType = request.ConsultationType.Value,
             CheckInTime = request.CheckInTime,
             QueuePosition = queuePosition,
+            TurnNumber = turnNumber,
             Notes = request.Notes
         };
 
@@ -502,6 +505,7 @@ public sealed class WaitingQueue : AggregateRoot
     /// </summary>
     private void When(PatientCheckedIn @event)
     {
+        _nextTurnNumber = Math.Max(_nextTurnNumber, @event.TurnNumber);
         var patient = new WaitingPatient(
             patientId: PatientId.Create(@event.PatientId),
             patientName: @event.PatientName,
@@ -509,6 +513,7 @@ public sealed class WaitingQueue : AggregateRoot
             consultationType: ConsultationType.Create(@event.ConsultationType),
             checkInTime: @event.CheckInTime,
             queuePosition: @event.QueuePosition,
+            turnNumber: @event.TurnNumber,
             notes: @event.Notes
         );
 
@@ -633,6 +638,7 @@ public sealed class WaitingQueue : AggregateRoot
         MaxCapacity = @event.MaxCapacity;
         CreatedAt = @event.CreatedAt;
         LastModifiedAt = @event.CreatedAt;
+        _nextTurnNumber = 0;
     }
 
     /// <summary>

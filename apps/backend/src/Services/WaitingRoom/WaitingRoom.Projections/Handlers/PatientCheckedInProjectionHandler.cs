@@ -78,7 +78,8 @@ public sealed class PatientCheckedInProjectionHandler : IProjectionHandler
                 PatientName = evt.PatientName,
                 Priority = NormalizePriority(evt.Priority),
                 CheckInTime = evt.Metadata.OccurredAt,
-                WaitTimeMinutes = 0
+                WaitTimeMinutes = 0,
+                TurnNumber = evt.TurnNumber
             },
             cancellationToken);
 
