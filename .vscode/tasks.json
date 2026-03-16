@@ -118,13 +118,13 @@
     {
       "label": "apply-migration-001",
       "type": "shell",
-      "command": "docker compose exec -T postgres psql -v ON_ERROR_STOP=1 -U rlapp -d rlapp_waitingroom < rlapp-backend/src/Services/WaitingRoom/migrations/20260228_001_CreateIdempotencyRecordsTable.sql",
+      "command": "docker compose exec -T postgres psql -v ON_ERROR_STOP=1 -U rlapp -d rlapp_waitingroom < apps/backend/src/Services/WaitingRoom/migrations/20260228_001_CreateIdempotencyRecordsTable.sql",
       "isBackground": false
     },
     {
       "label": "apply-migration-002",
       "type": "shell",
-      "command": "docker compose exec -T postgres psql -v ON_ERROR_STOP=1 -U rlapp -d rlapp_waitingroom < rlapp-backend/src/Services/WaitingRoom/migrations/20260228_002_NormalizePatientIdStorage.sql",
+      "command": "docker compose exec -T postgres psql -v ON_ERROR_STOP=1 -U rlapp -d rlapp_waitingroom < apps/backend/src/Services/WaitingRoom/migrations/20260228_002_NormalizePatientIdStorage.sql",
       "isBackground": false
     },
     {
@@ -142,7 +142,7 @@
     {
       "label": "reapply-migration-001",
       "type": "shell",
-      "command": "docker compose exec -T postgres psql -v ON_ERROR_STOP=1 -U rlapp -d rlapp_waitingroom < rlapp-backend/src/Services/WaitingRoom/migrations/20260228_001_CreateIdempotencyRecordsTable.sql",
+      "command": "docker compose exec -T postgres psql -v ON_ERROR_STOP=1 -U rlapp -d rlapp_waitingroom < apps/backend/src/Services/WaitingRoom/migrations/20260228_001_CreateIdempotencyRecordsTable.sql",
       "isBackground": false
     },
     {
@@ -172,14 +172,14 @@
     {
       "label": "backend-full-tests",
       "type": "shell",
-      "command": "cd rlapp-backend && chmod +x run-complete-test.sh && ./run-complete-test.sh --clean",
+      "command": "cd apps/backend && chmod +x run-complete-test.sh && ./run-complete-test.sh --clean",
       "isBackground": false,
       "problemMatcher": ["$msCompile"]
     },
     {
       "label": "frontend-tests",
       "type": "shell",
-      "command": "cd rlapp-frontend && npm test -- --runInBand",
+      "command": "cd apps/frontend && npm test -- --runInBand",
       "isBackground": false
     },
     {
@@ -191,124 +191,124 @@
     {
       "label": "frontend-tests",
       "type": "shell",
-      "command": "cd rlapp-frontend && npm test -- --runInBand",
+      "command": "cd apps/frontend && npm test -- --runInBand",
       "isBackground": false
     },
     {
       "label": "backend-dotnet-test",
       "type": "shell",
-      "command": "cd rlapp-backend && dotnet test RLAPP.slnx --configuration Release --verbosity normal",
+      "command": "cd apps/backend && dotnet test RLAPP.slnx --configuration Release --verbosity normal",
       "isBackground": false,
       "problemMatcher": ["$msCompile"]
     },
     {
       "label": "frontend-npm-ci",
       "type": "shell",
-      "command": "cd rlapp-frontend && npm ci",
+      "command": "cd apps/frontend && npm ci",
       "isBackground": false
     },
     {
       "label": "frontend-tests-rerun",
       "type": "shell",
-      "command": "cd rlapp-frontend && npm test -- --runInBand",
+      "command": "cd apps/frontend && npm test -- --runInBand",
       "isBackground": false
     },
     {
       "label": "full-automated-tests",
       "type": "shell",
-      "command": "set -e; cd rlapp-backend && dotnet test RLAPP.slnx --configuration Release --verbosity minimal; cd ../rlapp-frontend && npm ci && npm test -- --runInBand",
+      "command": "set -e; cd apps/backend && dotnet test RLAPP.slnx --configuration Release --verbosity minimal; cd ../frontend && npm ci && npm test -- --runInBand",
       "isBackground": false
     },
     {
       "label": "backend-dotnet-test-rerun",
       "type": "shell",
-      "command": "cd rlapp-backend && dotnet test RLAPP.slnx --configuration Release --verbosity minimal",
+      "command": "cd apps/backend && dotnet test RLAPP.slnx --configuration Release --verbosity minimal",
       "isBackground": false,
       "problemMatcher": ["$msCompile"]
     },
     {
       "label": "frontend-npm-ci-and-test",
       "type": "shell",
-      "command": "cd rlapp-frontend && npm ci && npm test -- --runInBand",
+      "command": "cd apps/frontend && npm ci && npm test -- --runInBand",
       "isBackground": false
     },
     {
       "label": "backend-dotnet-test-final",
       "type": "shell",
-      "command": "cd rlapp-backend && dotnet test RLAPP.slnx --configuration Release --verbosity minimal",
+      "command": "cd apps/backend && dotnet test RLAPP.slnx --configuration Release --verbosity minimal",
       "isBackground": false,
       "problemMatcher": ["$msCompile"]
     },
     {
       "label": "frontend-install-and-test",
       "type": "shell",
-      "command": "cd rlapp-frontend && npm install && npm test -- --runInBand",
+      "command": "cd apps/frontend && npm install && npm test -- --runInBand",
       "isBackground": false
     },
     {
       "label": "backend-dotnet-test-clean-run",
       "type": "shell",
-      "command": "cd rlapp-backend && dotnet test RLAPP.slnx --configuration Release --verbosity minimal",
+      "command": "cd apps/backend && dotnet test RLAPP.slnx --configuration Release --verbosity minimal",
       "isBackground": false
     },
     {
       "label": "backend-dotnet-test-after-integration-fix",
       "type": "shell",
-      "command": "cd rlapp-backend && dotnet test RLAPP.slnx --configuration Release --verbosity minimal",
+      "command": "cd apps/backend && dotnet test RLAPP.slnx --configuration Release --verbosity minimal",
       "isBackground": false
     },
     {
       "label": "backend-dotnet-test-post-fixes",
       "type": "shell",
-      "command": "cd rlapp-backend && dotnet test RLAPP.slnx --configuration Release --verbosity minimal",
+      "command": "cd apps/backend && dotnet test RLAPP.slnx --configuration Release --verbosity minimal",
       "isBackground": false
     },
     {
       "label": "backend-dotnet-test-final-pass",
       "type": "shell",
-      "command": "cd rlapp-backend && dotnet test RLAPP.slnx --configuration Release --verbosity minimal",
+      "command": "cd apps/backend && dotnet test RLAPP.slnx --configuration Release --verbosity minimal",
       "isBackground": false
     },
     {
       "label": "integration-tests-only",
       "type": "shell",
-      "command": "cd rlapp-backend && dotnet test src/Tests/WaitingRoom.Tests.Integration/WaitingRoom.Tests.Integration.csproj --configuration Release --verbosity normal",
+      "command": "cd apps/backend && dotnet test src/Tests/WaitingRoom.Tests.Integration/WaitingRoom.Tests.Integration.csproj --configuration Release --verbosity normal",
       "isBackground": false
     },
     {
       "label": "backend-detail-all-tests",
       "type": "shell",
-      "command": "cd rlapp-backend && ./run-tests-detail.sh",
+      "command": "cd apps/backend && ./run-tests-detail.sh",
       "isBackground": false
     },
     {
       "label": "backend-detail-domain",
       "type": "shell",
-      "command": "cd rlapp-backend && ./run-tests-detail.sh --domain",
+      "command": "cd apps/backend && ./run-tests-detail.sh --domain",
       "isBackground": false
     },
     {
       "label": "backend-detail-application",
       "type": "shell",
-      "command": "cd rlapp-backend && ./run-tests-detail.sh --application",
+      "command": "cd apps/backend && ./run-tests-detail.sh --application",
       "isBackground": false
     },
     {
       "label": "backend-detail-projections",
       "type": "shell",
-      "command": "cd rlapp-backend && ./run-tests-detail.sh --projections",
+      "command": "cd apps/backend && ./run-tests-detail.sh --projections",
       "isBackground": false
     },
     {
       "label": "backend-detail-integration",
       "type": "shell",
-      "command": "cd rlapp-backend && ./run-tests-detail.sh --integration",
+      "command": "cd apps/backend && ./run-tests-detail.sh --integration",
       "isBackground": false
     },
     {
       "label": "backend-detail-unit-only",
       "type": "shell",
-      "command": "cd rlapp-backend && ./run-tests-detail.sh --domain --application --projections --no-build",
+      "command": "cd apps/backend && ./run-tests-detail.sh --domain --application --projections --no-build",
       "isBackground": false
     }
   ]

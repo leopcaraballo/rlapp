@@ -65,9 +65,9 @@ Este repositorio sigue el flujo **ASDD**: toda funcionalidad nueva se ejecuta en
 ### Instructions (path-scoped)
 | Scope | Ruta | Se aplica a |
 |---|---|---|
-| Backend | `.github/instructions/backend.instructions.md` | `backend/**/*.py` |
-| Frontend | `.github/instructions/frontend.instructions.md` | `frontend/src/**/*.{js,jsx}` |
-| Tests | `.github/instructions/tests.instructions.md` | `backend/tests/**` · `frontend/src/__tests__/**` |
+| Backend | `.github/instructions/backend.instructions.md` | `apps/backend/src/**/*.cs` |
+| Frontend | `.github/instructions/frontend.instructions.md` | `apps/frontend/src/**/*.{ts,tsx,js,jsx}` |
+| Tests | `.github/instructions/tests.instructions.md` | `apps/backend/src/Tests/**/*.cs` · `apps/frontend/test/**/*` |
 
 ### Lineamientos y Contexto
 | Documento | Ruta |
@@ -76,6 +76,8 @@ Este repositorio sigue el flujo **ASDD**: toda funcionalidad nueva se ejecuta en
 | Lineamientos QA | `.github/docs/lineamientos/qa-guidelines.md` |
 | Stack + Arquitectura + Naming | `.github/instructions/backend.instructions.md` |
 | Stack Frontend + Naming | `.github/instructions/frontend.instructions.md` |
+| Arquitectura Backend | `apps/backend/README.md` |
+| Arquitectura Frontend | `apps/frontend/README.md` |
 
 ### Lineamientos generales para todos los agentes
 - **Reglas de Oro**: ver `.github/AGENTS.md` — rigen TODAS las interacciones.
@@ -109,20 +111,20 @@ Términos canónicos a usar en specs, código y mensajes:
 
 | Término | Definición | Sinónimos rechazados |
 |---------|-----------|---------------------|
-| **Usuario** (`user`) | Persona autenticada mediante Firebase | Persona, cliente |
-| **Perfil** (`profile`) | Datos personales y configuración del Usuario | Cuenta, ficha |
-| **UID** (`uid`) | Identificador único provisto por Firebase Auth | ID técnico, `_id` |
-| **Pregunta Frecuente** (`faq`) | Par pregunta-respuesta publicado para consulta | Artículo de ayuda |
-| **Pregunta** (`question`) | Texto de la pregunta dentro de una FAQ | Título |
-| **Respuesta** (`answer`) | Texto de la respuesta dentro de una FAQ | Descripción, contenido |
+| **Paciente** (`patient`) | Persona registrada para ser atendida | Cliente, usuario final |
+| **Turno** (`queue`) | Cola o flujo de atencion asignado al Paciente | Fila genérica |
+| **Consultorio** (`consulting room`) | Sala de atencion medica habilitada | Box, modulo |
+| **Recepcionista** | Rol que registra pacientes y gestiona ingreso | Operador |
+| **Cajero** | Rol que valida pago y llama siguiente paciente | Caja, pago |
+| **Doctor** | Rol que inicia y finaliza la consulta | Medico tratante |
 | **Dashboard** | Pantalla principal con métricas (solo lectura) | Inicio |
-| **Modo Oscuro** (`dark mode`) | Tema visual alternativo con colores oscuros | Modo noche |
-| **Token** (`idToken`) | Token Firebase en header `Authorization: Bearer` | Contraseña, sesión |
 | **Administrador** | Rol con permisos completos | Superusuario |
+| `queueId` | Identificador de la cola de atencion | Fila, ticket |
+| `patientId` | Identificador del paciente | ID técnico ambiguo |
 | `created_at` | Timestamp de creación en UTC | Fecha alta |
 | `updated_at` | Timestamp de última actualización en UTC | Fecha modificación |
 
-**Reglas:** `uid` siempre de Firebase. `FAQ` = par completo. Timestamps en snake_case. `Dashboard` es solo lectura.
+**Reglas:** usar la terminologia operacional de RLAPP. `Dashboard` es solo lectura. Timestamps en snake_case cuando existan en contratos o persistencia.
 
 ---
 

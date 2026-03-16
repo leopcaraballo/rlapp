@@ -40,8 +40,11 @@ La arquitectura real observada se implementa en C#/.NET con Event Sourcing + CQR
 │   ├── guidelines/
 │   ├── testing/
 │   └── audits/
-├── tools/
-│   └── automation/skills/
+├── .github/
+│   ├── agents/
+│   ├── skills/
+│   ├── prompts/
+│   └── instructions/
 ├── scripts/
 │   ├── dev/
 │   ├── ci/

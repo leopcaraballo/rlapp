@@ -2,7 +2,7 @@
 
 **Identificador:** RF-AUDIT-003
 **Fecha:** 28 de febrero de 2026
-**Alcance:** Análisis estático de rlapp-frontend/src/ (React 19, Next.js 16, TypeScript)
+**Alcance:** Análisis estático de apps/frontend/src/ (React 19, Next.js 16, TypeScript)
 **Stack:** Next.js 16, React 19, TypeScript 5, Jest 30, TailwindCSS (parcial)
 
 ---
@@ -26,7 +26,7 @@ El frontend implementa estructura modular con separación componentes/servicios.
 #### H-SEC-FE-001: Ausencia de autenticación del lado cliente
 
 **Criticidad:** 🔴 **CRÍTICA**
-**Componente:** rlapp-frontend/src/
+**Componente:** apps/frontend/src/
 **Descripción:** No existe mecanismo de login/logout. No hay JWT almacenado ni refresh tokens.
 **Ubicación:** [Ningún auth provider/context detectado]
 **Evidencia:**
@@ -55,9 +55,9 @@ $ find src/ -name "*auth*" -o -name "*login*"
 #### H-SEC-FE-002: Headers de seguridad faltantes
 
 **Criticidad:** 🔴 **CRÍTICA**
-**Componente:** rlapp-frontend/src/app/layout.tsx (o _document)
+**Componente:** apps/frontend/src/app/layout.tsx (o _document)
 **Descripción:** No hay CSP, X-Frame-Options, X-Content-Type-Options headers.
-**Ubicación:** [rlapp-frontend/src/app/layout.tsx](rlapp-frontend/src/app/layout.tsx)
+**Ubicación:** [apps/frontend/src/app/layout.tsx](apps/frontend/src/app/layout.tsx)
 **Riesgo:** Clickjacking, XSS, inyección de scripts, MIME sniffing.
 **Recomendación:**
 
@@ -83,9 +83,9 @@ async headers() {
 #### H-SEC-FE-003: Validación de entrada insuficiente
 
 **Criticidad:** 🔴 **CRÍTICA**
-**Componente:** rlapp-frontend/src/components/AppointmentRegistrationForm/
+**Componente:** apps/frontend/src/components/AppointmentRegistrationForm/
 **Descripción:** Formulario de registro acepta cualquier input sin sanitizar.
-**Ubicación:** [rlapp-frontend/src/components/AppointmentRegistrationForm/AppointmentRegistrationForm.tsx](rlapp-frontend/src/components/AppointmentRegistrationForm/AppointmentRegistrationForm.tsx)
+**Ubicación:** [apps/frontend/src/components/AppointmentRegistrationForm/AppointmentRegistrationForm.tsx](apps/frontend/src/components/AppointmentRegistrationForm/AppointmentRegistrationForm.tsx)
 **Evidencia:** Usa react-hook-form y Zod, pero sin validaciones custom:
 
 ```typescript
@@ -105,9 +105,9 @@ async headers() {
 #### H-SEC-FE-004: Información sensible en estado/logs del cliente
 
 **Criticidad:** 🔴 **CRÍTICA**
-**Componente:** rlapp-frontend/src/components/WaitingRoomDemo.tsx
+**Componente:** apps/frontend/src/components/WaitingRoomDemo.tsx
 **Descripción:** Datos clínicos (nombres, prioridades) imprimidos en `<pre>` visible en UI.
-**Ubicación:** [rlapp-frontend/src/components/WaitingRoomDemo.tsx:33-45](rlapp-frontend/src/components/WaitingRoomDemo.tsx#L33)
+**Ubicación:** [apps/frontend/src/components/WaitingRoomDemo.tsx:33-45](apps/frontend/src/components/WaitingRoomDemo.tsx#L33)
 **Evidencia:**
 
 ```tsx
@@ -129,9 +129,9 @@ async headers() {
 #### H-COMP-001: Falta de separation Container/Presenter
 
 **Criticidad:** 🟠 **ALTA**
-**Componente:** rlapp-frontend/src/components/
+**Componente:** apps/frontend/src/components/
 **Descripción:** Componentes mezclan lógica (hooks) y presentación (JSX).
-**Ubicación:** [rlapp-frontend/src/components/RealtimeAppointments/index.tsx](rlapp-frontend/src/components/RealtimeAppointments/index.tsx)
+**Ubicación:** [apps/frontend/src/components/RealtimeAppointments/index.tsx](apps/frontend/src/components/RealtimeAppointments/index.tsx)
 **Evidencia:**
 
 ```tsx
@@ -155,12 +155,12 @@ export const RealtimeAppointments = ({ layout, ... }) => {
 #### H-COMP-002: Duplicación de lógica entre componentes
 
 **Criticidad:** 🟠 **ALTA**
-**Componente:** rlapp-frontend/src/components/WaitingRoom*, rlapp-frontend/src/components/RealtimeAppointments
+**Componente:** apps/frontend/src/components/WaitingRoom*, apps/frontend/src/components/RealtimeAppointments
 **Descripción:** `WaitingRoomDemo.tsx` y `RealtimeAppointments` comparten lógica de conexión SignalR sin abstracción.
 **Ubicación:**
 
-- [rlapp-frontend/src/components/WaitingRoomDemo.tsx:11-21](rlapp-frontend/src/components/WaitingRoomDemo.tsx#L11)
-- [rlapp-frontend/src/components/RealtimeAppointments/index.tsx:14-15](rlapp-frontend/src/components/RealtimeAppointments/index.tsx#L14)
+- [apps/frontend/src/components/WaitingRoomDemo.tsx:11-21](apps/frontend/src/components/WaitingRoomDemo.tsx#L11)
+- [apps/frontend/src/components/RealtimeAppointments/index.tsx:14-15](apps/frontend/src/components/RealtimeAppointments/index.tsx#L14)
 
 **Evidencia:**
 
@@ -185,9 +185,9 @@ const { ... } = useQueueAsAppointments();
 #### H-COMP-003: Componentes con demasiadas responsabilidades
 
 **Criticidad:** 🟠 **ALTA**
-**Componente:** rlapp-frontend/src/components/AppointmentRegistrationForm/
+**Componente:** apps/frontend/src/components/AppointmentRegistrationForm/
 **Descripción:** Formulario maneja validación, submit, estado, error display.
-**Ubicación:** [rlapp-frontend/src/components/AppointmentRegistrationForm/AppointmentRegistrationForm.tsx](rlapp-frontend/src/components/AppointmentRegistrationForm/AppointmentRegistrationForm.tsx)
+**Ubicación:** [apps/frontend/src/components/AppointmentRegistrationForm/AppointmentRegistrationForm.tsx](apps/frontend/src/components/AppointmentRegistrationForm/AppointmentRegistrationForm.tsx)
 **Problema:** Componente >300 LOC; difícil de mantener; acoplado a DOM.
 **Recomendación:**
 
@@ -202,9 +202,9 @@ const { ... } = useQueueAsAppointments();
 #### H-STATE-001: Contexto de aplicación débil/ausente
 
 **Criticidad:** 🟠 **ALTA**
-**Componente:** rlapp-frontend/src/context/
+**Componente:** apps/frontend/src/context/
 **Descripción:** No existe AppContext para usuario autenticado, sesión, permisos.
-**Ubicación:** [rlapp-frontend/src/context/](rlapp-frontend/src/context/) (estructura vacía o minimal)
+**Ubicación:** [apps/frontend/src/context/](apps/frontend/src/context/) (estructura vacía o minimal)
 **Problema:** Cada componente hace fetch del usuario; no hay shared state; imposible implementar roles.
 **Recomendación:**
 
@@ -217,7 +217,7 @@ const { ... } = useQueueAsAppointments();
 #### H-STATE-002: Manejo de errores global débil
 
 **Criticidad:** 🟠 **ALTA**
-**Componente:** rlapp-frontend/src/
+**Componente:** apps/frontend/src/
 **Descripción:** Errores se manejan localmente en cada hook; sin error boundary global.
 **Ubicación:** [Ningún Error Boundary detectado; buscar "ErrorBoundary"]
 **Problema:** Si hook falla, toda la app falla; no hay fallback graceful.
@@ -234,9 +234,9 @@ const { ... } = useQueueAsAppointments();
 #### H-TEST-FE-001: Cobertura de tests fragmentada
 
 **Criticidad:** 🟠 **ALTA**
-**Componente:** rlapp-frontend/test/
+**Componente:** apps/frontend/test/
 **Descripción:** Solo 8 specs detectados; no cubre hooks, servicios, integraciones API.
-**Ubicación:** [rlapp-frontend/test/components/](rlapp-frontend/test/components/)
+**Ubicación:** [apps/frontend/test/components/](apps/frontend/test/components/)
 **Evidencia:**
 
 ```
@@ -259,9 +259,9 @@ test/services/  (¿vacío?)
 #### H-TEST-FE-002: E2E tests ausentes
 
 **Criticidad:** 🟡 **MEDIA**
-**Componente:** rlapp-frontend/test/e2e/
+**Componente:** apps/frontend/test/e2e/
 **Descripción:** Carpeta E2E existe pero vacía. Ningún flujo end-to-end validado.
-**Ubicación:** [rlapp-frontend/test/e2e/](rlapp-frontend/test/e2e/) (sin .spec.ts o .spec.tsx)
+**Ubicación:** [apps/frontend/test/e2e/](apps/frontend/test/e2e/) (sin .spec.ts o .spec.tsx)
 **Problema:** No se valida integración frontend↔backend; API breaks desapercibidos hasta producción.
 **Recomendación:**
 

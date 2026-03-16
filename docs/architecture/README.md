@@ -12,7 +12,7 @@ Este directorio contiene únicamente documentación arquitectónica vigente y al
 
 ## Documento canónico
 
-- `../AUDITORIA_TECNICA_2026-02-27.md`
+- `../audits/AUDITORIA_TECNICA_2026-02-27.md`
 
 ## Principios detectados
 

@@ -156,6 +156,6 @@ Estado defendible para stakeholders:
 
 - [INFORME_TDD_REAL.md](INFORME_TDD_REAL.md)
 - [docs/REPORTE_FINAL_VALIDACION_2026-03-01.md](docs/REPORTE_FINAL_VALIDACION_2026-03-01.md)
-- [rlapp-backend/docs/TDD_BDD_IMPACT_REPORT_2026-02-27.md](rlapp-backend/docs/TDD_BDD_IMPACT_REPORT_2026-02-27.md)
-- [rlapp-backend/docs/TESTING.md](rlapp-backend/docs/TESTING.md)
+- [apps/backend/docs/TDD_BDD_IMPACT_REPORT_2026-02-27.md](apps/backend/docs/TDD_BDD_IMPACT_REPORT_2026-02-27.md)
+- [apps/backend/docs/TESTING.md](apps/backend/docs/TESTING.md)
 - [docs/AI_WORKFLOW.md](docs/AI_WORKFLOW.md)

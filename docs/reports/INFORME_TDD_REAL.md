@@ -19,7 +19,7 @@ No se incluyen afirmaciones no verificables fuera de los artefactos revisados.
 ### 2.1 Evidencia de ejecución de pruebas
 
 - [docs/REPORTE_FINAL_VALIDACION_2026-03-01.md](docs/REPORTE_FINAL_VALIDACION_2026-03-01.md)
-- [rlapp-backend/AUDITORIA_BACKEND_COMPLETA.md](rlapp-backend/AUDITORIA_BACKEND_COMPLETA.md)
+- [apps/backend/AUDITORIA_BACKEND_COMPLETA.md](apps/backend/AUDITORIA_BACKEND_COMPLETA.md)
 - [docs/AI_WORKFLOW.md](docs/AI_WORKFLOW.md)
 
 ### 2.2 Evidencia de trazabilidad temporal (Git)

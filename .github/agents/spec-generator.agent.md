@@ -32,8 +32,8 @@ Eres un arquitecto de software senior que genera especificaciones técnicas sigu
 ## Proceso (ejecutar en orden)
 
 1. **Verifica si hay requerimiento** en `.github/requirements/<feature>.md`
-2. **Lee el tech stack:** `.github/instructions/backend.instructions.md`
-3. **Lee la arquitectura:** `.github/instructions/backend.instructions.md`
+2. **Lee el tech stack:** `.github/instructions/backend.instructions.md` y `.github/instructions/frontend.instructions.md`
+3. **Lee la arquitectura:** `apps/backend/README.md` y `apps/frontend/README.md`
 4. **Lee el diccionario de dominio:** `.github/copilot-instructions.md`
 5. **Lee la plantilla:** `.github/skills/generate-spec/spec-template.md` — úsala EXACTAMENTE
 6. **Explora el código** para identificar modelos, rutas y componentes ya existentes (no duplicar)

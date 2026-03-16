@@ -285,7 +285,7 @@ jobs:
         env:
           POSTGRES_PASSWORD: test
     steps:
-      - run: dotnet test rlapp-backend/RLAPP.slnx --collect:"XPlat Code Coverage"
+      - run: dotnet test apps/backend/RLAPP.slnx --collect:"XPlat Code Coverage"
       - run: codecov upload
 
   frontend-tests:

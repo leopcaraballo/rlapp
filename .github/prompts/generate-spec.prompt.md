@@ -18,7 +18,7 @@ Genera una especificación técnica completa en `.github/specs/` para el siguien
 ## Pasos a seguir:
 
 1. **Si el requerimiento no se proporcionó**, busca en `.github/requirements/${input:featureName}.md`. Si existe, úsalo como fuente.
-2. Lee el stack: `.github/instructions/backend.instructions.md`.
+2. Lee el stack: `.github/instructions/backend.instructions.md` y `.github/instructions/frontend.instructions.md`.
 3. Explora el código existente para identificar patrones, modelos y rutas relacionadas.
 4. Genera la spec usando la plantilla en `.github/skills/generate-spec/spec-template.md`.
 5. Guarda el archivo como `.github/specs/${input:featureName}.spec.md` con estado `DRAFT`.
@@ -26,7 +26,7 @@ Genera una especificación técnica completa en `.github/specs/` para el siguien
 
 ## La spec debe cubrir:
 - Historias de usuario con criterios de aceptación en Gherkin
-- Modelos de datos (Pydantic + MongoDB)
+- Flujo backend, contratos API y cambios de persistencia si aplica
 - Endpoints de API con request/response y errores
-- Diseño Frontend (páginas, componentes, hooks, servicios)
+- Diseño Frontend (rutas App Router, componentes, hooks, servicios)
 - Plan de pruebas (backlog de tasks Backend + Frontend + QA)

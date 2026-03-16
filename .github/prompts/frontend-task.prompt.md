@@ -1,6 +1,6 @@
 ---
 name: frontend-task
-description: Implementa una funcionalidad en el frontend React/Vite basada en una spec ASDD aprobada.
+description: Implementa una funcionalidad en el frontend Next.js basada en una spec ASDD aprobada.
 argument-hint: "<nombre-feature> (debe existir .github/specs/<nombre-feature>.spec.md)"
 agent: Frontend Developer
 tools:
@@ -19,17 +19,17 @@ Implementa el frontend para el feature especificado, siguiendo la spec aprobada.
 ## Pasos obligatorios:
 
 1. **Lee la spec** en `.github/specs/${input:featureName:nombre-feature}.spec.md` — si no existe, detente e informa al usuario.
-2. **Revisa el código existente** en `frontend/src/` para entender patrones actuales.
+2. **Revisa el código existente** en `apps/frontend/src/` para entender patrones actuales.
 3. **Implementa en orden**:
-   - `frontend/src/services/` — servicio con llamadas a API (si aplica)
-   - `frontend/src/hooks/` — hook custom (si hay estado complejo)
-   - `frontend/src/components/` — componentes reutilizables
-   - `frontend/src/pages/` — página + CSS Module
-4. **Registra la ruta** en `frontend/src/App.jsx`.
-5. **Verifica** el build: `cd frontend && npm run build`
+  - `apps/frontend/src/services/` o `src/infrastructure/` — acceso a API o SignalR
+  - `apps/frontend/src/application/` o `src/hooks/` — estado y casos de uso de UI
+  - `apps/frontend/src/components/` — componentes reutilizables
+  - `apps/frontend/src/app/` — rutas App Router, layouts o paginas
+4. **Registra la navegacion o ruta** dentro de `src/app/` siguiendo App Router.
+5. **Verifica** el build o tests relevantes: `cd apps/frontend && npm test -- --runInBand` o `npm run build`
 
 ## Restricciones:
-- USAR CSS Modules exclusivamente — sin frameworks CSS globales.
-- El estado de autenticación SIEMPRE viene de `useAuth` hook.
-- Las variables de entorno deben usar prefijo `VITE_`.
-- Firebase tokens se obtienen del usuario actual y se envían como `Bearer` en el header de Authorization.
+- Respetar la arquitectura y estilos existentes del frontend.
+- Las variables de entorno expuestas al cliente deben usar prefijo `NEXT_PUBLIC_`.
+- No asumir React Router ni `App.jsx`; el proyecto usa Next.js App Router.
+- Mantener compatibilidad con componentes cliente/servidor segun el arbol actual.

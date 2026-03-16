@@ -277,7 +277,7 @@ NEXT_PUBLIC_DEFAULT_QUEUE_ID=QUEUE-01
 
 ## Instalacion
 ```bash
-cd rlapp-frontend
+cd apps/frontend
 npm install
 ```
 
@@ -298,7 +298,7 @@ npm run test:cov
 ## Docker
 
 ```bash
-docker build -t rlapp-frontend .
+cd apps/frontend && docker build -t rlapp-frontend .
 docker run -p 3000:3000 rlapp-frontend
 ```
 

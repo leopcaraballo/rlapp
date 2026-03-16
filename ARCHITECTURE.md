@@ -31,16 +31,17 @@ rlapp/
 │   ├── audits/           Auditorías técnicas
 │   └── reports/          Reportes de implementación
 │
-├── tools/
-│   └── automation/       Herramientas de gobernanza AI-assisted
-│
 ├── config/
 │   ├── lint/             Configuración de linters
 │   ├── formatting/       Configuración de formatters
 │   └── quality/          Reglas de calidad de código
 │
 ├── .github/
-│   └── workflows/        Pipelines de CI/CD (GitHub Actions)
+│   ├── workflows/        Pipelines de CI/CD (GitHub Actions)
+│   ├── agents/           Agentes ASDD activos para Copilot Chat
+│   ├── skills/           Skills activas del framework ASDD
+│   ├── prompts/          Prompts operativos del framework
+│   └── instructions/     Instrucciones path-scoped para backend, frontend y tests
 │
 ├── docker-compose.yml    Stack completo de desarrollo
 ├── docker-compose.ci.yml Overlay para entorno CI

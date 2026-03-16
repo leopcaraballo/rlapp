@@ -11,7 +11,7 @@ Ejecuta el Documentation Agent (MARCO DOC) para generar la documentación técni
 
 1. Lee `.github/docs/lineamientos/dev-guidelines.md`
 2. Lee la spec aprobada en `.github/specs/${input:featureName}.spec.md`
-3. Revisa el código implementado en `backend/app/` y `frontend/src/`
+3. Revisa el código implementado en `apps/backend/src/` y `apps/frontend/src/`
 4. Genera los siguientes entregables:
    - Actualiza `README.md` con los cambios del feature
    - Genera documentación de API: `docs/output/api/api-reference.md`

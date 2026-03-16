@@ -150,14 +150,14 @@ WHERE table_schema='public' AND table_name LIKE 'waiting%';
 
 ```bash
 # Build Docker image with new code
-docker build -t rlapp-backend:1.2.0-hardened .
+cd apps/backend && docker build -t rlapp-api:1.2.0-hardened .
 
 # Redeploy (5-10 min downtime expected)
 docker-compose down
 docker-compose up -d
 
 # Verify startup
-docker logs rlapp-backend | grep "Database initialization complete"
+docker logs rlapp-api | grep "Database initialization complete"
 ```
 
 ### Step 4: Smoke Tests (Post-Deployment)

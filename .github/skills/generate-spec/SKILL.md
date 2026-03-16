@@ -11,10 +11,10 @@ argument-hint: "<nombre-feature>: <descripción del requerimiento>"
 Una historia puede generar spec solo si cumple:
 
 - [ ] Estructura **Como / Quiero / Para que** completa
-- [ ] Términos canónicos del dominio (ver `CLAUDE.md` / `copilot-instructions.md` → Diccionario de Dominio)
+- [ ] Términos canónicos del dominio (ver `README.md` y `copilot-instructions.md` → Diccionario de Dominio)
 - [ ] Criterios BDD: **Dado / Cuando / Entonces** (feliz + validaciones + errores)
-- [ ] Contrato API explícito si aplica (método, ruta `/api/v1/...`, request, response, códigos HTTP)
-- [ ] Alineada con arquitectura y stack (FastAPI + MongoDB + React + Firebase)
+- [ ] Contrato API explícito si aplica (método, ruta, request, response, códigos HTTP)
+- [ ] Alineada con arquitectura y stack real (`apps/backend` .NET 10 + `apps/frontend` Next.js 16)
 - [ ] Dependencias y riesgos identificados
 
 Si el requerimiento no cumple el DoR → listar las preguntas pendientes antes de generar.
@@ -22,7 +22,7 @@ Si el requerimiento no cumple el DoR → listar las preguntas pendientes antes d
 ## Proceso
 
 1. Busca requerimiento en `.github/requirements/<feature>.md` (si existe, úsalo)
-2. Lee las instrucciones de stack: `.github/instructions/backend.instructions.md`, `frontend.instructions.md`
+2. Lee las instrucciones de stack: `.github/instructions/backend.instructions.md`, `.github/instructions/frontend.instructions.md`
 3. Explora código existente — no duplicar modelos ni endpoints existentes
 4. Valida DoR (arriba) — si hay ambigüedades, lista preguntas antes de continuar
 5. Usa plantilla: `.github/skills/generate-spec/spec-template.md` EXACTAMENTE
@@ -46,7 +46,7 @@ related-specs: []
 ## Secciones obligatorias
 
 - `## 1. REQUERIMIENTOS` — HU (Como/Quiero/Para) + criterios Gherkin + reglas de negocio
-- `## 2. DISEÑO` — modelos de datos, endpoints API (request/response/HTTP codes), frontend
+- `## 2. DISEÑO` — flujo backend, contratos API, impactos frontend y datos si aplica
 - `## 3. LISTA DE TAREAS` — checklists backend `[ ]`, frontend `[ ]`, QA `[ ]`
 
 ## Restricciones

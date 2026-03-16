@@ -69,7 +69,7 @@
 
 ## 4. VIOLACIONES A CLEAN ARCHITECTURE / DDD DETECTADAS
 
-### Backend (rlapp-backend/src/Services/WaitingRoom/)
+### Backend (apps/backend/src/Services/WaitingRoom/)
 
 | Violación | Ubicación | Severidad | Descripción |
 |-----------|-----------|-----------|------------|
@@ -80,7 +80,7 @@
 | **Sin contratos explícitos** | Todas las capas | Media | DTOs vs entidades confundidas; Contracts folder vacío (debería tener request/response estándar) |
 | **Manejo de excepciones genérico** | Global exception handling | Media | Errores técnicos expuestos al cliente (ej. `NullReferenceException`) |
 
-### Frontend (rlapp-frontend/src/)
+### Frontend (apps/frontend/src/)
 
 | Violación | Ubicación | Severidad | Descripción |
 |-----------|-----------|-----------|------------|

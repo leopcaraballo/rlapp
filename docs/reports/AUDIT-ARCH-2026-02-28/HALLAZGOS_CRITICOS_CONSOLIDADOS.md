@@ -34,7 +34,7 @@ La auditoría arquitectónica completa del monorepo **rlapp** ha identificado **
 **Ubicación:**
 
 - Backend: [WaitingRoom.API/Program.cs](WaitingRoom.API/Program.cs) (sin JWT)
-- Frontend: [rlapp-frontend/src/](rlapp-frontend/src/) (sin AuthContext)
+- Frontend: [apps/frontend/src/](apps/frontend/src/) (sin AuthContext)
 
 **Riesgo:** Acceso no autorizado a datos clínicos; operarios pueden suplantarse; auditoría fallida
 
@@ -51,7 +51,7 @@ Frontend: AuthContext + <LoginPage /> + useAuth() hook
 
 **Descripción:** WaitingRoomDemo.tsx muestra en `<pre>` todos los pacientes en cola (nombres, prioridades).
 
-**Ubicación:** [rlapp-frontend/src/components/WaitingRoomDemo.tsx:33-45](rlapp-frontend/src/components/WaitingRoomDemo.tsx#L33)
+**Ubicación:** [apps/frontend/src/components/WaitingRoomDemo.tsx:33-45](apps/frontend/src/components/WaitingRoomDemo.tsx#L33)
 
 **Riesgo:** Violación HIPAA; privacidad comprometida; auditoría fallida
 
@@ -66,7 +66,7 @@ Frontend: AuthContext + <LoginPage /> + useAuth() hook
 
 **Descripción:** Read models se pierden al reiniciar API; no resiliente
 
-**Ubicación:** [rlapp-backend/src/Services/WaitingRoom/WaitingRoom.Projections/Infrastructure/InMemoryWaitingRoomProjectionContext.cs](rlapp-backend/src/Services/WaitingRoom/WaitingRoom.Projections/Infrastructure/InMemoryWaitingRoomProjectionContext.cs)
+**Ubicación:** [apps/backend/src/Services/WaitingRoom/WaitingRoom.Projections/Infrastructure/InMemoryWaitingRoomProjectionContext.cs](apps/backend/src/Services/WaitingRoom/WaitingRoom.Projections/Infrastructure/InMemoryWaitingRoomProjectionContext.cs)
 
 **Riesgo:** Dashboard queries fallan después restart; datos desincronizados
 
@@ -81,7 +81,7 @@ Frontend: AuthContext + <LoginPage /> + useAuth() hook
 
 **Descripción:** Ningún test valida role escalation, injection, XSS, falsificación de identidad
 
-**Ubicación:** [rlapp-backend/src/Tests/](rlapp-backend/src/Tests/) (falta WaitingRoom.Tests.Security)
+**Ubicación:** [apps/backend/src/Tests/](apps/backend/src/Tests/) (falta WaitingRoom.Tests.Security)
 
 **Riesgo:** Vulnerabilidades OWASP A01 (Broken Access Control), A03 (Injection) no detectadas
 
@@ -109,7 +109,7 @@ Frontend: AuthContext + <LoginPage /> + useAuth() hook
 
 **Descripción:** 0 tests validan: Check-in → Dashboard → Monitor real-time
 
-**Ubicación:** [rlapp-frontend/test/e2e/](rlapp-frontend/test/e2e/) (vacío)
+**Ubicación:** [apps/frontend/test/e2e/](apps/frontend/test/e2e/) (vacío)
 
 **Riesgo:** Regresiones silenciosas en producción; integración desconocida
 
@@ -158,8 +158,8 @@ Frontend: AuthContext + <LoginPage /> + useAuth() hook
 
 **Ubicación:**
 
-- Backend: [rlapp-backend/src/Tests/](rlapp-backend/src/Tests/) (falta WaitingRoom.Tests.Infrastructure)
-- Frontend: [rlapp-frontend/test/](rlapp-frontend/test/) (8/50 specs)
+- Backend: [apps/backend/src/Tests/](apps/backend/src/Tests/) (falta WaitingRoom.Tests.Infrastructure)
+- Frontend: [apps/frontend/test/](apps/frontend/test/) (8/50 specs)
 
 **Riesgo:** Defects slip to production
 
@@ -197,12 +197,12 @@ if (existingPatient.Name != request.Name)
 |---|----------|-----------|----------|---------|--------------|
 | 1 | Sin autenticación | 🔴 CRÍTICA | 40 hrs | Sí | [Program.cs](WaitingRoom.API/Program.cs#L60) |
 | 2 | Proyecciones en memoria | 🔴 CRÍTICA | 32 hrs | Sí | [InMemoryWaitingRoomProjectionContext.cs](WaitingRoom.Projections/Infrastructure/InMemoryWaitingRoomProjectionContext.cs#L1) |
-| 3 | Sin security tests | 🔴 CRÍTICA | 24 hrs | Sí | [Tests/WaitingRoom.Tests.Security](rlapp-backend/src/Tests/) (falta) |
-| 4 | Sin E2E tests | 🔴 CRÍTICA | 32 hrs | Sí | [test/e2e/](rlapp-frontend/test/e2e/) (vacío) |
+| 3 | Sin security tests | 🔴 CRÍTICA | 24 hrs | Sí | [Tests/WaitingRoom.Tests.Security](apps/backend/src/Tests/) (falta) |
+| 4 | Sin E2E tests | 🔴 CRÍTICA | 32 hrs | Sí | [test/e2e/](apps/frontend/test/e2e/) (vacío) |
 | 5 | Sin REQUIREMENTS.md | 🔴 CRÍTICA | 16 hrs | Sí | [docs/](docs/) (falta) |
 | 6 | Sin rate limiting | 🔴 CRÍTICA | 16 hrs | Sí | [Program.cs](WaitingRoom.API/Program.cs#L150) |
-| 7 | Sin infra tests | 🟠 ALTA | 32 hrs | Sí | [Tests/WaitingRoom.Tests.Infrastructure](rlapp-backend/src/Tests/) (falta) |
-| 8 | Frontend coverage <30% | 🟠 ALTA | 40 hrs | Sí | [test/](rlapp-frontend/test/) |
+| 7 | Sin infra tests | 🟠 ALTA | 32 hrs | Sí | [Tests/WaitingRoom.Tests.Infrastructure](apps/backend/src/Tests/) (falta) |
+| 8 | Frontend coverage <30% | 🟠 ALTA | 40 hrs | Sí | [test/](apps/frontend/test/) |
 | 9 | DI acoplado | 🟠 ALTA | 16 hrs | No | [Program.cs:70-120](WaitingRoom.API/Program.cs#L70) |
 | 10 | Secretos plaintext | 🔴 CRÍTICA | 4 hrs | Sí | [docker-compose.yml:15](docker-compose.yml#L15) |
 

@@ -56,7 +56,7 @@ RLAPP es un sistema de gestion de sala de espera medica con arquitectura Hexagon
 
 ### 1.7 Estrategia de inmutabilidad y empaquetamiento Docker
 
-Con el fin de garantizar la separación de conceptos y la inmutabilidad en el ciclo de vida de los despliegues, la arquitectura opta por definir los de `Dockerfile` de forma independiente dentro de los módulos `rlapp-backend/` y `rlapp-frontend/`. Esto garantiza que los test de integración y los escaneos de vulnerabilidades identifiquen de manera segregada las brechas en la imagen `.NET` o la de `Next.js` sin fricción. Aunque el pipeline lo centraliza todo desde `.github/workflows/ci.yml` ejecutando comandos ubicados en los subdirectorios, en términos de monorepositorios profesionales, mantener el `Dockerfile` junto al código asegura la cohesividad por componente en lugar de recurrir a un hiper-dockerfile complejo en la raíz.
+Con el fin de garantizar la separación de conceptos y la inmutabilidad en el ciclo de vida de los despliegues, la arquitectura opta por definir los de `Dockerfile` de forma independiente dentro de los módulos `apps/backend/` y `apps/frontend/`. Esto garantiza que los test de integración y los escaneos de vulnerabilidades identifiquen de manera segregada las brechas en la imagen `.NET` o la de `Next.js` sin fricción. Aunque el pipeline lo centraliza todo desde `.github/workflows/ci.yml` ejecutando comandos ubicados en los subdirectorios, en términos de monorepositorios profesionales, mantener el `Dockerfile` junto al código asegura la cohesividad por componente en lugar de recurrir a un hiper-dockerfile complejo en la raíz.
 
 ## 2. Estrategia multinivel (piramide de pruebas)
 

@@ -2,7 +2,7 @@
 
 **Identificador:** RF-AUDIT-002
 **Fecha:** 28 de febrero de 2026
-**Alcance:** Análisis estático de rlapp-backend/src/ (Arquitectura Hexagonal, CQRS, Event Sourcing)
+**Alcance:** Análisis estático de apps/backend/src/ (Arquitectura Hexagonal, CQRS, Event Sourcing)
 **Stack:** .NET 10.0, ASP.NET Core, PostgreSQL 16, RabbitMQ 3.x
 
 ---
@@ -28,7 +28,7 @@ El backend implementa correctamente la arquitectura hexagonal con Event Sourcing
 **Criticidad:** 🔴 **CRÍTICA**
 **Componente:** WaitingRoom.API
 **Descripción:** El API no implementa OAuth2/JWT. Solo utiliza filtro de header `X-User-Role` que es falsificable.
-**Ubicación:** [rlapp-backend/src/Services/WaitingRoom/WaitingRoom.API/Program.cs:996](rlapp-backend/src/Services/WaitingRoom/WaitingRoom.API/Program.cs#L996)
+**Ubicación:** [apps/backend/src/Services/WaitingRoom/WaitingRoom.API/Program.cs:996](apps/backend/src/Services/WaitingRoom/WaitingRoom.API/Program.cs#L996)
 **Evidencia:**
 
 ```csharp
@@ -44,7 +44,7 @@ El backend implementa correctamente la arquitectura hexagonal con Event Sourcing
 - Eliminar filtro de header vulnerable
 - Target .NET 10.0 soporta Identity autónoma sin librerías externas
 
-**Artefactos relacionados:** [rlapp-backend/docs/DEBT.md#L4-L5](rlapp-backend/docs/DEBT.md#L4-L5) (ya documentado como deuda)
+**Artefactos relacionados:** [apps/backend/docs/DEBT.md#L4-L5](apps/backend/docs/DEBT.md#L4-L5) (ya documentado como deuda)
 
 ---
 
@@ -53,7 +53,7 @@ El backend implementa correctamente la arquitectura hexagonal con Event Sourcing
 **Criticidad:** 🔴 **CRÍTICA**
 **Componente:** WaitingRoom.API
 **Descripción:** Sin Authorization policies. Header `X-User-Role` lee pero no se valida contra recurso solicitado.
-**Ubicación:** [rlapp-backend/src/Services/WaitingRoom/WaitingRoom.API/Program.cs:150-160](rlapp-backend/src/Services/WaitingRoom/WaitingRoom.API/Program.cs#L150)
+**Ubicación:** [apps/backend/src/Services/WaitingRoom/WaitingRoom.API/Program.cs:150-160](apps/backend/src/Services/WaitingRoom/WaitingRoom.API/Program.cs#L150)
 **Evidencia:** No se encuentran:
 
 - `AuthorizeAttribute` en endpoints
@@ -74,7 +74,7 @@ El backend implementa correctamente la arquitectura hexagonal con Event Sourcing
 **Criticidad:** 🔴 **CRÍTICA**
 **Componente:** WaitingRoom.API
 **Descripción:** Sin protección contra fuerza bruta. Endpoint de check-in puede ser llamado ilimitadamente.
-**Ubicación:** [rlapp-backend/src/Services/WaitingRoom/WaitingRoom.API/Endpoints/WaitingRoomQueryEndpoints.cs:30-50](rlapp-backend/src/Services/WaitingRoom/WaitingRoom.API/Endpoints/WaitingRoomQueryEndpoints.cs#L30)
+**Ubicación:** [apps/backend/src/Services/WaitingRoom/WaitingRoom.API/Endpoints/WaitingRoomQueryEndpoints.cs:30-50](apps/backend/src/Services/WaitingRoom/WaitingRoom.API/Endpoints/WaitingRoomQueryEndpoints.cs#L30)
 **Riesgo:** DDoS, ataques de fuerza bruta, inyección DoS en database (100 mills de eventos).
 **Recomendación:**
 
@@ -111,7 +111,7 @@ RABBITMQ_DEFAULT_PASS: guest
 **Criticidad:** 🔴 **CRÍTICA**
 **Componente:** WaitingRoom.API/Hubs
 **Descripción:** Hub SignalR no valida identidad. Cualquier WebSocket puede conectarse.
-**Ubicación:** [rlapp-backend/src/Services/WaitingRoom/WaitingRoom.API/Hubs](rlapp-backend/src/Services/WaitingRoom/WaitingRoom.API/Hubs) (no hay [Authorize])
+**Ubicación:** [apps/backend/src/Services/WaitingRoom/WaitingRoom.API/Hubs](apps/backend/src/Services/WaitingRoom/WaitingRoom.API/Hubs) (no hay [Authorize])
 **Riesgo:** Espionaje de datos clínicos en tiempo real (nombres de pacientes, tiempos, prioridades).
 **Recomendación:**
 
@@ -128,7 +128,7 @@ RABBITMQ_DEFAULT_PASS: guest
 **Criticidad:** 🟠 **ALTA**
 **Componente:** WaitingRoom.Application/CommandHandlers
 **Descripción:** Handlers contienen lógica de orquestación que podría estar en Domain (decisiones de negocio).
-**Ubicación:** [rlapp-backend/src/Services/WaitingRoom/WaitingRoom.Application/CommandHandlers/CheckInPatientCommandHandler.cs:75-95](rlapp-backend/src/Services/WaitingRoom/WaitingRoom.Application/CommandHandlers/CheckInPatientCommandHandler.cs#L75)
+**Ubicación:** [apps/backend/src/Services/WaitingRoom/WaitingRoom.Application/CommandHandlers/CheckInPatientCommandHandler.cs:75-95](apps/backend/src/Services/WaitingRoom/WaitingRoom.Application/CommandHandlers/CheckInPatientCommandHandler.cs#L75)
 **Evidencia:**
 
 ```csharp
@@ -156,7 +156,7 @@ public async Task<int> HandleAsync(
 **Criticidad:** 🟠 **ALTA**
 **Componente:** WaitingRoom.Projections/Infrastructure/InMemoryWaitingRoomProjectionContext.cs
 **Descripción:** Read models se pierden al reiniciar API. No es resiliente para producción.
-**Ubicación:** [rlapp-backend/src/Services/WaitingRoom/WaitingRoom.Projections/Infrastructure/InMemoryWaitingRoomProjectionContext.cs:1-30](rlapp-backend/src/Services/WaitingRoom/WaitingRoom.Projections/Infrastructure/InMemoryWaitingRoomProjectionContext.cs#L1)
+**Ubicación:** [apps/backend/src/Services/WaitingRoom/WaitingRoom.Projections/Infrastructure/InMemoryWaitingRoomProjectionContext.cs:1-30](apps/backend/src/Services/WaitingRoom/WaitingRoom.Projections/Infrastructure/InMemoryWaitingRoomProjectionContext.cs#L1)
 **Evidencia:**
 
 ```csharp
@@ -181,7 +181,7 @@ public sealed class InMemoryWaitingRoomProjectionContext : IWaitingRoomProjectio
 **Criticidad:** 🟠 **ALTA**
 **Componente:** WaitingRoom.API/Program.cs
 **Descripción:** Bootstrap de servicios mezcla capas (Domain, Application, Infrastructure, API).
-**Ubicación:** [rlapp-backend/src/Services/WaitingRoom/WaitingRoom.API/Program.cs:70-120](rlapp-backend/src/Services/WaitingRoom/WaitingRoom.API/Program.cs#L70)
+**Ubicación:** [apps/backend/src/Services/WaitingRoom/WaitingRoom.API/Program.cs:70-120](apps/backend/src/Services/WaitingRoom/WaitingRoom.API/Program.cs#L70)
 **Evidencia:**
 
 ```csharp
@@ -207,7 +207,7 @@ services.AddScoped<CheckInPatientCommandHandler>();  // Application
 **Criticidad:** 🟠 **ALTA**
 **Componente:** WaitingRoom.Infrastructure
 **Descripción:** No existe suite `WaitingRoom.Tests.Infrastructure`. PostgresEventStore, OutboxStore y Publisher no tienen tests.
-**Ubicación:** [rlapp-backend/src/Tests/](rlapp-backend/src/Tests/) (carpeta no incluye Infrastructure tests)
+**Ubicación:** [apps/backend/src/Tests/](apps/backend/src/Tests/) (carpeta no incluye Infrastructure tests)
 **Evidencia:**
 
 ```
@@ -256,7 +256,7 @@ Tests/
 **Criticidad:** 🟠 **ALTA**
 **Componente:** WaitingRoom.Application/CommandHandlers, WaitingRoom.Infrastructure/Persistence
 **Descripción:** Conflicto de identidad (mismo patientId con nombre distinto) detectado pero manejo ad-hoc.
-**Ubicación:** [rlapp-backend/docs/ARCHITECTURE.md#L25-L30](rlapp-backend/docs/ARCHITECTURE.md#L25-L30)
+**Ubicación:** [apps/backend/docs/ARCHITECTURE.md#L25-L30](apps/backend/docs/ARCHITECTURE.md#L25-L30)
 **Evidencia:** Error mapeado en ExceptionHandler, pero:
 
 ```csharp
@@ -282,7 +282,7 @@ if (existingPatient.Name != request.Name)
 **Criticidad:** 🟡 **MEDIA**
 **Componente:** WaitingRoom.API/Program.cs
 **Descripción:** No hay validación de connection strings al startup.
-**Ubicación:** [rlapp-backend/src/Services/WaitingRoom/WaitingRoom.API/Program.cs:60-65](rlapp-backend/src/Services/WaitingRoom/WaitingRoom.API/Program.cs#L60)
+**Ubicación:** [apps/backend/src/Services/WaitingRoom/WaitingRoom.API/Program.cs:60-65](apps/backend/src/Services/WaitingRoom/WaitingRoom.API/Program.cs#L60)
 **Evidencia:**
 
 ```csharp

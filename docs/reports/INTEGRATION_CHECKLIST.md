@@ -4,7 +4,7 @@
 
 ### 1. CSP (Content-Security-Policy) - Permitir conexiones al backend
 
-**Archivo**: [rlapp-frontend/src/proxi.ts](rlapp-frontend/src/proxi.ts#L70-L85)
+**Archivo**: [apps/frontend/src/proxi.ts](apps/frontend/src/proxi.ts#L70-L85)
 
 Se actualizó la política de seguridad para permitir conexiones HTTP/WebSocket al backend:
 
@@ -25,7 +25,7 @@ NEXT_PUBLIC_API_BASE_URL: http://api:8080
 NEXT_PUBLIC_WS_URL: http://api:8080
 ```
 
-**Archivo 2**: [rlapp-frontend/.env.local](rlapp-frontend/.env.local#L2-L6)
+**Archivo 2**: [apps/frontend/.env.local](apps/frontend/.env.local#L2-L6)
 
 Actualizado para coincidir con docker-compose.yml:
 

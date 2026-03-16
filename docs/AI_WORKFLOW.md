@@ -8,10 +8,10 @@
 - SA model: Gemini 3 Flash (Preview) (Tier 3)
 
 - Archivos de fuente modificados:
-  - `rlapp-frontend/src/app/login/page.tsx` — se añade el campo `idCard`, validación de 6 dígitos y visualización de errores.
+  - `apps/frontend/src/app/login/page.tsx` — se añade el campo `idCard`, validación de 6 dígitos y visualización de errores.
 
 - Archivos de test actualizados:
-  - `rlapp-frontend/test/app/login/page.spec.tsx` — se actualizan los tests para incluir el llenado del campo `idCard` y se añade un test para la validación de error.
+  - `apps/frontend/test/app/login/page.spec.tsx` — se actualizan los tests para incluir el llenado del campo `idCard` y se añade un test para la validación de error.
 
 - Commits atómicos:
   - `d5a673c` — `feat(login): implementar validación de idCard y visualización de errores`
@@ -43,15 +43,15 @@
 - SA model: Claude Sonnet 4.6 (Tier 2)
 
 - Archivos de fuente modificados:
-  - `rlapp-frontend/src/app/login/page.tsx` — añade `noValidate` en `<form>` para delegar validación de TTL al `onSubmit`
-  - `rlapp-frontend/src/app/reception/page.tsx` — restaura `patientName.trim()` eliminado durante resolución de conflicto
+  - `apps/frontend/src/app/login/page.tsx` — añade `noValidate` en `<form>` para delegar validación de TTL al `onSubmit`
+  - `apps/frontend/src/app/reception/page.tsx` — restaura `patientName.trim()` eliminado durante resolución de conflicto
 
 - Archivos de test creados o actualizados:
-  - `rlapp-frontend/test/app/login/page.spec.tsx` (nuevo — 11 tests)
-  - `rlapp-frontend/test/components/Navbar.coverage.spec.tsx` (reescrito — 14 tests con mocks de `useAuth`/`useRouter`)
-  - `rlapp-frontend/test/app/reception/page.red.spec.tsx` (actualizado — agrega campo `patientId` a 3 tests)
-  - `rlapp-frontend/test/app/waiting-room/page.red.spec.tsx` (actualizado — agrega mock `useAuth` + fixes lint)
-  - `rlapp-frontend/test/app/cashier.spec.tsx` (reescrito — 4 tests con mocks de `useAlert`, `useCashierStation`, `useWaitingRoom`)
+  - `apps/frontend/test/app/login/page.spec.tsx` (nuevo — 11 tests)
+  - `apps/frontend/test/components/Navbar.coverage.spec.tsx` (reescrito — 14 tests con mocks de `useAuth`/`useRouter`)
+  - `apps/frontend/test/app/reception/page.red.spec.tsx` (actualizado — agrega campo `patientId` a 3 tests)
+  - `apps/frontend/test/app/waiting-room/page.red.spec.tsx` (actualizado — agrega mock `useAuth` + fixes lint)
+  - `apps/frontend/test/app/cashier.spec.tsx` (reescrito — 4 tests con mocks de `useAlert`, `useCashierStation`, `useWaitingRoom`)
 
 - Commits atómicos:
   - `9d1817e` — `test(login): green - cobertura login/page.tsx agregada desde merge develop`
@@ -99,12 +99,12 @@
   B2-B5 (tests de cobertura de capas: `useWaitingRoom`, `waitingRoomApi`, `SignalRAdapter`,
   `waitingRoomSignalR`) y correcciones de errores TypeScript pre-existentes.
 - Files changed:
-  - `rlapp-frontend/test/hooks/useWaitingRoom.spec.ts` (nuevo — 14 tests)
-  - `rlapp-frontend/test/services/waitingRoomApi.spec.ts` (nuevo — 23 tests)
-  - `rlapp-frontend/test/infrastructure/signalRAdapter.spec.ts` (nuevo — 14 tests)
-  - `rlapp-frontend/test/services/waitingRoomSignalR.spec.ts` (nuevo — 17 tests)
-  - `rlapp-frontend/test/hooks/useQueueAsAppointments.coverage.spec.tsx` (corrección TS)
-  - `rlapp-frontend/docs/TDD_PLAN.md` (actualizado secciones 0, 9, 10)
+  - `apps/frontend/test/hooks/useWaitingRoom.spec.ts` (nuevo — 14 tests)
+  - `apps/frontend/test/services/waitingRoomApi.spec.ts` (nuevo — 23 tests)
+  - `apps/frontend/test/infrastructure/signalRAdapter.spec.ts` (nuevo — 14 tests)
+  - `apps/frontend/test/services/waitingRoomSignalR.spec.ts` (nuevo — 17 tests)
+  - `apps/frontend/test/hooks/useQueueAsAppointments.coverage.spec.tsx` (corrección TS)
+  - `apps/frontend/docs/TDD_PLAN.md` (actualizado secciones 0, 9, 10)
 - Commits atómicos:
   - `c90db2f` — `feat(registration): green`
   - `d460c38` — `refactor(registration): extraer Priority type e ID_CARD_PATTERN`
@@ -157,7 +157,7 @@
 - Actor: AI assistant (Copilot)
 - Task: Ciclo TDD para la pantalla `/registration`; cobertura de renderizado, validaciones del formulario, submit válido con prioridad, estados loading/disabled, mensajes de éxito/error y opciones del select de prioridad.
 - Files changed:
-  - rlapp-frontend/test/app/registration/page.red.spec.tsx (nuevo — 14 pruebas)
+  - apps/frontend/test/app/registration/page.red.spec.tsx (nuevo — 14 pruebas)
 - Commits atómicos:
   - `test(registration): red - título, validaciones, submit, loading, success, error y opciones de prioridad (14/14)`
 
@@ -181,7 +181,7 @@
 - Actor: AI assistant (Copilot)
 - Task: Ciclo TDD para la pantalla `/dashboard`; cobertura de título, tres secciones (En consultorio / En espera / Completados), empty states, isConnecting, error, y cita por cada estado.
 - Files changed:
-  - rlapp-frontend/test/app/dashboard/page.red.spec.tsx (nuevo — 12 pruebas)
+  - apps/frontend/test/app/dashboard/page.red.spec.tsx (nuevo — 12 pruebas)
 - Commits atómicos:
   - `test(dashboard): red - título, secciones, empty states, isConnecting, error y citas por estado (12/12)` (incluye refactor)
 
@@ -202,7 +202,7 @@
 - Actor: AI assistant (Copilot)
 - Task: Ciclo TDD para la pantalla `/waiting-room/[queueId]`; cobertura de queueId en cabecera, refresh al montar, cuatro cards en estado null y con datos, links de acciones rápidas con queueId codificado, y botón Reconstruir (POST + refresh).
 - Files changed:
-  - rlapp-frontend/test/app/waiting-room/page.red.spec.tsx (nuevo — 12 pruebas)
+  - apps/frontend/test/app/waiting-room/page.red.spec.tsx (nuevo — 12 pruebas)
 - Commits atómicos:
   - `test(waiting-room): red - queueId, refresh mount, cards null/datos, links queueId, rebuild POST (12/12)`
 
@@ -224,7 +224,7 @@
 - Actor: AI assistant (Copilot)
 - Task: Ciclo TDD para la pantalla `/display/[queueId]`; cobertura de queueId en cabecera, turno activo/nulo, consultorio destino, lista de espera, límite de 8 slots, orden y footer de última actualización.
 - Files changed:
-  - rlapp-frontend/test/app/display/page.red.spec.tsx (nuevo — 12 pruebas)
+  - apps/frontend/test/app/display/page.red.spec.tsx (nuevo — 12 pruebas)
 - Commits atómicos:
   - `test(display): red - queueId en cabecera, turno activo, lista, límite 8 slots, orden y lastUpdated (12/12)`
   - `refactor(display): it.each para tests de footer lastUpdated (10-11)`
@@ -246,7 +246,7 @@
 - Actor: AI assistant (Copilot)
 - Task: Ciclo TDD para la pantalla `/consulting-rooms`; cobertura de toggle activate/deactivate, idempotencia de estado ante fallos de red, busy, propagación de error y queueId desde query param.
 - Files changed:
-  - rlapp-frontend/test/app/consulting-rooms/page.red.spec.tsx (nuevo — 12 pruebas)
+  - apps/frontend/test/app/consulting-rooms/page.red.spec.tsx (nuevo — 12 pruebas)
 - Commits atómicos:
   - `test(consulting-rooms): red - tests de toggle, idempotencia, fallo de red, busy y propagación de error (12/12)`
   - `refactor(consulting-rooms): extraer helpers getCard/activateCard para eliminar patrón repetido`
@@ -267,8 +267,8 @@
 - Actor: AI assistant (Copilot)
 - Task: Ciclo TDD para la pantalla `/medical`; cobertura de claim, call, complete, markAbsent, guards de patientId, busy, propagación de errores y query param. Descubrimiento y corrección de defecto en coerción de `outcome`.
 - Files changed:
-  - rlapp-frontend/test/app/medical/page.red.spec.tsx (nuevo — 12 pruebas)
-  - rlapp-frontend/src/app/medical/page.tsx (corrección `??` → `||` en `outcome`)
+  - apps/frontend/test/app/medical/page.red.spec.tsx (nuevo — 12 pruebas)
+  - apps/frontend/src/app/medical/page.tsx (corrección `??` → `||` en `outcome`)
 - Commits atómicos:
   - `test(medical): red - tests de claim, call, complete, absent, guards de patientId, busy y propagación de errores (12/12)`
   - `refactor(medical): extraer ActionRow, simplificar fillStation y corregir outcome coercion vacío→null`
@@ -291,7 +291,7 @@
 - Actor: AI assistant (Copilot)
 - Task: Ciclo TDD completo para la pantalla `/cashier`; cobertura de acciones, doble submit, propagación de errores y estado vacío.
 - Files changed:
-  - rlapp-frontend/test/app/cashier/page.red.spec.tsx (nuevo — 12 pruebas)
+  - apps/frontend/test/app/cashier/page.red.spec.tsx (nuevo — 12 pruebas)
 - Commits atómicos:
   - `test(cashier): red - tests de acciones, payload, doble submit y errores del hook`
   - `feat(cashier): green - mock configurable por variable y assertions corregidas (12/12)`
@@ -311,7 +311,7 @@
 - Actor: AI assistant (Copilot)
 - Task: Elaborar plan detallado de TDD y refactor para el frontend, con commits atómicos Red → Green → Refactor y trazabilidad.
 - Files changed:
-  - rlapp-frontend/docs/TDD_PLAN.md (nuevo plan por pantalla)
+  - apps/frontend/docs/TDD_PLAN.md (nuevo plan por pantalla)
 
 - Actions performed:
   1. Se definieron objetivos, alcance y secuencia de trabajo por pantallas (`/`, `reception`, `cashier`, `medical`, `consulting-rooms`, `display/[queueId]`, `waiting-room/[queueId]`, `dashboard`, `registration`).
@@ -327,8 +327,8 @@
 - Actor: AI assistant (Copilot)
 - Task: Fase RED/GREEN para recepción; normalizar payload y evitar doble submit.
 - Files changed:
-  - rlapp-frontend/test/app/reception/page.red.spec.tsx (nuevas pruebas RED)
-  - rlapp-frontend/src/app/reception/page.tsx (ajuste GREEN: trim de nombre, guard de doble submit)
+  - apps/frontend/test/app/reception/page.red.spec.tsx (nuevas pruebas RED)
+  - apps/frontend/src/app/reception/page.tsx (ajuste GREEN: trim de nombre, guard de doble submit)
 
 - Actions performed:
   1. Se agregaron pruebas RED que verifican trim de `patientName`, opcionales a `null` y bloqueo de doble submit.
@@ -343,7 +343,7 @@
 - Actor: AI assistant (Copilot)
 - Task: Limpiar avisos de act en tests de recepción.
 - Files changed:
-  - rlapp-frontend/test/app/reception/page.red.spec.tsx (uso de `userEvent.setup()` para envolver interacciones en act)
+  - apps/frontend/test/app/reception/page.red.spec.tsx (uso de `userEvent.setup()` para envolver interacciones en act)
 
 - Actions performed:
   1. Se actualizaron los tests para usar `userEvent.setup()` y así envolver las interacciones en act.
@@ -357,13 +357,13 @@
 - Actor: AI assistant (Copilot)
 - Task: Añadir validación a formularios `reception`, `cashier`, `medical`; estilos responsivos; tests básicos; build y despliegue frontend.
 - Files changed:
-  - rlapp-frontend/src/app/reception/page.tsx (form migrated to react-hook-form + zod)
-  - rlapp-frontend/src/app/cashier/page.tsx (form migrated to react-hook-form + zod)
-  - rlapp-frontend/src/app/medical/page.tsx (form migrated to react-hook-form + zod)
-  - rlapp-frontend/src/app/*/page.module.css (new CSS modules for responsive layout)
-  - rlapp-frontend/src/infrastructure/adapters/SignalRAdapter.ts (added compatibility alias)
-  - rlapp-frontend/src/infrastructure/adapters/SocketIoAdapter.ts (added compatibility alias)
-  - rlapp-frontend/src/domain/ports/RealTimePort.ts (added optional alias method)
+  - apps/frontend/src/app/reception/page.tsx (form migrated to react-hook-form + zod)
+  - apps/frontend/src/app/cashier/page.tsx (form migrated to react-hook-form + zod)
+  - apps/frontend/src/app/medical/page.tsx (form migrated to react-hook-form + zod)
+  - apps/frontend/src/app/*/page.module.css (new CSS modules for responsive layout)
+  - apps/frontend/src/infrastructure/adapters/SignalRAdapter.ts (added compatibility alias)
+  - apps/frontend/src/infrastructure/adapters/SocketIoAdapter.ts (added compatibility alias)
+  - apps/frontend/src/domain/ports/RealTimePort.ts (added optional alias method)
   - test/app/{reception,cashier,medical}.spec.tsx (basic rendering tests)
 
 - Actions performed:
@@ -384,8 +384,8 @@
   - Actor: AI assistant (Copilot)
   - Task: Ajustar ignores y retirar artefactos generados del control de versiones para evitar ruido en estados y commits.
   - Files changed:
-    - rlapp-backend/.gitignore (agregado `test-results.log`)
-    - Eliminaciones del indice en bin/ y obj/ bajo rlapp-backend
+    - apps/backend/.gitignore (agregado `test-results.log`)
+    - Eliminaciones del indice en bin/ y obj/ bajo apps/backend
 
   - Actions performed:
     1. Se identificaron artefactos generados versionados en `bin/`, `obj/` y `test-results.log`.
@@ -809,7 +809,7 @@ Razón: Estos tests son intensivos y validan escenarios ya verificados mediante 
 **Pasos Ejecutados:**
 1. **Verificación Local vs. CI:** Confirmé que la instrucción `test:component` generera exclusiones debidas en la suite E2E (`--testPathIgnorePatterns='e2e'`). Estas instrucciones ya se encontraban listas en el CLI del `package.json` de previas iteraciones de refactor local.
 2. **Generación de Reportes (`coverage`):** Analicé `jest.config.ts`, notando que exporta sus métricas hacia `.rootDir/test-results/coverage`, no la carpeta `/coverage/` cruda en la raíz del frontend. 
-3. **Parche en Pipeline YAML (`ci.yml`):** Reemplacé la instrucción de subida en la fase de Github Actions, cambiando `rlapp-frontend/coverage/` por `rlapp-frontend/test-results/coverage/` como la ruta definitiva para el artefacto de resultados frontend.
+3. **Parche en Pipeline YAML (`ci.yml`):** Reemplacé la instrucción de subida en la fase de Github Actions, cambiando `apps/frontend/coverage/` por `apps/frontend/test-results/coverage/` como la ruta definitiva para el artefacto de resultados frontend.
 
 **Comando Principal de Test:**
 ```bash

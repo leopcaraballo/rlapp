@@ -7,7 +7,6 @@ Requerimiento → Spec → [Backend ∥ Frontend ∥ DB] → [Tests BE ∥ Tests
 ```
 
 > Esta guía cubre el uso con **GitHub Copilot Chat** en VS Code.
-> Para uso con **Claude Code CLI**, ver `.claude/README.md`.
 
 ---
 
@@ -19,25 +18,25 @@ Requerimiento → Spec → [Backend ∥ Frontend ∥ DB] → [Tests BE ∥ Tests
 | GitHub Copilot Chat | Extensión instalada y activa |
 | Setting habilitado | `github.copilot.chat.codeGeneration.useInstructionFiles: true` |
 
-El archivo `.vscode/settings.json` ya configura el auto-descubrimiento de agentes, skills e instructions. Si no existe, créalo con las rutas correspondientes a `.github/`.
+El archivo `.vscode/settings.json` debe mantener habilitado `github.copilot.chat.codeGeneration.useInstructionFiles: true`. La resolucion de agentes, skills e instrucciones depende de la estructura real de `.github/`.
 
 ---
 
-## Onboarding — nuevo proyecto
+## Onboarding del repositorio
 
-Al copiar `.github/` y `docs/` a un proyecto nuevo, completa estos archivos **en orden** antes de usar cualquier agente:
+Antes de usar cualquier agente en RLAPP, valida estos archivos **en orden**:
 
 | # | Archivo | Qué escribir |
 |---|---------|-------------|
-| 1 | `README.md` (raíz del proyecto) | Stack, arquitectura, comandos (`install`, `dev`, `test`, `build`), variables de entorno |
-| 2 | `.claude/rules/backend.md + frontend.md` | Lenguaje, framework, base de datos, herramientas aprobadas |
-| 3 | `.claude/rules/backend.md + frontend.md` | Capas, módulos, bounded contexts |
-| 4 | `CLAUDE.md (Diccionario de Dominio)` | Términos canónicos del negocio (glosario) |
-| 5 | `CLAUDE.md` (DoR + DoD ya incluidos) | Criterios DoR y DoD del equipo |
+| 1 | `README.md` (raíz del proyecto) | Contexto general del sistema y documentación principal |
+| 2 | `apps/backend/README.md` | Arquitectura backend, comandos y estructura real |
+| 3 | `apps/frontend/README.md` | Arquitectura frontend, comandos y estructura real |
+| 4 | `.github/instructions/*.md` | Reglas path-scoped para backend, frontend y tests |
+| 5 | `.github/copilot-instructions.md` | Flujo ASDD y diccionario de dominio |
 
-Una vez completados, los agentes tienen todo el contexto para operar de forma autónoma.
+Una vez validados, los agentes tienen el contexto minimo para operar de forma consistente con este repositorio.
 
-**No modificar**: `agents/`, `skills/`, `instructions/`, `.github/docs/lineamientos/`, `copilot-instructions.md`, `AGENTS.md`
+Si cambia el stack o la estructura de carpetas, actualiza primero `instructions/`, `agents/`, `skills/` y `prompts/`.
 
 ---
 
@@ -146,7 +145,7 @@ Al cerrar el feature:
 | Comando | Agente | Qué hace |
 |---|---|---|
 | `/asdd-orchestrate` | Orchestrator | Orquesta el flujo completo o muestra estado actual |
-| `/generate-spec` | Spec Generator | Genera spec técnica con validación INVEST/IEEE 830 |
+| `/generate-spec` | Spec Generator | Genera spec técnica alineada al stack real del repo |
 | `/implement-backend` | Backend Developer | Implementa feature completo en el backend |
 | `/implement-frontend` | Frontend Developer | Implementa feature completo en el frontend |
 | `/unit-testing` | Test Engineers | Genera suite de tests (backend + frontend) |
@@ -180,11 +179,11 @@ Inyectadas automáticamente por Copilot cuando el archivo activo coincide:
 
 | Archivo activo | Instructions aplicadas |
 |---|---|
-| `backend/**/*.py` (o equivalente) | `instructions/backend.instructions.md` |
-| `frontend/src/**/*.{js,jsx}` (o equivalente) | `instructions/frontend.instructions.md` |
-| `backend/tests/**` / `frontend/src/__tests__/**` | `instructions/tests.instructions.md` |
+| `apps/backend/src/**/*.cs` | `instructions/backend.instructions.md` |
+| `apps/frontend/src/**/*.{ts,tsx,js,jsx}` | `instructions/frontend.instructions.md` |
+| `apps/backend/src/Tests/**/*.cs` / `apps/frontend/test/**/*` | `instructions/tests.instructions.md` |
 
-> Si el proyecto usa otro stack, ajusta los patrones `applyTo:` de cada archivo.
+> Si cambian las rutas o el stack, ajusta los patrones `applyTo:` y los prompts antes de volver a usar los agentes.
 
 ---
 
@@ -210,7 +209,7 @@ Project Root/
 │   ├── api/                         ← documentación de API
 │   └── adr/                         ← Architecture Decision Records
 │
-└── .github/                         ← framework Copilot (auto-contenido para compartir)
+└── .github/                         ← framework Copilot del repositorio
     ├── README.md                    ← este archivo
     ├── AGENTS.md                    ← reglas críticas para todos los agentes
     ├── copilot-instructions.md      ← siempre activo en Copilot Chat
@@ -237,16 +236,16 @@ Project Root/
     │   ├── automation-flow-proposer/
     │   └── performance-analyzer/
     │
-    ├── docs/lineamientos/           ← guidelines del framework (incluidos al compartir)
+    ├── docs/lineamientos/           ← guidelines del framework
     │   ├── dev-guidelines.md
     │   └── qa-guidelines.md
     │
     ├── prompts/                     ← 8 prompts (/nombre en Copilot Chat)
     │
     ├── instructions/                ← aplicadas automáticamente por contexto de archivo
-    │   ├── backend.instructions.md  ← applyTo: backend/**
-    │   ├── frontend.instructions.md ← applyTo: frontend/src/**
-    │   └── tests.instructions.md   ← applyTo: tests/**
+    │   ├── backend.instructions.md  ← applyTo: apps/backend/src/**/*.cs
+    │   ├── frontend.instructions.md ← applyTo: apps/frontend/src/**/*
+    │   └── tests.instructions.md    ← applyTo: apps/backend/src/Tests/** y apps/frontend/test/**
     │
     ├── requirements/                ← requerimientos de negocio (input del pipeline)
     │   └── <feature>.md

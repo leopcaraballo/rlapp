@@ -48,9 +48,9 @@ Sistema de gestión de sala de espera médica (RLAPP) ha completado exitosamente
 ### 1.3 Arquitectura
 
 ```plaintext
-┌─ Next.js UI (rlapp-frontend)
+┌─ Next.js UI (apps/frontend)
 │
-├─ ASP.NET Core API (rlapp-backend)
+├─ ASP.NET Core API (apps/backend)
 │  ├─ Minimal API Controller (check-in)
 │  ├─ Domain (Patient Aggregate, Events)
 │  ├─ Application (Commands, Handlers)
@@ -652,7 +652,7 @@ Sistema RLAPP está certificado como **LISTO PARA PRODUCCIÓN CLÍNICA** a la fe
 
 - `docs/AI_WORKFLOW.md` - Registro detallado de interacciones
 - `docs/REPORTE_FINAL_VALIDACION_2026-03-01.md` - Este documento
-- Backend tests: `rlapp-backend/src/Tests/`
+- Backend tests: `apps/backend/src/Tests/`
 - Infrastructure: `docker-compose.yml`
 
 ---

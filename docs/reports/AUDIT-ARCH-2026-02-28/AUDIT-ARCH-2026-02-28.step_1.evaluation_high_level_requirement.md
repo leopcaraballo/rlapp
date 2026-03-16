@@ -280,7 +280,7 @@ CRITERIO-001.2: Identificar Acoplamientos No Intencionados
   Entonces: genera lista de acoplamientos con nombre de módulos, rutas de archivos y líneas de código exactas
 
 CRITERIO-001.3: Evaluar Separación Backend/Frontend
-  Dado que: existe código en rlapp-backend/ y rlapp-frontend/
+  Dado que: existe código en apps/backend/ y apps/frontend/
   Cuando: sistema verifica si existe código compartido no documentado entre ambas carpetas
   Entonces: reporta grado de separación (aislado / mínimamente acoplado / moderadamente acoplado / altamente acoplado)
 
@@ -312,7 +312,7 @@ ALTA — Es prerequisito para todas las auditorías especializadas. Sin diagnós
 
 **Descripción Completa:**
 
-El sistema debe ejecutar auditoría especializada del código backend (rlapp-backend/src/), evaluando adherencia a arquitectura limpia, DDD, patrones SOLID y estándares definidos en lineamientos. La auditoría debe analizar: (a) separación de capas (Domain/Application/Infrastructure) en cada módulo, (b) violaciones a Clean Architecture (lógica de negocio fuera del Domain, detalles de infraestructura filtrándose a capas superiores), (c) distinción entre modelos ricos vs. anémicos de dominio, (d) ubicación correcta de DTOs, (e) manejo de excepciones y validaciones, (f) código duplicado y muerto, (g) uso indebido de dependencias, (h) falta de validaciones en puntos críticos. Además, evalúa cobertura y calidad de testing (unitarios e integración). Entrega informe con hallazgos críticos (rojo), hallazgos moderados (amarillo) y mejoras recomendadas (verde).
+El sistema debe ejecutar auditoría especializada del código backend (apps/backend/src/), evaluando adherencia a arquitectura limpia, DDD, patrones SOLID y estándares definidos en lineamientos. La auditoría debe analizar: (a) separación de capas (Domain/Application/Infrastructure) en cada módulo, (b) violaciones a Clean Architecture (lógica de negocio fuera del Domain, detalles de infraestructura filtrándose a capas superiores), (c) distinción entre modelos ricos vs. anémicos de dominio, (d) ubicación correcta de DTOs, (e) manejo de excepciones y validaciones, (f) código duplicado y muerto, (g) uso indebido de dependencias, (h) falta de validaciones en puntos críticos. Además, evalúa cobertura y calidad de testing (unitarios e integración). Entrega informe con hallazgos críticos (rojo), hallazgos moderados (amarillo) y mejoras recomendadas (verde).
 
 **Cumplimiento de Criterios de Calidad:**
 
@@ -330,13 +330,13 @@ El sistema debe ejecutar auditoría especializada del código backend (rlapp-bac
 ```gherkin
 CRITERIO-002.1: Validar Separación de Capas
   Dado que: cada módulo backend debe tener estructura Domain/Application/Infrastructure
-  Cuando: sistema analiza paquetes y archivos dentro de rlapp-backend/src/Services/
+  Cuando: sistema analiza paquetes y archivos dentro de apps/backend/src/Services/
   Entonces: verifica que Domain no importa desde Infrastructure ni Application, genera lista de violaciones con archivo:línea
 
 CRITERIO-002.2: Detectar Lógica de Negocio Fuera del Dominio
   Dado que: reglas de negocio deben residir en capa Domain
   Cuando: análisis detecta lógica de validación o cálculo en Controllers o Services de Application
-  Entonces: reporta con severidad alta: "Lógica de negocio detectada en rlapp-backend/src/Services/WaitingRoom/WaitingRoom.API/Controllers/..."
+  Entonces: reporta con severidad alta: "Lógica de negocio detectada en apps/backend/src/Services/WaitingRoom/WaitingRoom.API/Controllers/..."
 
 CRITERIO-002.3: Evaluar Distinción entre Modelos Ricos y Anémicos
   Dado que: entidades de dominio deben encapsular lógica (ricos) no ser meros contenedores de datos
@@ -372,7 +372,7 @@ ALTA — Backend es componente crítico. Arquitectura deficiente del backend blo
 
 **Descripción Completa:**
 
-El sistema debe ejecutar auditoría especializada del código frontend (rlapp-frontend/src/), evaluando organización de componentes, separación UI/lógica, reutilización de componentes, acoplamiento indebido, gestión de estado, calidad de testing y accesibilidad (WCAG 2.1 AA). La auditoría debe analizar: (a) estructura de carpetas coherente con patrones definidos, (b) componentes sin lógica anidada (separación Container/Presenter), (c) reutilización efectiva de componentes (no duplicación), (d) acoplamiento de estado (prop drilling vs. context/global), (e) calidad de tests (unitarios vs. E2E balance), (f) cumplimiento de estándares de accesibilidad en elementos interactivos, (g) seguridad (sin datos sensibles en logs, sanitización de inputs). Entrega informe con hallazgos por categoría.
+El sistema debe ejecutar auditoría especializada del código frontend (apps/frontend/src/), evaluando organización de componentes, separación UI/lógica, reutilización de componentes, acoplamiento indebido, gestión de estado, calidad de testing y accesibilidad (WCAG 2.1 AA). La auditoría debe analizar: (a) estructura de carpetas coherente con patrones definidos, (b) componentes sin lógica anidada (separación Container/Presenter), (c) reutilización efectiva de componentes (no duplicación), (d) acoplamiento de estado (prop drilling vs. context/global), (e) calidad de tests (unitarios vs. E2E balance), (f) cumplimiento de estándares de accesibilidad en elementos interactivos, (g) seguridad (sin datos sensibles en logs, sanitización de inputs). Entrega informe con hallazgos por categoría.
 
 **Cumplimiento de Criterios de Calidad:**
 
@@ -390,7 +390,7 @@ El sistema debe ejecutar auditoría especializada del código frontend (rlapp-fr
 ```gherkin
 CRITERIO-003.1: Validar Estructura de Componentes
   Dado que: componentes deben seguir patrón Container/Presenter
-  Cuando: se inspeccionan archivos en rlapp-frontend/src/components/
+  Cuando: se inspeccionan archivos en apps/frontend/src/components/
   Entonces: reporta componentes que mezclan lógica con presentación (>100 líneas con lógica no separada)
 
 CRITERIO-003.2: Detectar Duplicación de Componentes
@@ -400,7 +400,7 @@ CRITERIO-003.2: Detectar Duplicación de Componentes
 
 CRITERIO-003.3: Evaluar Accesibilidad WCAG 2.1 AA
   Dado que: elementos interactivos deben cumplir estándares a11y
-  Cuando: Lighthouse + axe-core analizan rlapp-frontend/
+  Cuando: Lighthouse + axe-core analizan apps/frontend/
   Entonces: reporta puntuación de accesibilidad (target: >= 90/100) con detalles de violaciones
 
 CRITERIO-003.4: Validar Testing Coverage
@@ -415,7 +415,7 @@ CRITERIO-003.4: Validar Testing Coverage
 |---------|--------|-----------------------|------------|
 | Componentes mixtos (lógica+UI) | ESLint custom rule / manual | ≤ 5 componentes violadores | src/components/ solamente |
 | Duplicación componentes | Similitud semántica | ≤ 3% pares duplicados | Análisis de src/components/ |
-| Puntuación accesibilidad | Lighthouse API + axe-core | >= 90/100 en accesibilidad | rlapp-frontend/ en modo producción |
+| Puntuación accesibilidad | Lighthouse API + axe-core | >= 90/100 en accesibilidad | apps/frontend/ en modo producción |
 | Cobertura testing | Jest coverage report | >= 75% en src/ (excepto configuración) | npm test -- --coverage |
 | Componentes reutilizados | Conteo de imports | >= 50% componentes utilisados >=2 veces | src/components/ |
 
@@ -450,7 +450,7 @@ El sistema debe ejecutar auditoría de calidad integral, evaluando cobertura de 
 ```gherkin
 CRITERIO-004.1: Validar Pirámide de Testing
   Dado que: distribución ideal es 70% unitarios, 20% integración, 10% E2E
-  Cuando: se analizan tests en rlapp-backend/src/Tests/ y rlapp-frontend/test/
+  Cuando: se analizan tests en apps/backend/src/Tests/ y apps/frontend/test/
   Entonces: reporta distribución actual con recomendaciones de balanceo
 
 CRITERIO-004.2: Identificar Flujos Críticos Sin Cobertura E2E
@@ -477,7 +477,7 @@ CRITERIO-004.4: Revisar Criterios de Aceptación en Historias
 | Flujos críticos cubiertos | Mapeo manual vs. scripts E2E | 100% de 5-7 flujos críticos con E2E | Principales: login, registro, consulta |
 | Matriz riesgos completitud | Revisión de todos los RF/RNF | >=80% riesgos identificados (Alto/Medio/Bajo) | Basada en auditorías previas (RF-002, 003) |
 | Criterios aceptación completos | Inspección de HU | >=90% HU con criterios BDD | Historias en backlog |
-| Cobertura end-to-end | Reporte de test execution | >=60% de flujos e2e automatizados | Scripts en rlapp-frontend/test/e2e/ |
+| Cobertura end-to-end | Reporte de test execution | >=60% de flujos e2e automatizados | Scripts en apps/frontend/test/e2e/ |
 
 **Prioridad - Justificación:**
 MEDIA-ALTA — Calidad de testing es prerequisito para confianza en releases. Ejecutarse después de auditorías backend/frontend para tener contexto de lo que auditar. Hallazgos informan estrategia de QA futura.
@@ -593,7 +593,7 @@ CRITERIO-006.4: Listar Dependencias No Usadas
 
 | Métrica | Método | Criterio Aceptación | Condiciones |
 |---------|--------|-----------------------|------------|
-| Código muerto identificado | SonarQube / Roslyn / custom script | <=5 entidades no usadas | rlapp-backend/src/ + rlapp-frontend/src/ |
+| Código muerto identificado | SonarQube / Roslyn / custom script | <=5 entidades no usadas | apps/backend/src/ + apps/frontend/src/ |
 | Duplicación código | Similitud semántica + manual | <=3% código con duplicación >80% | Análisis de fuentes principales |
 | Documentación desactualizada | Búsqueda de referencias obsoletas | >=90% documentación actualizada en 12 meses | docs/, README, inline comments |
 | Dependencias innecesarias | npm list / gradle dependencies | <=10% dependencias no utilizadas | package.json + pom.xml |

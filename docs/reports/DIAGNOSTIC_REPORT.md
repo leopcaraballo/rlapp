@@ -84,8 +84,8 @@ function addIdempotencyKey(config) {
 
 **Prioridad 1: Actualizar Frontend**
 
-1. Revisar [rlapp-frontend/src/lib/httpClient.ts](rlapp-frontend/src/lib/httpClient.ts)
-2. Revisar [rlapp-frontend/src/services/](rlapp-frontend/src/services/)
+1. Revisar [apps/frontend/src/lib/httpClient.ts](apps/frontend/src/lib/httpClient.ts)
+2. Revisar [apps/frontend/src/services/](apps/frontend/src/services/)
 3. Agregar `Idempotency-Key` a todos los POST/PUT/DELETE
 4. Usar `crypto.randomUUID()` para cada solicitud
 

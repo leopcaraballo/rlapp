@@ -24,8 +24,8 @@ Este documento registra la colaboración humano-IA para el backend. Es evidencia
 - Tipo: Inicialización
 - Actor: IA
 - Solicitud: Creación de documentos de trazabilidad en backend
-- Resultado: Creación de este archivo y DEBT_REPORT.md en rlapp-backend/docs
-- Archivos: rlapp-backend/docs/AI_WORKFLOW.md, rlapp-backend/docs/DEBT_REPORT.md
+- Resultado: Creación de este archivo y DEBT_REPORT.md en apps/backend/docs
+- Archivos: apps/backend/docs/AI_WORKFLOW.md, apps/backend/docs/DEBT_REPORT.md
 - Commits: N/A
 - Estado: Completado
 
@@ -35,7 +35,7 @@ Este documento registra la colaboración humano-IA para el backend. Es evidencia
 - Actor: IA
 - Solicitud: Consolidar cambios, respetar Git Flow, reinicio Docker y pruebas de integración
 - Resultado: Commit firmado, rebase sobre origin/develop, push de rama, reinicio Docker completo y pruebas ejecutadas
-- Archivos: rlapp-backend/**
+- Archivos: apps/backend/**
 - Commits: 59b67b4 (chore(governance): add backend governance artifacts)
 - Observaciones: Docker compose levantado con advertencia de red existente. Frontend en estado unhealthy. Pruebas dotnet test: 96 OK, 0 fallos.
 - Estado: Completado
@@ -82,7 +82,7 @@ Este documento registra la colaboración humano-IA para el backend. Es evidencia
 - Actor: IA
 - Solicitud: Fase 2 del backend con precondición de Docker operativo
 - Resultado: Se levantó stack Docker, se verificó salud y se ejecutó Fase 2 técnica en backend
-- Archivos: rlapp-backend/src/Services/WaitingRoom/**, rlapp-backend/src/Tests/WaitingRoom.Tests.Integration/**, rlapp-backend/docs/**
+- Archivos: apps/backend/src/Services/WaitingRoom/**, apps/backend/src/Tests/WaitingRoom.Tests.Integration/**, apps/backend/docs/**
 - Commits: N/A
 - Evidencia: docker compose up -d, docker compose ps, dotnet test RLAPP.slnx (96/96)
 - Estado: Completado
@@ -93,7 +93,7 @@ Este documento registra la colaboración humano-IA para el backend. Es evidencia
 - Actor: IA
 - Solicitud: Reducir acoplamiento en adaptador HTTP y fortalecer validación de borde
 - Resultado: Se extrajo reproyección repetida a helper común en API y se aplicó filtro transversal de validación para DTOs con DataAnnotations
-- Archivos: rlapp-backend/src/Services/WaitingRoom/WaitingRoom.API/Program.cs, rlapp-backend/src/Services/WaitingRoom/WaitingRoom.API/Validation/RequestValidationFilter.cs, rlapp-backend/src/Services/WaitingRoom/WaitingRoom.Application/DTOs/*.cs
+- Archivos: apps/backend/src/Services/WaitingRoom/WaitingRoom.API/Program.cs, apps/backend/src/Services/WaitingRoom/WaitingRoom.API/Validation/RequestValidationFilter.cs, apps/backend/src/Services/WaitingRoom/WaitingRoom.Application/DTOs/*.cs
 - Commits: N/A
 - Estado: Completado
 
@@ -103,7 +103,7 @@ Este documento registra la colaboración humano-IA para el backend. Es evidencia
 - Actor: IA
 - Solicitud: Endurecer configuración y mejorar ejecución asíncrona de rebuild
 - Resultado: Se removieron secretos hardcodeados de appsettings de API/Worker y se desacopló el rebuild de proyección del token HTTP, con logging de error explícito
-- Archivos: rlapp-backend/src/Services/WaitingRoom/WaitingRoom.API/appsettings.json, rlapp-backend/src/Services/WaitingRoom/WaitingRoom.API/appsettings.Development.json, rlapp-backend/src/Services/WaitingRoom/WaitingRoom.Worker/appsettings.json, rlapp-backend/src/Services/WaitingRoom/WaitingRoom.API/Endpoints/WaitingRoomQueryEndpoints.cs
+- Archivos: apps/backend/src/Services/WaitingRoom/WaitingRoom.API/appsettings.json, apps/backend/src/Services/WaitingRoom/WaitingRoom.API/appsettings.Development.json, apps/backend/src/Services/WaitingRoom/WaitingRoom.Worker/appsettings.json, apps/backend/src/Services/WaitingRoom/WaitingRoom.API/Endpoints/WaitingRoomQueryEndpoints.cs
 - Commits: N/A
 - Estado: Completado
 
@@ -114,10 +114,10 @@ Este documento registra la colaboración humano-IA para el backend. Es evidencia
 - Solicitud: Aplicar TDD/BDD para asegurar calidad alineada a la lógica de negocio clínica, con patrón AAA, y verificar funcionamiento integral.
 - Resultado: Se ejecutó ciclo Red-Green-Refactor sobre pruebas de Check-In/seguridad/identidad con estructuración explícita Given-When-Then + AAA, se añadieron escenarios faltantes y se verificó regresión cero.
 - Archivos:
-  - rlapp-backend/src/Tests/WaitingRoom.Tests.Application/CommandHandlers/CheckInPatientCommandHandlerTests.cs
-  - rlapp-backend/src/Tests/WaitingRoom.Tests.Integration/API/ReceptionistOnlyFilterTests.cs
-  - rlapp-backend/src/Tests/WaitingRoom.Tests.Integration/API/ExceptionHandlerMiddlewareTests.cs
-  - rlapp-backend/src/Tests/WaitingRoom.Tests.Integration/Infrastructure/PostgresPatientIdentityRegistryTests.cs
+  - apps/backend/src/Tests/WaitingRoom.Tests.Application/CommandHandlers/CheckInPatientCommandHandlerTests.cs
+  - apps/backend/src/Tests/WaitingRoom.Tests.Integration/API/ReceptionistOnlyFilterTests.cs
+  - apps/backend/src/Tests/WaitingRoom.Tests.Integration/API/ExceptionHandlerMiddlewareTests.cs
+  - apps/backend/src/Tests/WaitingRoom.Tests.Integration/Infrastructure/PostgresPatientIdentityRegistryTests.cs
 - Escenarios BDD validados:
   - Given paciente existente con nombre distinto, When se registra, Then lanza conflicto de identidad controlado.
   - Given request sin rol Receptionist o rol incorrecto, When pasa por filtro, Then devuelve Forbid.
@@ -141,12 +141,12 @@ Este documento registra la colaboración humano-IA para el backend. Es evidencia
 - Solicitud: Actualizar documentación completa del backend, dejar trazabilidad total y crear documento de impacto sobre pruebas, TDD y BDD.
 - Resultado: Se actualizaron documentos canónicos y se creó reporte dedicado de impacto real de cambio.
 - Archivos:
-  - rlapp-backend/README.md
-  - rlapp-backend/docs/ARCHITECTURE.md
-  - rlapp-backend/docs/API.md
-  - rlapp-backend/docs/TESTING.md
-  - rlapp-backend/docs/DEBT.md
-  - rlapp-backend/docs/TDD_BDD_IMPACT_REPORT_2026-02-27.md
+  - apps/backend/README.md
+  - apps/backend/docs/ARCHITECTURE.md
+  - apps/backend/docs/API.md
+  - apps/backend/docs/TESTING.md
+  - apps/backend/docs/DEBT.md
+  - apps/backend/docs/TDD_BDD_IMPACT_REPORT_2026-02-27.md
 - Evidencia de validación:
   - WaitingRoom.Tests.Application: 12/12 exitosas.
   - WaitingRoom.Tests.Integration: 19/19 exitosas.

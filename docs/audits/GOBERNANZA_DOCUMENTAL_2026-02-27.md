@@ -8,10 +8,10 @@ Esta gobernanza documenta el resultado de la depuración y regeneración documen
 
 ## 2. Lista de documentación eliminada (con motivo)
 
-1. `rlapp-backend/READMEBACKEND.md`
+1. `apps/backend/READMEBACKEND.md`
    Motivo: documento masivo, redundante con README principal y con secciones no verificables en la base de código vigente.
 
-2. `rlapp-frontend/FEEDBACK_ESTEBAN_RODRIGUEZ.md`
+2. `apps/frontend/FEEDBACK_ESTEBAN_RODRIGUEZ.md`
    Motivo: documento de feedback puntual, no canónico y sin valor operativo/documental del estado actual.
 
 3. `docs/ORCHESTRATOR_SETUP.md`
@@ -28,10 +28,10 @@ Esta gobernanza documenta el resultado de la depuración y regeneración documen
 1. `docs/agent-context/PROJECT_CONTEXT.md`
    Cambio: corregido stack y topología a .NET + PostgreSQL + RabbitMQ + Next.js.
 
-2. `rlapp-backend/README.md`
+2. `apps/backend/README.md`
    Cambio: reemplazado por versión alineada a módulos reales, endpoints reales y estado real de seguridad.
 
-3. `rlapp-frontend/README.md`
+3. `apps/frontend/README.md`
    Cambio: reemplazado por versión alineada a runtime real (REST polling + SignalR), rutas reales y configuración efectiva.
 
 4. `docs/architecture/README.md`
@@ -98,27 +98,27 @@ Prioridad P3:
 
 ## 7. Estado de cierre
 
-Se dispone de una línea documental canónica sustentada en evidencia de código para arquitectura, flujos, módulos, riesgos, deuda y roadmap técnico. La siguiente iteración recomendada es ejecutar la depuración fina de `rlapp-backend/docs/**` para converger toda la documentación histórica a un único set operativo vigente.
+Se dispone de una línea documental canónica sustentada en evidencia de código para arquitectura, flujos, módulos, riesgos, deuda y roadmap técnico. La siguiente iteración recomendada es ejecutar la depuración fina de `apps/backend/docs/**` para converger toda la documentación histórica a un único set operativo vigente.
 
-## 8. Fase 2 ejecutada: depuración de `rlapp-backend/docs/**`
+## 8. Fase 2 ejecutada: depuración de `apps/backend/docs/**`
 
 En esta segunda fase se ejecutó la convergencia completa del árbol documental del backend:
 
 - Se eliminó documentación legacy en:
-  - `rlapp-backend/docs/architecture/**`
-  - `rlapp-backend/docs/compliance/**`
-  - `rlapp-backend/docs/governance/**`
+  - `apps/backend/docs/architecture/**`
+  - `apps/backend/docs/compliance/**`
+  - `apps/backend/docs/governance/**`
 - Se reemplazaron los documentos troncales por versiones canónicas:
-  - `rlapp-backend/docs/ARCHITECTURE.md`
-  - `rlapp-backend/docs/API.md`
-  - `rlapp-backend/docs/TESTING.md`
-  - `rlapp-backend/docs/OPERATING_MODEL.md`
-  - `rlapp-backend/docs/DEBT.md`
-  - `rlapp-backend/docs/PR_AUDIT_CHECKLIST.md`
+  - `apps/backend/docs/ARCHITECTURE.md`
+  - `apps/backend/docs/API.md`
+  - `apps/backend/docs/TESTING.md`
+  - `apps/backend/docs/OPERATING_MODEL.md`
+  - `apps/backend/docs/DEBT.md`
+  - `apps/backend/docs/PR_AUDIT_CHECKLIST.md`
 - Se creó índice canónico del directorio:
-  - `rlapp-backend/docs/README.md`
+  - `apps/backend/docs/README.md`
 
-Resultado: `rlapp-backend/docs` quedó reducido a documentación operativa vigente, sin capas históricas paralelas ni duplicidad semántica.
+Resultado: `apps/backend/docs` quedó reducido a documentación operativa vigente, sin capas históricas paralelas ni duplicidad semántica.
 
 ## 9. Fase 3 ejecutada: convergencia final de `docs` raíz
 

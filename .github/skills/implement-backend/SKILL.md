@@ -9,29 +9,27 @@ argument-hint: "<nombre-feature>"
 ## Prerequisitos
 1. Leer spec: `.github/specs/<feature>.spec.md` — sección 2 (modelos, endpoints)
 2. Leer stack: `.github/instructions/backend.instructions.md`
-3. Leer arquitectura: `.github/instructions/backend.instructions.md`
+3. Leer arquitectura: `apps/backend/README.md`
 
 ## Orden de implementación
 ```
-models → repositories → services → routes → registrar en punto de entrada
+DTOs/Commands -> Handlers -> Domain -> Infrastructure/Projections -> API wiring
 ```
 
 | Capa | Responsabilidad |
 |------|-----------------|
-| **Models / Schemas** | Validación de tipos e input/output (Create, Update, Response, Document) |
-| **Repositories** | Acceso a DB — queries CRUD sin lógica de negocio |
-| **Services** | Lógica de negocio pura — orquesta repositorios |
-| **Routes / Controllers** | Parsing HTTP + DI + delegar al service |
+| **DTOs / Commands** | Contratos de entrada y salida |
+| **Handlers** | Orquestacion del caso de uso |
+| **Domain** | Invariantes, aggregate, eventos |
+| **API / Endpoints** | HTTP mapping, DI, filtros, middlewares |
 
-## Patrón de DI (obligatorio en routes)
-- Inyectar dependencias en la firma del handler (no instanciar inline en el cuerpo)
-- El service recibe el repo por parámetro; el router instancia ambos
-
-Ver patrones específicos del stack en `.github/instructions/backend.instructions.md`.
+## Patron de DI
+- Registrar e inyectar dependencias via `WaitingRoom.API/Program.cs`.
+- Seguir el patron actual de Minimal API + handler + filtros por rol.
 
 ## Reglas
-Ver `.claude/rules/backend.md` — async, naming, errores, timestamps.
+Ver `.github/instructions/backend.instructions.md` — async, naming, errores, timestamps.
 
 ## Restricciones
-- Solo directorio de backend del proyecto. No tocar frontend.
+- Solo `apps/backend/`. No tocar frontend.
 - No generar tests (responsabilidad de `test-engineer-backend`).

@@ -33,14 +33,14 @@ docs/
 ├── API.md                (sí)
 ├── TDD_BDD_IMPACT_REPORT.md
 
-rlapp-backend/
+apps/backend/
 ├── docs/
 │   ├── ARCHITECTURE.md
 │   ├── API.md
 │   ├── DEBT.md
 │   ├── TESTING.md
 
-rlapp-frontend/
+apps/frontend/
 ├── README.md
 
 FALTA:
@@ -61,7 +61,7 @@ Analizando el dominio, se deducen las siguientes HU que **NO están explícitame
 #### HU-01: Registrar paciente en sala de espera
 
 **Ubicación en código:** WaitingQueue.CheckInPatient()
-**Línea:** [rlapp-backend/src/Services/WaitingRoom/WaitingRoom.Domain/Aggregates/WaitingQueue.cs:120-145](rlapp-backend/src/Services/WaitingRoom/WaitingRoom.Domain/Aggregates/WaitingQueue.cs#L120)
+**Línea:** [apps/backend/src/Services/WaitingRoom/WaitingRoom.Domain/Aggregates/WaitingQueue.cs:120-145](apps/backend/src/Services/WaitingRoom/WaitingRoom.Domain/Aggregates/WaitingQueue.cs#L120)
 **Evento dominio:** `PatientCheckedIn`
 **Backend handler:** `CheckInPatientCommandHandler`
 
@@ -97,7 +97,7 @@ Feature: Patient Check-in
 
 **Verificación de cumplimiento:**
 
-- ✅ Validación identidad: [rlapp-backend/docs/ARCHITECTURE.md#L25-L30](rlapp-backend/docs/ARCHITECTURE.md#L25)
+- ✅ Validación identidad: [apps/backend/docs/ARCHITECTURE.md#L25-L30](apps/backend/docs/ARCHITECTURE.md#L25)
 - ✅ Idempotencia: PatientIdentityRegistry compara
 - ✅ Error 409: ExceptionHandlerMiddleware convierte
 
@@ -106,7 +106,7 @@ Feature: Patient Check-in
 #### HU-02: Operario caja llama siguiente paciente
 
 **Ubicación:** WaitingQueue.CallNextAtCashier()
-**Línea:** [rlapp-backend/src/Services/WaitingRoom/WaitingRoom.Domain/Aggregates/WaitingQueue.cs:220-260](rlapp-backend/src/Services/WaitingRoom/WaitingRoom.Domain/Aggregates/WaitingQueue.cs#L220)
+**Línea:** [apps/backend/src/Services/WaitingRoom/WaitingRoom.Domain/Aggregates/WaitingQueue.cs:220-260](apps/backend/src/Services/WaitingRoom/WaitingRoom.Domain/Aggregates/WaitingQueue.cs#L220)
 **Evento:** `PatientCalledAtCashier`
 
 **Deducción:**
@@ -137,7 +137,7 @@ Feature: Call Next Patient at Cashier
 #### HU-03: Médico reclama paciente para consulta
 
 **Ubicación:** WaitingQueue.ClaimNextPatient()
-**Línea:** [rlapp-backend/src/Services/WaitingRoom/WaitingRoom.Domain/Aggregates/WaitingQueue.cs:150-175](rlapp-backend/src/Services/WaitingRoom/WaitingRoom.Domain/Aggregates/WaitingQueue.cs#L150)
+**Línea:** [apps/backend/src/Services/WaitingRoom/WaitingRoom.Domain/Aggregates/WaitingQueue.cs:150-175](apps/backend/src/Services/WaitingRoom/WaitingRoom.Domain/Aggregates/WaitingQueue.cs#L150)
 **Evento:** `PatientClaimedForAttention`
 
 **Deducción implícita:**
@@ -361,8 +361,8 @@ Feature: Real-time Waiting Room Monitor
 **Criticidad:** 🔴 **CRÍTICA**
 **Evidencia:**
 
-- PatientIdenti conflictValidation lógica en [PostgresPatientIdentityRegistry](rlapp-backend/src/Services/WaitingRoom/WaitingRoom.Infrastructure/Persistence/PatientIdentityRegistry.cs)
-- Priorizaciones en [WaitingQueue.ClaimNextPatient](rlapp-backend/src/Services/WaitingRoom/WaitingRoom.Domain/Aggregates/WaitingQueue.cs#L150)
+- PatientIdenti conflictValidation lógica en [PostgresPatientIdentityRegistry](apps/backend/src/Services/WaitingRoom/WaitingRoom.Infrastructure/Persistence/PatientIdentityRegistry.cs)
+- Priorizaciones en [WaitingQueue.ClaimNextPatient](apps/backend/src/Services/WaitingRoom/WaitingRoom.Domain/Aggregates/WaitingQueue.cs#L150)
 **Problema:** Médicos/operarios no leen código; modifican regla sin consultar
 **Recomendación:** Crear `docs/CLINICAL_SPECIFICATIONS.md`:
 

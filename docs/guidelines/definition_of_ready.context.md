@@ -2,7 +2,7 @@
 
 ## Propósito
 
-Este documento define las condiciones mínimas que una historia de usuario debe cumplir **antes de entrar a desarrollo** en el contexto del proyecto **Catálogo de Productos**.
+Este documento define las condiciones mínimas que una historia de usuario debe cumplir **antes de entrar a desarrollo** en el contexto del proyecto **RLAPP**.
 
 Su objetivo es asegurar que el equipo reciba historias claras, estimables, implementables en un sprint y alineadas con dominio, arquitectura y stack aprobados.
 
@@ -10,7 +10,7 @@ Su objetivo es asegurar que el equipo reciba historias claras, estimables, imple
 
 ## Alcance
 
-Aplica a todas las historias funcionales del backlog del contexto **Catálogo de Productos**.
+Aplica a todas las historias funcionales del backlog operativo de **RLAPP**.
 
 El DoR se valida en refinamiento y planificación. Si una historia no cumple los criterios obligatorios, debe volver a refinamiento.
 
@@ -36,7 +36,7 @@ Una historia está Ready cuando:
    - validaciones de entrada,
    - escenario de no encontrado o conflicto (según aplique),
    - error técnico controlado cuando sea relevante para el endpoint.
-3. Cada criterio es testeable y tiene resultado observable (estado HTTP, estructura de respuesta, mensaje/error esperado).
+3. Cada criterio es testeable y tiene resultado observable (estado HTTP, estructura de respuesta, cambio de estado, mensaje/error esperado).
 4. No deja decisiones abiertas de comportamiento (ejemplo: elegir entre `409` o `400` para el mismo caso sin regla explícita).
 
 ---
@@ -48,7 +48,7 @@ Una historia está Ready cuando:
 3. Response explícito: estructura JSON de éxito con campos definidos (evitar "objeto completo" sin contrato).
 4. Códigos HTTP definidos y coherentes con el estándar del proyecto (`200`, `201`, `400`, `404`, `409`, `500` según caso).
 5. Estructura de error acordada (mensaje general y detalle por campo cuando aplique).
-6. Comportamiento ante valores inválidos y duplicados especificado (ejemplo: unicidad de `code`, rango de `price`).
+6. Comportamiento ante valores inválidos, conflictos de identidad e idempotencia especificado cuando aplique.
 
 ---
 
@@ -56,15 +56,16 @@ Una historia está Ready cuando:
 
 1. La historia pertenece a un único bounded context o justifica explícitamente cruces.
 2. Encaja en la estructura por capas del módulo:
-   - `product-api`
-   - `product-application`
-   - `product-domain`
-   - `product-infrastructure`
+   - `API`
+   - `Application`
+   - `Domain`
+   - `Infrastructure`
 3. Respeta restricciones del stack aprobado:
-   - Java 21, Spring Boot 3.x,
-   - Spring WebFlux + Reactor,
-   - Spring Data R2DBC + PostgreSQL 15+.
-4. No exige tecnologías no homologadas ni mezcla de acceso bloqueante/reactivo.
+   - .NET 10 + ASP.NET Core Minimal API en backend,
+   - Event Sourcing + CQRS + Outbox,
+   - Next.js 16 + React 19 + TypeScript en frontend,
+   - PostgreSQL 16+ y RabbitMQ 3.x.
+4. No exige tecnologías no homologadas ni patrones paralelos al stack real.
 5. El impacto estructural esperado no supera el umbral de dispersión (máximo 3 features/módulos independientes).
 
 ---
@@ -87,7 +88,7 @@ Antes de pasar a desarrollo, debe existir:
 - [ ] Terminología validada contra `business_domain_dictionary.context.md`.
 - [ ] Criterios BDD completos y verificables.
 - [ ] Contrato API explícito (request/response/errores) cuando aplique.
-- [ ] Validaciones de negocio críticas definidas (ej. unicidad `code`, rango de `price`).
+- [ ] Validaciones de negocio críticas definidas (ej. identidad de paciente, prioridad, idempotencia, transición de estado).
 - [ ] Impacto arquitectónico identificado (módulos/capas afectadas).
 - [ ] Dependencias y riesgos documentados.
 - [ ] Aceptación del equipo en sesión de refinamiento/planning.

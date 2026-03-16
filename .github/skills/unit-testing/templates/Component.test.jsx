@@ -1,23 +1,23 @@
-// Plantilla para tests de componentes React con Vitest + Testing Library
-// Copia este archivo a frontend/src/__tests__/<Component>.test.jsx
+// Plantilla de referencia para tests de componentes con Jest + Testing Library.
+// Ajusta la ruta final segun la organizacion actual en apps/frontend/test o pruebas cercanas al codigo.
 
 import { render, screen, waitFor } from '@testing-library/react';
 import userEvent from '@testing-library/user-event';
-import { vi, describe, it, expect, beforeEach } from 'vitest';
+import { describe, it, expect, beforeEach, jest } from '@jest/globals';
 // import FeatureComponent from '../components/FeatureComponent';
 
 // Mock de módulos externos
-vi.mock('../hooks/useAuth', () => ({
-  useAuth: () => ({ user: { uid: 'test-uid', getIdToken: vi.fn().mockResolvedValue('fake-token') }, loading: false }),
+jest.mock('../hooks/useAuth', () => ({
+  useAuth: () => ({ user: { uid: 'test-uid', getIdToken: jest.fn().mockResolvedValue('fake-token') }, loading: false }),
 }));
 
-vi.mock('../services/featureService', () => ({
-  getFeature: vi.fn().mockResolvedValue({ name: 'Test Feature' }),
+jest.mock('../services/featureService', () => ({
+  getFeature: jest.fn().mockResolvedValue({ name: 'Test Feature' }),
 }));
 
 describe('FeatureComponent', () => {
   beforeEach(() => {
-    vi.clearAllMocks();
+    jest.clearAllMocks();
   });
 
   // ─── Happy Path ──────────────────────────────────────────────────────────
@@ -37,7 +37,7 @@ describe('FeatureComponent', () => {
   // ─── Error Path ─────────────────────────────────────────────────────────
 
   it('shows error message when fetch fails', async () => {
-    // vi.mocked(getFeature).mockRejectedValueOnce(new Error('Network error'));
+    // jest.mocked(getFeature).mockRejectedValueOnce(new Error('Network error'));
     // render(<FeatureComponent />);
     // await waitFor(() => {
     //   expect(screen.getByText(/error/i)).toBeInTheDocument();
@@ -47,7 +47,7 @@ describe('FeatureComponent', () => {
   // ─── User Interactions ───────────────────────────────────────────────────
 
   it('calls onSubmit with input value when form is submitted', async () => {
-    // const onSubmit = vi.fn();
+    // const onSubmit = jest.fn();
     // render(<FeatureComponent onSubmit={onSubmit} />);
     // await userEvent.type(screen.getByRole('textbox', { name: /name/i }), 'hello');
     // await userEvent.click(screen.getByRole('button', { name: /submit/i }));

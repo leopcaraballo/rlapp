@@ -2,16 +2,24 @@
 
 ## Backend aprobado
 
-- Java 21
-- Spring Boot 3.x
-- Spring WebFlux (programación reactiva)
-- Spring Data R2DBC
-- Reactor Core
+- .NET 10
+- ASP.NET Core Minimal API
+- Event Sourcing + CQRS
+- Outbox Pattern
+- xUnit, Moq y FluentAssertions para testing backend
 
-## Persistencia aprobada
+## Persistencia e integraciones aprobadas
 
-- PostgreSQL 15+
-- Acceso reactivo mediante R2DBC
+- PostgreSQL 16+
+- RabbitMQ 3.x
+- Event Store y read models segun la arquitectura del modulo WaitingRoom
+
+## Frontend aprobado
+
+- Next.js 16
+- React 19
+- TypeScript
+- Jest + Testing Library + Playwright
 
 ## API y contratos
 
@@ -21,18 +29,19 @@
 
 ## Tecnologías/librerías no aprobadas para este proyecto
 
-- Programación bloqueante para casos de uso del backend reactivo (ej. JPA/Hibernate bloqueante en flujos WebFlux)
-- Frameworks adicionales de servidor fuera del stack Spring definido
-- Motores NoSQL no homologados para el dominio de productos
+- Frameworks backend paralelos al stack actual sin justificación aprobada
+- Motores NoSQL como persistencia primaria del flujo clínico sin ADR explícito
+- Atajos de escritura que omitan Event Store, handlers o aggregates del dominio
+- Supuestos de Vite, React Router o Firebase en el frontend vigente
 
 ## Restricciones de diseño y antipatrones prohibidos
 
 - No usar singletons globales para estado mutable compartido.
-- No mezclar acceso bloqueante y reactivo en el mismo caso de uso.
+- No mutar estado clínico directamente desde endpoints, adaptadores o proyecciones.
 - No exponer errores internos de infraestructura en respuestas públicas.
 
 ## Capacidades y límites relevantes
 
-- Operaciones CRUD de catálogo son viables con el stack actual.
-- Validaciones de campos obligatorios y unicidad de `code` son soportadas.
-- Timestamps automáticos (`createdAt`, `updatedAt`) son soportados a nivel aplicación o persistencia.
+- El backend soporta commands, eventos, proyecciones e idempotencia para flujos clínicos y operativos.
+- El frontend soporta vistas operativas en tiempo real mediante SignalR/polling según el módulo.
+- Timestamps y contratos de persistencia deben mantenerse en UTC y con nomenclatura consistente del dominio.

@@ -106,5 +106,5 @@ El repositorio contiene suites en:
 Ejecución:
 
 ```bash
-dotnet test rlapp-backend/RLAPP.slnx
+cd apps/backend && dotnet test RLAPP.slnx
 ```

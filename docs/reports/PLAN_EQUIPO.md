@@ -8,7 +8,7 @@ Llevar el proyecto RLAPP desde su estado local funcional hasta un ecosistema pro
 
 ### 2.1 Dockerfiles
 
-| Aspecto | Backend (`rlapp-backend/Dockerfile`) | Frontend (`rlapp-frontend/Dockerfile`) |
+| Aspecto | Backend (`apps/backend/Dockerfile`) | Frontend (`apps/frontend/Dockerfile`) |
 | --- | --- | --- |
 | Multi-stage | Si (build + runtime) | No (imagen unica `node:20-slim`) |
 | Imagen base | `mcr.microsoft.com/dotnet/nightly/aspnet:10.0` | `node:20-slim` |
@@ -25,8 +25,8 @@ Llevar el proyecto RLAPP desde su estado local funcional hasta un ecosistema pro
 | Aplicacion backend | `WaitingRoom.Tests.Application` | 2 | Caja Blanca (unitario) | Sin reporte |
 | Proyecciones backend | `WaitingRoom.Tests.Projections` | 2 | Caja Blanca (unitario) | Sin reporte |
 | Integracion backend | `WaitingRoom.Tests.Integration` | 13 | Mixto: usa `WaitingRoomApiFactory` con fakes in-memory (son componente, no integracion real) + E2E pipeline que requiere infra real | Sin reporte |
-| Frontend componente | `rlapp-frontend/test/` | 71 archivos | Caja Blanca (unitario/componente) con Jest + RTL + MSW | Lines: 83.96%, Statements: 81.61%, Branches: 70.56% |
-| Frontend E2E | `rlapp-frontend/test/e2e/` | 2 | Playwright (Caja Negra parcial) | Sin reporte separado |
+| Frontend componente | `apps/frontend/test/` | 71 archivos | Caja Blanca (unitario/componente) con Jest + RTL + MSW | Lines: 83.96%, Statements: 81.61%, Branches: 70.56% |
+| Frontend E2E | `apps/frontend/test/e2e/` | 2 | Playwright (Caja Negra parcial) | Sin reporte separado |
 
 ### 2.3 Hallazgos criticos
 
@@ -61,7 +61,7 @@ Llevar el proyecto RLAPP desde su estado local funcional hasta un ecosistema pro
 La rubrica pide "Archivo Dockerfile optimizado y seguro en la raiz del repositorio". Al ser un monorepo con backend (.NET) y frontend (Next.js), existen dos opciones:
 
 - **Opcion A (recomendada)**: Crear un `Dockerfile` en la raiz que actue como multi-target build usando `--build-arg TARGET=api|frontend|worker`. De esta forma hay un unico Dockerfile en la raiz que cumple literalmente el requisito.
-- **Opcion B**: Mantener los Dockerfiles en subdirectorios (`rlapp-backend/Dockerfile`, `rlapp-frontend/Dockerfile`) y justificar en la defensa que en un monorepo profesional cada servicio tiene su propio Dockerfile junto a su codigo fuente. Documentar esta decision en el `TEST_PLAN.md` como parte de la estrategia de inmutabilidad.
+- **Opcion B**: Mantener los Dockerfiles en subdirectorios (`apps/backend/Dockerfile`, `apps/frontend/Dockerfile`) y justificar en la defensa que en un monorepo profesional cada servicio tiene su propio Dockerfile junto a su codigo fuente. Documentar esta decision en el `TEST_PLAN.md` como parte de la estrategia de inmutabilidad.
 
 **Decision**: Evaluar con Leopoldo cual opcion tomar. Si se elige Opcion A, Jhorman crea el Dockerfile raiz. Si se elige Opcion B, preparar la justificacion tecnica para la defensa.
 
@@ -78,10 +78,10 @@ La rubrica pide "Archivo Dockerfile optimizado y seguro en la raiz del repositor
    - `RUN adduser --disabled-password --gecos '' --uid 1001 appuser`
    - `USER appuser`
 2. Agregar metadata con `LABEL` (maintainer, version, description).
-3. Agregar `.dockerignore` en `rlapp-backend/` para excluir `bin/`, `obj/`, `*.md`, `tests/`.
+3. Agregar `.dockerignore` en `apps/backend/` para excluir `bin/`, `obj/`, `*.md`, `tests/`.
 4. Verificar que el healthcheck (`curl`) sigue funcionando con usuario no-root.
 
-**Archivos a modificar**: `rlapp-backend/Dockerfile`, crear `rlapp-backend/.dockerignore`.
+**Archivos a modificar**: `apps/backend/Dockerfile`, crear `apps/backend/.dockerignore`.
 
 #### Tarea J2: Reescribir Dockerfile frontend (multi-stage produccion)
 
@@ -92,10 +92,10 @@ La rubrica pide "Archivo Dockerfile optimizado y seguro en la raiz del repositor
    - Etapa 1 (`deps`): instalar dependencias con `npm ci`.
    - Etapa 2 (`builder`): ejecutar `next build` para generar el artefacto standalone.
    - Etapa 3 (`runner`): imagen minima `node:20-alpine`, copiar solo `.next/standalone` y `.next/static`, usuario no-root.
-2. Agregar `.dockerignore` en `rlapp-frontend/` para excluir `node_modules/`, `.next/`, `coverage/`, `test/`.
+2. Agregar `.dockerignore` en `apps/frontend/` para excluir `node_modules/`, `.next/`, `coverage/`, `test/`.
 3. Mantener el Dockerfile de desarrollo actual renombrado como `Dockerfile.dev` si se requiere hot-reload local.
 
-**Archivos a crear/modificar**: `rlapp-frontend/Dockerfile`, crear `rlapp-frontend/.dockerignore`, opcionalmente `rlapp-frontend/Dockerfile.dev`.
+**Archivos a crear/modificar**: `apps/frontend/Dockerfile`, crear `apps/frontend/.dockerignore`, opcionalmente `apps/frontend/Dockerfile.dev`.
 
 #### Tarea J3: Crear pipeline CI/CD (`.github/workflows/ci.yml`)
 
@@ -171,7 +171,7 @@ Jobs (en orden de dependencia):
    - `"test:component": "jest --ci --coverage --testPathIgnorePatterns='e2e'"`.
 4. Asegurar que el job `component-tests` del pipeline ejecute este script.
 
-**Archivos a modificar**: `rlapp-frontend/package.json`.
+**Archivos a modificar**: `apps/frontend/package.json`.
 
 #### Tarea J5: Redactar `TEST_PLAN.md`
 
@@ -296,7 +296,7 @@ Jobs (en orden de dependencia):
    - Caso de error: check-in con datos faltantes retorna 400.
    - Caso de negocio: check-in duplicado (mismo paciente) retorna respuesta coherente.
 
-**Archivos a crear**: `rlapp-backend/src/Tests/WaitingRoom.Tests.Integration/BlackBox/` o `scripts/black-box-test.sh`.
+**Archivos a crear**: `apps/backend/src/Tests/WaitingRoom.Tests.Integration/BlackBox/` o `scripts/black-box-test.sh`.
 
 #### Tarea L4: Aportar Test Cases backend para `TEST_PLAN.md`
 

@@ -2,9 +2,9 @@
 
 ## Propósito
 
-Este documento define los criterios mínimos de calidad y completitud para considerar **terminada** una historia de usuario del proyecto.
+Este documento define los criterios mínimos de calidad y completitud para considerar **terminada** una historia de usuario del proyecto **RLAPP**.
 
-Aplica a todo el backlog del contexto **Catálogo de Productos** y debe usarse como acuerdo transversal de equipo para evitar ambigüedades en entrega.
+Aplica a todo el backlog operativo de **RLAPP** y debe usarse como acuerdo transversal de equipo para evitar ambigüedades en entrega.
 
 ---
 
@@ -31,7 +31,7 @@ Para historias que exponen o modifican API REST:
 2. Contrato de request y response especificado sin usar expresiones abiertas como "objeto completo".
 3. Códigos HTTP alineados al estándar del proyecto (`201`, `200`, `400`, `404`, `409`, `500` según aplique).
 4. Respuestas de error definidas en formato JSON consistente.
-5. Validaciones de entrada cubiertas para campos obligatorios, tipos y reglas de negocio relevantes (por ejemplo unicidad de `code`, rango de `price`).
+5. Validaciones de entrada cubiertas para campos obligatorios, tipos y reglas de negocio relevantes (por ejemplo identidad del paciente, prioridad, idempotencia, transiciones válidas).
 
 ---
 
@@ -40,14 +40,14 @@ Para historias que exponen o modifican API REST:
 La implementación se considera "Done" cuando:
 
 1. Respeta el estilo en capas por feature:
-   - `product-api`
-   - `product-application`
-   - `product-domain`
-   - `product-infrastructure`
+   - `API`
+   - `Application`
+   - `Domain`
+   - `Infrastructure`
 2. Mantiene separación de responsabilidades:
    - el controlador no contiene lógica de negocio compleja,
    - el dominio no depende de infraestructura.
-3. Mantiene consistencia reactiva extremo a extremo (WebFlux + Reactor + acceso R2DBC sin mezclas bloqueantes).
+3. Mantiene consistencia con la arquitectura vigente del repositorio (Minimal API, Event Sourcing, CQRS, Outbox y proyecciones cuando apliquen).
 4. No introduce tecnologías fuera del stack aprobado.
 5. No cruza bounded contexts sin justificación explícita y aprobada.
 6. La dispersión estructural está dentro del umbral definido (máximo 3 módulos/features independientes impactados por historia).
@@ -60,7 +60,7 @@ La implementación se considera "Done" cuando:
 2. Nombres de clases, métodos, paquetes y carpetas coherentes con responsabilidad de dominio.
 3. Sin antipatrones prohibidos:
    - estado mutable global en singletons,
-   - mezcla de acceso bloqueante/reactivo en el mismo caso de uso,
+   - bypass del aggregate o del Event Store en mutaciones del dominio,
    - exposición de errores internos de infraestructura al consumidor.
 4. Manejo de errores consistente con contrato público del API.
 
@@ -72,7 +72,7 @@ Una historia está "Done" cuando:
 
 1. Tiene evidencia de pruebas exitosas para sus criterios de aceptación.
 2. Incluye pruebas del caso feliz y de los escenarios de error esperados.
-3. Las validaciones de negocio críticas quedan cubiertas por pruebas (ej. duplicado de `code`, datos inválidos).
+3. Las validaciones de negocio críticas quedan cubiertas por pruebas (ej. conflicto de identidad, datos inválidos, idempotencia, cambios de estado).
 4. Los cambios no rompen contratos existentes del módulo.
 
 > Nota: el nivel de pruebas (unitarias, integración, contrato/API) se decide por impacto, pero siempre debe existir evidencia verificable en el entregable.
@@ -95,7 +95,7 @@ Antes de mover una historia a "Done", validar:
 - [ ] Requerimiento semánticamente válido según diccionario de dominio.
 - [ ] Criterios BDD completos y verificables.
 - [ ] Contrato API explícito (request/response/errores).
-- [ ] Implementación alineada con arquitectura por capas y enfoque reactivo.
+- [ ] Implementación alineada con arquitectura por capas y stack vigente del repositorio.
 - [ ] Pruebas ejecutadas con resultado satisfactorio para escenarios clave.
 - [ ] Sin antipatrones ni desvíos de stack aprobados.
 - [ ] Documentación/artefactos actualizados.

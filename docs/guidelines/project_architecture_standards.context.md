@@ -11,16 +11,15 @@ Debe usarse como referencia obligatoria durante análisis, refinamiento e implem
 ## 1) Patrones arquitectónicos aprobados
 
 1. Arquitectura por capas dentro de cada feature:
-   - `api`
-   - `application`
-   - `domain`
-   - `infrastructure`
+   - `API`
+   - `Application`
+   - `Domain`
+   - `Infrastructure`
 2. Diseño por bounded context (separación explícita de dominios).
-3. Backend reactivo end-to-end:
-   - Spring WebFlux + Reactor
-   - Persistencia reactiva con R2DBC
-4. Enfoque por casos de uso en capa `application`.
+3. Backend basado en Event Sourcing + CQRS + Outbox Pattern.
+4. Enfoque por casos de uso en capa `Application`.
 5. Contratos API versionados por ruta (`/api/v1/...`).
+6. Frontend con App Router y separación entre `app`, `application`, `domain`, `infrastructure`, `components` y `hooks`.
 
 ---
 
@@ -29,7 +28,7 @@ Debe usarse como referencia obligatoria durante análisis, refinamiento e implem
 ### `api`
 
 - Orquesta request/response HTTP.
-- Valida formato de entrada y delega en `application`.
+- Valida formato de entrada y delega en `Application`.
 - No contiene reglas de negocio complejas.
 
 ### `application`
@@ -52,8 +51,8 @@ Debe usarse como referencia obligatoria durante análisis, refinamiento e implem
 
 ## 3) Principios de acoplamiento y cohesión
 
-1. **Dependencia hacia adentro**: `api` -> `application` -> `domain`.
-2. **Dominio aislado**: `domain` no depende de `infrastructure` ni de componentes web.
+1. **Dependencia hacia adentro**: `API` -> `Application` -> `Domain`.
+2. **Dominio aislado**: `Domain` no depende de `Infrastructure` ni de componentes web.
 3. **Bajo acoplamiento entre contextos**: evitar dependencias directas entre bounded contexts.
 4. **Alta cohesión por feature**: una historia debe concentrar cambios en un módulo funcional principal.
 5. **Contratos explícitos**: integración entre capas mediante interfaces/puertos claros.
@@ -73,44 +72,11 @@ Debe usarse como referencia obligatoria durante análisis, refinamiento e implem
 
 ## 5) Decisiones de diseño vigentes (resumen operacional)
 
-<!-- Referencias de ejemplo - actualizar según proyecto específico -->
-<!-- Config: {project-root}/docs/config/config.yaml -->
-<!-- Agents: {project-root}/.github/agents/ -->
-<!-- Output: {project-root}/.github/_gaidd-output -->
-<!-- Context: {project-root}/docs/context -->
-
-Ahora verifico los archivos de contexto disponibles y los de validación del paso anterior.
-
----
-
-¡Hola, Julian! Soy **Tomás**, analista técnico senior de requerimientos. He recibido el artefacto **HU-P001: Registrar Nuevo Producto en el Catálogo** y procedo a verificar los insumos necesarios para ejecutar el análisis técnico.
-
----
-
-## Verificación de Insumos
-
-**✅ Artefacto recibido:** `HU-P001` — Registrar Nuevo Producto en el Catálogo
-
-**✅ Archivos de contexto disponibles:**
-- `business_domain_dictionary.context.md`
-- `project_architecture.context.md`
-- `project_structure_principles.context.md`
-- `tech_stack_constraints.context.md`
-
----
-
-**❌ Archivos requeridos NO encontrados:**
-
-Los siguientes archivos son necesarios para continuar y no se encuentran en el workspace:
-
-| # | Archivo | Ubicación esperada | Para qué sirve |
-|---|---------|-------------------|----------------|
-| 1 | `HU-P001.step_2.requirement-validator.md` | `_gaidd-output/HU-P001/` | Resultado de la validación del requerimiento en el Paso 2: completitud, claridad, viabilidad técnica, hallazgos y recomendaciones específicas. Sin este insumo no es posible contextualizar qué ambigüedades o riesgos ya fueron identificados. |
-| 2 | `HU-P001.step_2.resolution-of-conflicts.md` | `_gaidd-output/HU-P001/` | Registro de cómo se resolvieron los conflictos y ambigüedades detectados en el Paso 2. Es necesario para no repetir análisis ya realizados ni contradecir resoluciones tomadas. |
-1. El estilo base del backend es reactivo (WebFlux + Reactor + R2DBC).
-2. El módulo de Catálogo de Productos mantiene separación estricta por capas.
-3. La API REST del proyecto usa contratos JSON y versionado por ruta.
-4. Las historias que impacten más de 3 módulos/features independientes deben reevaluarse para descomposición.
+1. El backend principal vive en `apps/backend/` y usa .NET 10 con ASP.NET Minimal API.
+2. El dominio central implementa Event Sourcing, CQRS y Outbox Pattern sobre PostgreSQL y RabbitMQ.
+3. El frontend principal vive en `apps/frontend/` y usa Next.js App Router con React 19 y TypeScript.
+4. Los contratos públicos y la terminología deben respetar el diccionario operativo de RLAPP.
+5. Las historias que impacten múltiples módulos o bounded contexts deben evaluarse para descomposición antes de implementarse.
 
 ---
 
@@ -121,7 +87,7 @@ Una propuesta de análisis se considera alineada cuando:
 - [ ] Identifica bounded context principal.
 - [ ] Ubica responsabilidades en capas correctas.
 - [ ] Evita antipatrones prohibidos.
-- [ ] Respeta stack y enfoque reactivo vigentes.
+- [ ] Respeta stack y arquitectura vigentes del repositorio.
 - [ ] No contradice ADRs activos (`architecture_decision_records.context.md`).
 
 ---

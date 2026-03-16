@@ -75,7 +75,7 @@ Este documento registra la deuda tecnica identificada, resuelta, y pendiente en 
 | Categoria | DevOps |
 | Descripcion | Contenedores ejecutando como root, sin limites de memoria, sin cap_drop, sin healthchecks en Dockerfiles. |
 | Resolucion | Non-root user (appuser:1001), read_only FS, cap_drop ALL, no-new-privileges, memory limits, HEALTHCHECK |
-| Archivos | `rlapp-backend/Dockerfile`, `rlapp-frontend/Dockerfile`, `docker-compose.yml` |
+| Archivos | `apps/backend/Dockerfile`, `apps/frontend/Dockerfile`, `docker-compose.yml` |
 | Branch | `feature/docker-hardening` |
 | Tests | `docker compose config` validacion |
 

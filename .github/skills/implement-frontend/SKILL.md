@@ -8,29 +8,29 @@ argument-hint: "<nombre-feature>"
 
 ## Prerequisitos
 1. Leer spec: `.github/specs/<feature>.spec.md` — sección 2.3 (componentes, páginas, hooks)
-2. Leer stack: `.github/instructions/backend.instructions.md`
-3. Leer arquitectura: `.github/instructions/backend.instructions.md`
+2. Leer stack: `.github/instructions/frontend.instructions.md`
+3. Leer arquitectura: `apps/frontend/README.md`
 
 ## Orden de implementación
 ```
-services → hooks/state → components → pages/views → registrar ruta
+services -> application/hooks -> components -> app routes
 ```
 
 | Capa | Responsabilidad |
 |------|-----------------|
-| **Services** | Llamadas HTTP al backend — sin estado, sin lógica de negocio |
-| **Hooks / State** | Estado local, efectos, acciones — consume services |
-| **Components** | UI reutilizable — recibe props, emite eventos |
-| **Pages / Views** | Composición final — layout + rutas |
+| **Services** | Llamadas HTTP, SignalR y adaptadores de infraestructura |
+| **Application / Hooks** | Casos de uso de UI, estado, efectos, acciones |
+| **Components** | UI reutilizable alineada a App Router |
+| **App Routes** | Pantallas en `src/app/**` con layout y navigation |
 
 ## Patrones obligatorios
-- Auth state: consumir SÓLO desde el hook/store de auth del proyecto (ver contexto)
-- Variables de entorno: URL del API siempre desde variables de entorno, nunca hardcodeada
-- Token en header: `Authorization: Bearer <token>` en todas las llamadas protegidas
-- Estilos: usar ÚNICAMENTE el sistema de estilos aprobado en el proyecto (ver contexto)
+- Respetar App Router y la organización actual en `src/app`, `src/components`, `src/application`, `src/infrastructure`.
+- Variables de entorno: usar solo `NEXT_PUBLIC_*` cuando el valor deba exponerse al cliente.
+- No hardcodear URLs del backend ni credenciales.
+- Seguir los patrones ya existentes de componentes cliente/servidor.
 
-Ver patrones específicos en `.claude/rules/frontend.md` y `.github/instructions/backend.instructions.md`.
+Ver patrones específicos en `.github/instructions/frontend.instructions.md`.
 
 ## Restricciones
-- Solo directorio de frontend del proyecto. No tocar backend.
+- Solo `apps/frontend/`. No tocar backend.
 - No generar tests (responsabilidad de `test-engineer-frontend`).

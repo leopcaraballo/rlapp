@@ -21,7 +21,7 @@ cambiar
 ### 2.2 Evidencia de falla
 
 - Comando ejecutado:
-  - `dotnet test rlapp-backend/RLAPP.slnx --filter "<filtro>"`
+  - `dotnet test apps/backend/RLAPP.slnx --filter "<filtro>"`
   - `npm test -- --runInBand --testPathPattern="<patrón>"`
 - Resultado observado:
   - <mensaje de error / assert fallido>
@@ -40,7 +40,7 @@ cambiar
 ### 3.2 Evidencia de paso
 
 - Comando ejecutado:
-  - `dotnet test rlapp-backend/RLAPP.slnx --filter "<filtro>"`
+  - `dotnet test apps/backend/RLAPP.slnx --filter "<filtro>"`
   - `npm test -- --runInBand --testPathPattern="<patrón>"`
 - Resultado observado:
   - <tests en verde>
@@ -57,8 +57,8 @@ cambiar
 ### 4.2 Evidencia de no regresión
 
 - Comando de regresión:
-  - `dotnet test rlapp-backend/RLAPP.slnx --configuration Release --verbosity minimal`
-  - `cd rlapp-frontend && npm test -- --runInBand`
+  - `dotnet test apps/backend/RLAPP.slnx --configuration Release --verbosity minimal`
+  - `cd apps/frontend && npm test -- --runInBand`
 - Resultado:
   - <sin regresiones>
 

@@ -2,30 +2,31 @@
 
 ## Estilo arquitectónico
 
-- Arquitectura en capas con separación por módulos de dominio.
-- Backend reactivo orientado a casos de uso (WebFlux + servicios de aplicación + repositorios).
+- Monorepo con separación por aplicaciones (`apps/backend`, `apps/frontend`) y capas por módulo.
+- Backend basado en ASP.NET Core Minimal API, Event Sourcing, CQRS y Outbox Pattern.
+- Frontend basado en Next.js App Router con separación entre `app`, `application`, `domain`, `infrastructure`, `components` y `hooks`.
 
 ## Bounded contexts
 
-- **Catálogo de Productos**: alta, consulta, actualización y baja de productos.
-- **Gestión de Usuarios y Roles**: autenticación/autorización.
-- **Facturación**: procesos financieros posteriores a venta.
+- **Waiting Room**: registro de pacientes, colas, atención y proyecciones operativas.
+- **Gestión de Roles y Acceso**: controles de Recepcionista, Cajero, Doctor y Administrador.
+- **Monitoreo y Visualización**: dashboard, display y vistas de lectura en tiempo real.
 
 ## Módulos principales y responsabilidades
 
-- `product-api`: controladores REST de productos.
-- `product-application`: casos de uso y reglas de negocio de productos.
-- `product-domain`: entidades/objetos de valor y validaciones de dominio.
-- `product-infrastructure`: repositorios y adaptadores técnicos.
+- `WaitingRoom.API`: endpoints, middlewares, filtros y wiring de dependencias.
+- `WaitingRoom.Application`: commands, DTOs, handlers y puertos.
+- `WaitingRoom.Domain`: aggregates, invariantes, value objects y eventos.
+- `WaitingRoom.Infrastructure` y `WaitingRoom.Projections`: persistencia, mensajería y modelos de lectura.
 
 ## Restricciones arquitectónicas
 
-1. El contexto de Catálogo no debe incluir lógica de Facturación.
-2. Los controladores no contienen lógica de negocio compleja; delegan en aplicación.
-3. El dominio no depende de infraestructura.
-4. Debe mantenerse consistencia del estilo reactivo de extremo a extremo.
+1. Los endpoints no contienen lógica clínica compleja; delegan en handlers y aggregates.
+2. El dominio no depende de infraestructura ni de detalles HTTP.
+3. Las mutaciones de estado pasan por commands, handlers, aggregates y Event Store.
+4. Las proyecciones y vistas de lectura no deben convertirse en la fuente de verdad del dominio.
 
 ## Criterios de encaje para requerimientos
 
-- Requerimientos de creación de producto pertenecen al bounded context **Catálogo de Productos**.
-- Cambios que crucen Catálogo + Facturación en una sola historia requieren descomposición.
+- Requerimientos de registro, atención o monitoreo de pacientes pertenecen al bounded context **Waiting Room**.
+- Cambios que crucen múltiples contextos o módulos operativos en una sola historia requieren descomposición.

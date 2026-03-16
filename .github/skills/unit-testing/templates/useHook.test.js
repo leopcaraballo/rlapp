@@ -1,34 +1,34 @@
-// Plantilla para tests de hooks React con Vitest + Testing Library
-// Copia este archivo a frontend/src/__tests__/use<Hook>.test.js
+// Plantilla de referencia para tests de hooks con Jest + Testing Library.
+// Ajusta la ruta final segun la organizacion actual en apps/frontend/test o pruebas cercanas al codigo.
 
 import { renderHook, act, waitFor } from '@testing-library/react';
-import { vi, describe, it, expect, beforeEach } from 'vitest';
+import { describe, it, expect, beforeEach, jest } from '@jest/globals';
 // import { useFeature } from '../hooks/useFeature';
 
-vi.mock('../hooks/useAuth', () => ({
+jest.mock('../hooks/useAuth', () => ({
   useAuth: () => ({
     user: {
       uid: 'test-uid',
-      getIdToken: vi.fn().mockResolvedValue('fake-token'),
+      getIdToken: jest.fn().mockResolvedValue('fake-token'),
     },
     loading: false,
   }),
 }));
 
-vi.mock('../services/featureService', () => ({
-  getFeature: vi.fn(),
+jest.mock('../services/featureService', () => ({
+  getFeature: jest.fn(),
 }));
 
 describe('useFeature', () => {
   beforeEach(() => {
-    vi.clearAllMocks();
+    jest.clearAllMocks();
   });
 
   // ─── Happy Path ──────────────────────────────────────────────────────────
 
   it('returns data after successful fetch', async () => {
     // const { getFeature } = await import('../services/featureService');
-    // vi.mocked(getFeature).mockResolvedValue({ name: 'Test' });
+    // jest.mocked(getFeature).mockResolvedValue({ name: 'Test' });
     //
     // const { result } = renderHook(() => useFeature());
     //
@@ -44,7 +44,7 @@ describe('useFeature', () => {
 
   it('sets error when fetch fails', async () => {
     // const { getFeature } = await import('../services/featureService');
-    // vi.mocked(getFeature).mockRejectedValue(new Error('API Error'));
+    // jest.mocked(getFeature).mockRejectedValue(new Error('API Error'));
     //
     // const { result } = renderHook(() => useFeature());
     //
@@ -59,7 +59,7 @@ describe('useFeature', () => {
   // ─── Edge Cases ─────────────────────────────────────────────────────────
 
   it('does not fetch when user is null', async () => {
-    // vi.mocked from useAuth: user = null
+    // mock from useAuth: user = null
     // const { result } = renderHook(() => useFeature());
     // await act(async () => {});
     // expect(result.current.loading).toBe(true); // never resolves without user

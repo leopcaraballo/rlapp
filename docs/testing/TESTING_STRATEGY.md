@@ -122,7 +122,7 @@ Ejemplo: `RegisterPatient_WithValidData_ShouldEmitPatientRegisteredEvent`
 
 ```bash
 # Todas las pruebas (183)
-cd rlapp-backend && dotnet test RLAPP.slnx --configuration Release
+cd apps/backend && dotnet test RLAPP.slnx --configuration Release
 
 # Solo dominio (91 pruebas, < 5s)
 dotnet test src/Tests/WaitingRoom.Tests.Domain/

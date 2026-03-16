@@ -8,8 +8,8 @@ argument-hint: "<nombre-feature> [backend|frontend|ambos]"
 
 ## Definition of Done — verificar al completar
 
-- [ ] Cobertura ≥ 80% en lógica de negocio (quality gate bloqueante)
-- [ ] Tests aislados — sin conexión a DB real ni Firebase (siempre mocks)
+- [ ] Cobertura adecuada en la lógica modificada y escenarios criticos de la spec
+- [ ] Tests aislados — sin conexión a PostgreSQL, RabbitMQ ni servicios externos reales
 - [ ] Escenario feliz + errores de negocio + validaciones de entrada cubiertos
 - [ ] Los cambios no rompen contratos existentes del módulo
 
@@ -17,52 +17,54 @@ argument-hint: "<nombre-feature> [backend|frontend|ambos]"
 
 ```
 .github/specs/<feature>.spec.md        (criterios de aceptación)
-código implementado en backend/ y/o frontend/
-.github/instructions/backend.instructions.md   (pytest + pytest-asyncio)
-.github/instructions/frontend.instructions.md  (Vitest + Testing Library)
+código implementado en apps/backend/ y/o apps/frontend/
+.github/instructions/tests.instructions.md     (xUnit/Moq/FluentAssertions + Jest/Playwright)
 ```
 
 ## Output por scope
 
-### Backend → `backend/tests/`
+### Backend → `apps/backend/src/Tests/`
 
 | Archivo | Cubre |
 |---------|-------|
-| `routes/test_<feature>_router.py` | Endpoints: 200/201, 400, 401, 404, 422 |
-| `services/test_<feature>_service.py` | Lógica: happy path + errores de negocio |
-| `repositories/test_<feature>_repository.py` | Queries: parámetros y retornos correctos |
+| `WaitingRoom.Tests.Domain/...` | Reglas de dominio e invariantes |
+| `WaitingRoom.Tests.Application/...` | Handlers, validaciones y casos de uso |
+| `WaitingRoom.Tests.Integration/...` | Endpoints, persistencia e integraciones necesarias |
 
-### Frontend → `frontend/src/__tests__/`
+### Frontend → `apps/frontend/test/` o `apps/frontend/src/**/__tests__/`
 
 | Archivo | Cubre |
 |---------|-------|
-| `components/<Feature>.test.jsx` | Render + interacciones (click, submit) |
-| `hooks/use<Feature>.test.js` | Estado inicial + respuesta API + error handling |
-| `pages/<Feature>Page.test.jsx` | Render completo con providers |
+| `test/components/<Feature>.test.tsx` | Render + interacciones |
+| `test/hooks/use<Feature>.test.tsx` | Estado, efectos, errores |
+| `test/e2e/<feature>.spec.ts` | Flujo navegador si la spec lo exige |
 
 ## Patrones core
 
-```python
-# Backend — AAA con AsyncMock (pytest-asyncio)
-@pytest.mark.asyncio
-async def test_create_success():
-    repo = AsyncMock()
-    repo.find_by_name.return_value = None
-    repo.insert.return_value = {"uid": "abc", "name": "test"}
-    result = await FeatureService(repo).create(FeatureCreate(name="test"))
-    assert result["uid"] == "abc"
+```csharp
+// Backend — xUnit + FluentAssertions
+[Fact]
+public async Task Handle_Should_ReturnExpectedResult()
+{
+    var repository = new Mock<ISomeRepository>();
+    repository.Setup(x => x.LoadAsync(It.IsAny<CancellationToken>())).ReturnsAsync(entity);
+
+    var result = await handler.Handle(command, CancellationToken.None);
+
+    result.Should().NotBeNull();
+}
 ```
 
-```js
-// Frontend — mock service + renderHook (Vitest + Testing Library)
-vi.mock('../../services/featureService');
-getFeatures.mockResolvedValue([{ uid: '1' }]);
-const { result } = renderHook(() => useFeature());
-await waitFor(() => expect(result.current.data).toHaveLength(1));
+```tsx
+// Frontend — Jest + Testing Library
+jest.mock('@/services/patients');
+render(<PatientForm />);
+await userEvent.click(screen.getByRole('button', { name: /guardar/i }));
+expect(await screen.findByText(/paciente registrado/i)).toBeInTheDocument();
 ```
 
 ## Restricciones
 
-- Solo `tests/` o `__tests__/`. No modificar código fuente.
-- Nunca conectar a DB real ni Firebase — siempre mocks.
-- Cobertura mínima ≥ 80% en lógica de negocio.
+- Solo agregar o ajustar tests necesarios para la feature.
+- Nunca conectar a servicios externos reales salvo que la suite de integracion del repo ya lo requiera.
+- Si una prueba E2E no es necesaria para la spec, preferir unit/integration tests mas rapidos.

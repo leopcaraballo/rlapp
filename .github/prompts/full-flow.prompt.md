@@ -12,12 +12,12 @@ Inicia el flujo completo ASDD con paralelismo máximo.
 
 1. **[FASE 1 — Secuencial]** `Spec Generator` → genera `.github/specs/${input:featureName}.spec.md`
 2. **[FASE 2 — Paralelo]** al aprobar la spec:
-   - `Backend Developer` → implementa `backend/app/`
-   - `Frontend Developer` → implementa `frontend/src/`
+   - `Backend Developer` → implementa `apps/backend/src/`
+   - `Frontend Developer` → implementa `apps/frontend/src/`
    - `Database Agent` → si hay cambios de esquema en la spec
 3. **[FASE 3 — Paralelo]** al completar implementación:
-   - `Test Engineer Backend` → genera `backend/tests/`
-   - `Test Engineer Frontend` → genera `frontend/src/__tests__/`
+   - `Test Engineer Backend` → genera `apps/backend/src/Tests/`
+   - `Test Engineer Frontend` → genera `apps/frontend/test/`
 4. **[FASE 4]** `QA Agent` → estrategia, Gherkin, riesgos, automatización
 5. **[FASE 5 — Opcional]** `Documentation Agent` → si el usuario lo solicita
 

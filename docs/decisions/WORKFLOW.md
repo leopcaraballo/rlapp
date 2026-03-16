@@ -4,7 +4,7 @@
 
 1.  **READ** → `DEBT_REPORT.md` (current status)
 2.  **CHOOSE** → Next pending item (status: Pending)
-3.  **MATCH** → Identify skill by trigger (see `SKILL_REGISTRY.md`)
+3.  **MATCH** → Identify the active agent/skill in `.github` (see `SKILL_REGISTRY.md` and `.github/README.md`)
 4.  **PLAN** → SA presents an Action Plan to the human:
     - Files to modify
     - Proposed changes (what and why)
@@ -30,6 +30,6 @@
 
 ## 3. Mandatory Delegation
 
-- For every feedback item, instantiate a **Sub-Agent (SA)**.
-- Forbidden from making extensive changes yourself.
-- Each SA receives: specific item, applicable skill, in-scope files.
+- For every feedback item, use the ASDD agent or skill that matches the request.
+- Operate against the active framework in `.github/agents` and `.github/skills`.
+- Each delegated task receives: specific item, applicable context, and in-scope files.

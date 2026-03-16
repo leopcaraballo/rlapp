@@ -24,7 +24,7 @@ Eres el QA Lead del equipo ASDD. Produces artefactos de calidad basados en la sp
 ```
 .github/docs/lineamientos/qa-guidelines.md
 .github/specs/<feature>.spec.md
-tests en backend/tests/ y frontend/src/__tests__/
+tests en apps/backend/src/Tests/ y apps/frontend/test/
 ```
 
 ## Skills a ejecutar (en orden)

@@ -18,12 +18,12 @@ Este documento resume las decisiones arquitectónicas relevantes del proyecto, i
 
 | ID      | Decisión                                                                              | Estado   | Fecha      | Reemplaza                         |
 | ------- | ------------------------------------------------------------------------------------- | -------- | ---------- | --------------------------------- |
-| ADR-001 | Arquitectura por capas por feature (`api`, `application`, `domain`, `infrastructure`) | Activa   | 2026-02-18 | —                                 |
-| ADR-002 | Backend reactivo con Spring WebFlux + Reactor + R2DBC                                 | Activa   | 2026-02-18 | —                                 |
+| ADR-001 | Arquitectura por capas por feature (`API`, `Application`, `Domain`, `Infrastructure`) | Activa   | 2026-02-18 | —                                 |
+| ADR-002 | Backend principal con .NET 10, Minimal API, Event Sourcing y CQRS                     | Activa   | 2026-02-18 | —                                 |
 | ADR-003 | API REST JSON versionada por ruta (`/api/v1/...`)                                     | Activa   | 2026-02-18 | —                                 |
 | ADR-004 | Límite de dispersión por historia: máximo 3 módulos/features independientes           | Activa   | 2026-02-18 | —                                 |
-| ADR-005 | Prohibición de mezcla bloqueante/reactiva en un mismo caso de uso                     | Activa   | 2026-02-18 | —                                 |
-| ADR-006 | Uso de JPA/Hibernate bloqueante en módulos WebFlux                                    | Obsoleta | 2026-02-18 | Reemplazada por ADR-002 y ADR-005 |
+| ADR-005 | Prohibición de mezclar flujos clínicos del aggregate con atajos de infraestructura     | Activa   | 2026-02-18 | —                                 |
+| ADR-006 | Persistencia reactiva Spring/JPA como base del backend                                 | Obsoleta | 2026-02-18 | Reemplazada por ADR-002 y ADR-005 |
 
 ---
 
@@ -39,10 +39,10 @@ Se requiere mantener separadas responsabilidades de transporte, negocio, dominio
 
 Adoptar estructura por capas dentro de cada módulo funcional:
 
-- `api`
-- `application`
-- `domain`
-- `infrastructure`
+- `API`
+- `Application`
+- `Domain`
+- `Infrastructure`
 
 #### Consecuencias
 
@@ -51,20 +51,20 @@ Adoptar estructura por capas dentro de cada módulo funcional:
 
 ---
 
-### ADR-002: Backend reactivo end-to-end
+### ADR-002: Backend .NET con Event Sourcing y CQRS
 
 #### Contexto
 
-El proyecto prioriza consistencia reactiva para operaciones de catálogo y escalabilidad del backend.
+El proyecto requiere trazabilidad clínica, consistencia de reglas del dominio y capacidad de reproyección sobre eventos persistidos.
 
 #### Decisión
 
-Adoptar Spring WebFlux + Reactor + Spring Data R2DBC en toda la cadena de ejecución.
+Adoptar .NET 10 con ASP.NET Core Minimal API, Event Sourcing, CQRS y Outbox Pattern como base del backend operativo.
 
 #### Consecuencias
 
-- Se evita bloqueo en flujos de entrada/salida.
-- Obliga disciplina técnica para no introducir componentes bloqueantes.
+- La mutación del estado clínico queda centralizada en aggregates y eventos de dominio.
+- La lectura puede evolucionar mediante proyecciones sin romper el flujo transaccional principal.
 
 ---
 
@@ -102,32 +102,32 @@ Establecer umbral máximo de 3 módulos/features independientes impactados por h
 
 ---
 
-### ADR-005: Prohibición de mezcla bloqueante/reactiva
+### ADR-005: Prohibición de atajos que salten el aggregate
 
 #### Contexto
 
-La mezcla de llamadas bloqueantes en flujos reactivos degrada rendimiento y genera comportamientos no deseados.
+Se observó que escribir estado clínico directamente desde endpoints, proyecciones o adaptadores degrada la trazabilidad y rompe invariantes del dominio.
 
 #### Decisión
 
-Prohibir componentes bloqueantes en casos de uso reactivos del backend.
+Prohibir mutaciones de estado clínico fuera del aggregate y del flujo command -> handler -> event store.
 
 #### Consecuencias
 
-- Mejor consistencia operativa del modelo reactivo.
-- Requiere validar librerías/adaptadores antes de adopción.
+- Mejora la consistencia de reglas clínicas e idempotencia.
+- Obliga a modelar correctamente commands, handlers, eventos y proyecciones.
 
 ---
 
 ## ADRs obsoletos
 
-### ADR-006: Uso de JPA/Hibernate en módulos WebFlux
+### ADR-006: Persistencia reactiva Spring/JPA como base del backend
 
 **Estado**: Obsoleta.
 
 #### Motivo de obsolescencia
 
-Contradice el enfoque reactivo end-to-end y fue reemplazada por las decisiones ADR-002 y ADR-005.
+No representa el stack real del repositorio y fue reemplazada por las decisiones ADR-002 y ADR-005.
 
 ---
 

@@ -17,7 +17,7 @@
 ## Ejecución
 
 ```bash
-dotnet test rlapp-backend/RLAPP.slnx
+dotnet test apps/backend/RLAPP.slnx
 ```
 
 ## Notas

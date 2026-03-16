@@ -1,67 +1,57 @@
 ---
-applyTo: "frontend/src/**/*.{js,jsx}"
+applyTo: "apps/frontend/src/**/*.{ts,tsx,js,jsx}"
 ---
 
-> **Scope**: Se aplica a proyectos con capa frontend. Si el proyecto es backend-only, este archivo no tiene efecto. Si el frontend usa otro framework (Vue, Angular, Svelte, etc.), adaptar las convenciones de componentes, rutas y estado al stack real.
+> Scope: instrucciones para el frontend real del repositorio RLAPP.
 
-# Instrucciones para Archivos de Frontend (React/Vite)
+# Instrucciones para Archivos de Frontend (Next.js 16 / React 19 / TypeScript)
 
-## Convenciones Obligatorias
+## Stack y arquitectura
 
-- **CSS**: SIEMPRE usar CSS Modules (`*.module.css`) — NUNCA clases CSS globales ni frameworks como Tailwind/Bootstrap.
-- **Nombres**: PascalCase para componentes y páginas (`.jsx`), camelCase para hooks (`.js`) y servicios (`.js`).
-- **Auth state**: SIEMPRE consumir de `useAuth` — nunca crear estado de autenticación paralelo.
-- **Env vars**: SIEMPRE con prefijo `VITE_` para que Vite las exponga.
-
-## Estructura de Archivos
+El frontend vive en `apps/frontend/src/` y usa App Router de Next.js con arquitectura hexagonal:
 
 ```
-src/
-  config/firebase.js      ← init Firebase (solo aquí)
-  hooks/useAuth.js        ← fuente única de verdad para auth
-  services/authService.js ← Firebase signIn + POST backend
-  components/ProtectedRoute.jsx
-  pages/                  ← PageName.jsx + PageName.module.css
+app -> components/hooks/context -> application -> domain -> infrastructure/services
 ```
 
-## Llamadas a la API Backend
+- `src/app`: rutas y paginas App Router.
+- `src/components`: UI reutilizable.
+- `src/hooks`: estado, side effects y coordinacion UI.
+- `src/application`: use cases.
+- `src/domain`: modelos y puertos.
+- `src/infrastructure` y `src/services`: adaptadores HTTP y realtime.
 
-Usar siempre **Axios** (no `fetch`). Las llamadas van en `services/`, nunca directamente en componentes o páginas.
+## Convenciones obligatorias
 
-```js
-// services/featureService.js
-import axios from 'axios';
-const API_BASE = import.meta.env.VITE_API_URL;
+- CSS Modules para estilos locales. Mantener estilos globales solo donde ya exista convencion del proyecto.
+- Componentes en PascalCase; hooks en camelCase con prefijo `use`; tipos y modelos en PascalCase.
+- Variables de entorno con prefijo `NEXT_PUBLIC_` y acceso tipado desde `src/config/env.ts` cuando ya exista.
+- Mantener separacion CQRS del frontend: comandos via gateways/adapters, lecturas via queries/read services.
+- No introducir React Router. La navegacion se hace con App Router de Next.js.
 
-export async function getFeatures(token) {
-  const res = await axios.get(`${API_BASE}/api/v1/features`, {
-    headers: { Authorization: `Bearer ${token}` }
-  });
-  return res.data;
-}
+## Llamadas a la API
 
-export async function createFeature(data, token) {
-  const res = await axios.post(`${API_BASE}/api/v1/features`, data, {
-    headers: { Authorization: `Bearer ${token}` }
-  });
-  return res.data;
-}
-```
+- Reutilizar adaptadores existentes como `HttpCommandAdapter`, `HttpAppointmentAdapter` y servicios de `src/services/api/`.
+- No hacer llamadas HTTP directas desde paginas si ya existe un hook o use case del modulo.
+- Mantener headers de correlacion e idempotencia cuando el flujo ya los usa.
+- Preservar traduccion de errores a UX desde las utilidades existentes.
 
-El token se obtiene siempre desde `useAuth()`:
-```js
-const { token } = useAuth();
-```
+## Estado y dependencias
 
-## Rutas (React Router v6)
+- Reutilizar `DependencyContext` y `useDependencies()` antes de crear clientes paralelos.
+- No duplicar estado global de autenticacion, alertas, conexion o cola.
+- Mantener la integracion con SignalR/polling donde aplique; no reemplazarla con soluciones paralelas.
 
-Las rutas se registran en `src/App.jsx`:
-```jsx
-<Route path="/nueva-ruta" element={<ProtectedRoute><NuevaPagina /></ProtectedRoute>} />
-```
+## Rutas
 
-## Componentes
+- Crear nuevas paginas bajo `src/app/<ruta>/page.tsx`.
+- Usar `next/navigation` para redirecciones y navegacion programatica.
+- Preservar guards, layouts y wrappers existentes del App Router.
 
-- Un componente por archivo.
-- Props tipadas con JSDoc si son complejas.
-- No lógica de negocio en los componentes — delegar a hooks o servicios.
+## Nunca hacer
+
+- No crear `src/App.jsx` ni estructura de React Router.
+- No introducir `VITE_*`, `import.meta.env` ni supuestos de Vite.
+- No mover logica de negocio al componente cuando ya existe un use case o hook dedicado.
+
+> Para lineamientos generales, ver `.github/docs/lineamientos/dev-guidelines.md`.
