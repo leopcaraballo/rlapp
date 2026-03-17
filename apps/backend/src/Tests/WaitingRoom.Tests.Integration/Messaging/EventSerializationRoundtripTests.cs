@@ -58,6 +58,7 @@ public sealed class EventSerializationRoundtripTests
             ConsultationType = "General",
             CalledAt = DateTime.UtcNow,
             CashierDeskId = "CAJA-01",
+            TurnNumber = 1,
             Metadata = CreateMetadata()
         };
 
@@ -82,6 +83,7 @@ public sealed class EventSerializationRoundtripTests
             ConsultationType = "General",
             ValidatedAt = DateTime.UtcNow,
             PaymentReference = "REF-12345",
+            TurnNumber = 1,
             Metadata = CreateMetadata()
         };
 

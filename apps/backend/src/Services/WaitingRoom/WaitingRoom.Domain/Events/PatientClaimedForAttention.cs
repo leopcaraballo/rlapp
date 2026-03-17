@@ -14,6 +14,7 @@ public sealed record PatientClaimedForAttention : DomainEvent
     public required string ConsultationType { get; init; }
     public required DateTime ClaimedAt { get; init; }
     public string? StationId { get; init; }
+    public int TurnNumber { get; init; }
 
     public override string EventName => nameof(PatientClaimedForAttention);
 

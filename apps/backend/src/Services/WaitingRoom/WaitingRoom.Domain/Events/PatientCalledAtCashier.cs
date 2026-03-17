@@ -11,6 +11,7 @@ public sealed record PatientCalledAtCashier : DomainEvent
     public required string ConsultationType { get; init; }
     public required DateTime CalledAt { get; init; }
     public string? CashierDeskId { get; init; }
+    public int TurnNumber { get; init; }
 
     public override string EventName => nameof(PatientCalledAtCashier);
 

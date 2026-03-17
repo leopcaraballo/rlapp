@@ -182,6 +182,7 @@ public static class WaitingRoomQueryEndpoints
             return Results.Ok(new NextTurnView
             {
                 QueueId = queueId,
+                TurnNumber = candidate.TurnNumber,
                 PatientId = candidate.PatientId,
                 PatientName = candidate.PatientName,
                 Priority = candidate.Priority,

@@ -11,6 +11,7 @@ public sealed record PatientPaymentValidated : DomainEvent
     public required string ConsultationType { get; init; }
     public required DateTime ValidatedAt { get; init; }
     public string? PaymentReference { get; init; }
+    public int TurnNumber { get; init; }
 
     public override string EventName => nameof(PatientPaymentValidated);
 

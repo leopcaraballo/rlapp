@@ -43,6 +43,7 @@ public sealed class PatientCalledAtCashierProjectionHandler : IProjectionHandler
                 ClaimedAt = evt.CalledAt,
                 CalledAt = evt.CalledAt,
                 StationId = evt.CashierDeskId,
+                TurnNumber = evt.TurnNumber,
                 ProjectedAt = DateTimeOffset.UtcNow
             },
             cancellationToken);

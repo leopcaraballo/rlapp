@@ -42,6 +42,7 @@ public sealed class PatientClaimedForAttentionProjectionHandler : IProjectionHan
                 Status = "claimed",
                 ClaimedAt = evt.ClaimedAt,
                 StationId = evt.StationId,
+                TurnNumber = evt.TurnNumber,
                 ProjectedAt = DateTimeOffset.UtcNow
             },
             cancellationToken);

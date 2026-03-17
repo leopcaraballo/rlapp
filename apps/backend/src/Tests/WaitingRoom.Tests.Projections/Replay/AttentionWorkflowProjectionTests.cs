@@ -65,6 +65,7 @@ public sealed class AttentionWorkflowProjectionTests
         Priority = "high",
         ConsultationType = "General",
         ClaimedAt = DateTime.UtcNow,
+        TurnNumber = 1,
         Metadata = NewMetadata(queueId)
     };
 
@@ -76,6 +77,7 @@ public sealed class AttentionWorkflowProjectionTests
         Priority = "high",
         ConsultationType = "General",
         CalledAt = DateTime.UtcNow,
+        TurnNumber = 1,
         Metadata = NewMetadata(queueId)
     };
 
@@ -87,6 +89,7 @@ public sealed class AttentionWorkflowProjectionTests
         Priority = "high",
         ConsultationType = "General",
         ValidatedAt = DateTime.UtcNow,
+        TurnNumber = 1,
         Metadata = NewMetadata(queueId)
     };
 

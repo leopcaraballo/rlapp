@@ -36,7 +36,8 @@ public sealed class PatientPaymentValidatedProjectionHandler : IProjectionHandle
                 PatientName = evt.PatientName,
                 Priority = normalizedPriority,
                 CheckInTime = evt.ValidatedAt,
-                WaitTimeMinutes = 0
+                WaitTimeMinutes = 0,
+                TurnNumber = evt.TurnNumber
             },
             cancellationToken);
 

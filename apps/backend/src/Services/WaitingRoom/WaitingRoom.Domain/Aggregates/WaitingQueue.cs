@@ -178,7 +178,8 @@ public sealed class WaitingQueue : AggregateRoot
             Priority = nextPatient.Priority.Value,
             ConsultationType = nextPatient.ConsultationType.Value,
             ClaimedAt = request.ClaimedAt,
-            StationId = request.StationId
+            StationId = request.StationId,
+            TurnNumber = nextPatient.TurnNumber
         };
 
         RaiseEvent(@event);
@@ -252,7 +253,8 @@ public sealed class WaitingQueue : AggregateRoot
             Priority = nextPatient.Priority.Value,
             ConsultationType = nextPatient.ConsultationType.Value,
             CalledAt = request.CalledAt,
-            CashierDeskId = request.CashierDeskId
+            CashierDeskId = request.CashierDeskId,
+            TurnNumber = nextPatient.TurnNumber
         };
 
         RaiseEvent(@event);
@@ -287,7 +289,8 @@ public sealed class WaitingQueue : AggregateRoot
             Priority = patient.Priority.Value,
             ConsultationType = patient.ConsultationType.Value,
             ValidatedAt = request.ValidatedAt,
-            PaymentReference = request.PaymentReference
+            PaymentReference = request.PaymentReference,
+            TurnNumber = patient.TurnNumber
         };
 
         RaiseEvent(@event);
