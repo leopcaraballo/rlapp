@@ -6,6 +6,8 @@ import { useDependencies } from "@/context/DependencyContext";
 import { Appointment } from "@/domain/Appointment";
 
 /**
+ * @deprecated Socket.IO legacy hook — use `useWaitingRoom` (SignalR) instead.
+ * Kept for reference only; will be removed in HU-R6 cleanup phase.
  * Real-time hook using WebSocket (Socket.IO).
  */
 export function useAppointmentsWebSocket(

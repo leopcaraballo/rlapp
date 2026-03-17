@@ -14,16 +14,14 @@ using Exceptions;
 /// </summary>
 public static class WaitingQueueInvariants
 {
-    public const string RegisteredState = "Registrado";
+    // Cashier flow
     public const string WaitingCashierState = "EnEsperaTaquilla";
     public const string CashierCalledState = "EnTaquilla";
-    public const string PaymentValidatedState = "PagoValidado";
     public const string PaymentPendingState = "PagoPendiente";
-    public const string CashierAbsentState = "AusenteTaquilla";
     public const string CancelledByPaymentState = "CanceladoPorPago";
+    // Consultation flow
     public const string WaitingConsultationState = "EnEsperaConsulta";
     public const string ClaimedState = "LlamadoConsulta";
-    public const string ConsultationAbsentState = "AusenteConsulta";
     public const string CalledState = "EnConsulta";
     public const string CompletedState = "Finalizado";
     public const string CancelledByAbsenceState = "CanceladoPorAusencia";

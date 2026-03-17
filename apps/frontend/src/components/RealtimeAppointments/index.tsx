@@ -7,7 +7,6 @@ import {
   WaitingAppointmentCard,
 } from "@/components/AppointmentCard";
 import AppointmentSkeleton from "@/components/AppointmentSkeleton";
-import WaitingRoomDemo from "@/components/WaitingRoomDemo";
 import WebSocketStatus from "@/components/WebSocketStatus";
 import { ConnectionStatus } from "@/components/WebSocketStatus";
 import { Appointment } from "@/domain/Appointment";
@@ -19,7 +18,6 @@ type Props = {
   layout?: "split" | "container";
   showCompleted?: boolean;
   title?: string;
-  demoQueueId?: string | null;
   /** ID de la cola que se debe observar en tiempo real (polling REST). */
   queueId?: string;
   /** Si es true, el contenedor ocupa el 100% del ancho. Si es false, se restringe al 70%. */
@@ -30,7 +28,6 @@ export default function RealtimeAppointments({
   layout = "split",
   showCompleted = false,
   title = "Turnos Disponibles",
-  demoQueueId = null,
   queueId = process.env.NEXT_PUBLIC_DEFAULT_QUEUE_ID || "QUEUE-01",
   fullWidth = true,
 }: Props) {
@@ -157,13 +154,6 @@ export default function RealtimeAppointments({
         )}
 
         {showToast && <div className={styles.toast}>{showToast}</div>}
-
-        {demoQueueId && (
-          <section className={styles.sectionBlock}>
-            <h2 className={styles.sectionTitle}>Demo API — WaitingRoom</h2>
-            <WaitingRoomDemo queueId={demoQueueId} />
-          </section>
-        )}
       </main>
     );
   }
