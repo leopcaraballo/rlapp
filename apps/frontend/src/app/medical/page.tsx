@@ -238,6 +238,9 @@ export default function MedicalPage() {
               <span className={styles.activePatientLabel}>
                 Paciente en turno
               </span>
+              <span className={styles.activePatientTurn}>
+                Turno #{activePatient.turnNumber}
+              </span>
               <span className={styles.activePatientName}>
                 {activePatient.patientName}
               </span>

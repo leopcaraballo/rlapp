@@ -204,6 +204,13 @@
   letter-spacing: 0.05em;
 }
 
+.activePatientTurn {
+  font-size: 22px;
+  font-weight: 800;
+  color: #2563eb;
+  letter-spacing: -0.5px;
+}
+
 .activePatientName {
   font-size: 17px;
   font-weight: 700;

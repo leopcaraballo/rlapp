@@ -62,6 +62,7 @@ export default function CashierPage() {
         priority: nextTurn.priority,
         checkInTime: nextTurn.calledAt ?? new Date().toISOString(),
         waitTimeMinutes: 0,
+        turnNumber: nextTurn.turnNumber,
       });
     }
   }, [nextTurn, selected]);
@@ -127,6 +128,9 @@ export default function CashierPage() {
             <span className={localStyles.activeTurnLabel}>
               Turno activo en caja
             </span>
+            <span className={localStyles.activeTurnNumber}>
+              Turno #{activeTurn.turnNumber}
+            </span>
             <span className={localStyles.activeTurnName}>
               {activeTurn.patientName}
             </span>
@@ -153,6 +157,9 @@ export default function CashierPage() {
                     onClick={() => selectPatient(p)}
                   >
                     <div className={localStyles.patientInfo}>
+                      <span className={localStyles.turnNumber}>
+                        Turno #{p.turnNumber}
+                      </span>
                       <span className={localStyles.patientName}>
                         {p.patientName}
                       </span>
@@ -198,6 +205,12 @@ export default function CashierPage() {
               </span>
             </div>
             <div className={localStyles.selectedDetails}>
+              <div className={localStyles.detailRow}>
+                <span className={localStyles.detailLabel}>Turno</span>
+                <span className={localStyles.detailValue}>
+                  #{selected.turnNumber}
+                </span>
+              </div>
               <div className={localStyles.detailRow}>
                 <span className={localStyles.detailLabel}>ID</span>
                 <span className={localStyles.detailValue}>
