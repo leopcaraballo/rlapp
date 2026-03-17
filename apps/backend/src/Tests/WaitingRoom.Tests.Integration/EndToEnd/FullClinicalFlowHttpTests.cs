@@ -443,7 +443,7 @@ public sealed class FullClinicalFlowHttpTests : IClassFixture<WaitingRoomApiFact
         // Reclamar paciente (estado: LlamadoConsulta)
         var claimResult = await DeserializeAsync(
             await SendPostAsync(
-                "/api/waiting-room/claim-next",
+                "/api/medical/call-next",
                 new ClaimNextPatientDto
                 {
                     QueueId = queueId,
