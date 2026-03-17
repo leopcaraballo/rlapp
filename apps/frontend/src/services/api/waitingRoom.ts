@@ -219,7 +219,7 @@ export async function claimNextPatient(
   dto: ClaimNextPatientDto,
 ): Promise<CommandSuccess> {
   return postCommand<ClaimNextPatientDto, CommandSuccess>(
-    `/api/waiting-room/claim-next`,
+    `/api/medical/call-next`,
     dto,
   );
 }
@@ -230,7 +230,7 @@ export async function callPatient(dto: {
   actor: string;
 }): Promise<CommandSuccess> {
   return postCommand<typeof dto, CommandSuccess>(
-    `/api/waiting-room/call-patient`,
+    `/api/medical/start-consultation`,
     dto,
   );
 }
@@ -239,7 +239,7 @@ export async function completeAttention(
   dto: CompleteAttentionDto,
 ): Promise<CommandSuccess> {
   return postCommand<CompleteAttentionDto, CommandSuccess>(
-    `/api/waiting-room/complete-attention`,
+    `/api/medical/finish-consultation`,
     dto,
   );
 }
