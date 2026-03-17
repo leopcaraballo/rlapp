@@ -27,9 +27,6 @@ jest.mock("@/hooks/useQueueAsAppointments", () => ({
   }),
 }));
 
-// ── mock WaitingRoomDemo (no necesario en layout=container, pero evita errores) ─
-jest.mock("@/components/WaitingRoomDemo", () => () => null);
-
 import DashboardPage from "@/app/dashboard/page";
 
 // ── helper ────────────────────────────────────────────────────────────────────
