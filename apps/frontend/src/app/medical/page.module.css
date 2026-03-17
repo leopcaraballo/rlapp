@@ -272,3 +272,54 @@
     grid-template-columns: 1fr;
   }
 }
+
+/* ── Cola de espera en panel de Estación Médica (HU-R3) ── */
+.queueList {
+  list-style: none;
+  margin: 0;
+  padding: 0;
+  max-height: 240px;
+  overflow-y: auto;
+  border-top: 1px solid #e5e7eb;
+}
+
+.queueListItem {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  padding: 6px 14px;
+  border-bottom: 1px solid #f1f5f9;
+  font-size: 13px;
+}
+
+.queueListItem:last-child {
+  border-bottom: none;
+}
+
+.queueTurnNumber {
+  font-weight: 800;
+  color: #2563eb;
+  font-size: 12px;
+  min-width: 36px;
+}
+
+.queuePatientName {
+  flex: 1;
+  color: #1e293b;
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
+}
+
+.queuePatientId {
+  font-size: 11px;
+  color: #9ca3af;
+  font-family: monospace;
+}
+
+.queueEmptySearch {
+  padding: 10px 14px;
+  font-size: 12px;
+  color: #9ca3af;
+  font-style: italic;
+}

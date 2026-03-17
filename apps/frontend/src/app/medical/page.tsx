@@ -10,6 +10,7 @@ import { useAlert } from "@/context/AlertContext";
 import { useConsultingRooms } from "@/hooks/useConsultingRooms";
 import { useMedicalStation } from "@/hooks/useMedicalStation";
 import { useWaitingRoom } from "@/hooks/useWaitingRoom";
+import { PatientSearchInput, filterPatients } from "@/components/PatientSearchInput";
 
 import styles from "./page.module.css";
 
@@ -50,9 +51,11 @@ export default function MedicalPage() {
   });
 
   const watchedQueueId = watch("queueId");
-  const { nextTurn, refresh } = useWaitingRoom(
+  const { nextTurn, refresh, queueState } = useWaitingRoom(
     watchedQueueId || env.DEFAULT_QUEUE_ID,
   );
+
+  const [searchQuery, setSearchQuery] = React.useState("");
 
   // // HUMAN CHECK: Auto-rellena patientId tras claim exitoso para evitar
   // copia manual del ID por el médico. Comportamiento esperado del dominio:
@@ -223,6 +226,36 @@ export default function MedicalPage() {
             </button>
           </div>
         </div>
+
+        {/* Cola de espera con búsqueda — visible para que el médico pueda identificar pacientes */}
+        {(() => {
+          const waitingPatients = queueState?.patientsInQueue ?? [];
+          const filteredPatients = filterPatients(waitingPatients, searchQuery);
+          return (
+            <>
+              <PatientSearchInput
+                value={searchQuery}
+                onChange={setSearchQuery}
+                resultCount={filteredPatients.length}
+                totalCount={waitingPatients.length}
+              />
+              {waitingPatients.length > 0 && (
+                <ul className={styles.queueList}>
+                  {filteredPatients.map((p) => (
+                    <li key={p.patientId} className={styles.queueListItem}>
+                      <span className={styles.queueTurnNumber}>#{p.turnNumber}</span>
+                      <span className={styles.queuePatientName}>{p.patientName}</span>
+                      <span className={styles.queuePatientId}>{p.patientId}</span>
+                    </li>
+                  ))}
+                  {filteredPatients.length === 0 && searchQuery && (
+                    <li className={styles.queueEmptySearch}>Sin resultados para la búsqueda.</li>
+                  )}
+                </ul>
+              )}
+            </>
+          );
+        })()}
       </section>
 
       {/* Panel derecho: Gestión de consulta */}

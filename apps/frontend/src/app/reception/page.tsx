@@ -12,6 +12,7 @@ import {
 } from "@/domain/patient/ConsultationType";
 import { useWaitingRoom } from "@/hooks/useWaitingRoom";
 import { registerReception } from "@/services/api/waitingRoom";
+import { PatientSearchInput, filterPatients } from "@/components/PatientSearchInput";
 
 import styles from "./page.module.css";
 
@@ -52,6 +53,7 @@ type CheckInForm = z.infer<typeof CheckInSchema>;
 
 export default function ReceptionPage() {
   const [submitting, setSubmitting] = useState(false);
+  const [searchQuery, setSearchQuery] = useState("");
   const alert = useAlert();
 
   const {
@@ -106,6 +108,7 @@ export default function ReceptionPage() {
   }
 
   const patients = queueState?.patientsInQueue ?? [];
+  const filteredPatients = filterPatients(patients, searchQuery);
 
   return (
     <main className={styles.splitLayout}>
@@ -115,6 +118,12 @@ export default function ReceptionPage() {
           <h2 className={styles.panelTitle}>Estado de la cola</h2>
           <span className={styles.queueBadge}>{queueId}</span>
         </header>
+        <PatientSearchInput
+          value={searchQuery}
+          onChange={setSearchQuery}
+          resultCount={filteredPatients.length}
+          totalCount={patients.length}
+        />
         <div className={styles.panelBody}>
           {queueState && (
             <div className={styles.statsGrid}>
@@ -139,14 +148,14 @@ export default function ReceptionPage() {
             </div>
           )}
 
-          {patients.length === 0 ? (
+          {filteredPatients.length === 0 ? (
             <div className={styles.emptyState}>
-              <span className={styles.emptyIcon}>🪑</span>
-              <p>No hay pacientes en la cola.</p>
+              <span className={styles.emptyIcon}>{searchQuery ? "🔍" : "🪑"}</span>
+              <p>{searchQuery ? "Sin resultados para la búsqueda." : "No hay pacientes en la cola."}</p>
             </div>
           ) : (
             <ul className={styles.patientList}>
-              {patients.map((p) => (
+              {filteredPatients.map((p) => (
                 <li key={p.patientId} className={styles.patientItem}>
                   <div className={styles.patientInfo}>
                     <span className={styles.patientName}>{p.patientName}</span>

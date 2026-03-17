@@ -8,6 +8,7 @@ import { useCashierStation } from "@/hooks/useCashierStation";
 import { useWaitingRoom } from "@/hooks/useWaitingRoom";
 import type { PatientInQueueDto } from "@/services/api/types";
 import sharedStyles from "@/styles/page.module.css";
+import { PatientSearchInput, filterPatients } from "@/components/PatientSearchInput";
 
 import localStyles from "./page.module.css";
 
@@ -36,6 +37,7 @@ export default function CashierPage() {
 
   // Paciente seleccionado de la lista
   const [selected, setSelected] = useState<PatientInQueueDto | null>(null);
+  const [searchQuery, setSearchQuery] = useState("");
 
   // Propagar errores del hook al sistema de alertas
   useEffect(() => {
@@ -100,6 +102,7 @@ export default function CashierPage() {
   }
 
   const patients = queueState?.patientsInQueue ?? [];
+  const filteredPatients = filterPatients(patients, searchQuery);
   // Turno activo: paciente llamado a caja pero aún pendiente de acción
   const activeTurn = nextTurn?.status === "cashier-called" ? nextTurn : null;
 
@@ -122,6 +125,13 @@ export default function CashierPage() {
           </button>
         </header>
 
+        <PatientSearchInput
+          value={searchQuery}
+          onChange={setSearchQuery}
+          resultCount={filteredPatients.length}
+          totalCount={patients.length}
+        />
+
         {/* Turno activo — paciente llamado a caja y pendiente de pago */}
         {activeTurn && (
           <div className={localStyles.activeTurnCard}>
@@ -140,14 +150,14 @@ export default function CashierPage() {
           </div>
         )}
 
-        {patients.length === 0 ? (
+        {filteredPatients.length === 0 ? (
           <div className={localStyles.emptyState}>
-            <span className={localStyles.emptyIcon}>🪑</span>
-            <p>No hay pacientes en la cola.</p>
+            <span className={localStyles.emptyIcon}>{searchQuery ? "🔍" : "🪑"}</span>
+            <p>{searchQuery ? "Sin resultados para la búsqueda." : "No hay pacientes en la cola."}</p>
           </div>
         ) : (
           <ul className={localStyles.patientList}>
-            {patients.map((p) => {
+            {filteredPatients.map((p) => {
               const isSelected = selected?.patientId === p.patientId;
               return (
                 <li key={p.patientId}>
