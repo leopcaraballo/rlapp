@@ -42,8 +42,20 @@ public sealed class WaitingQueue : AggregateRoot
     public List<WaitingPatient> Patients { get; private set; } = [];
     public string? CurrentCashierPatientId { get; private set; }
     public string? CurrentCashierState { get; private set; }
-    public string? CurrentAttentionPatientId { get; private set; }
-    public string? CurrentAttentionState { get; private set; }
+
+    // HU-R4: Per-room attention tracking. Each active consulting room maps to the patient being attended.
+    // Replaces the former single CurrentAttentionPatientId field to allow parallel consultations.
+    private readonly Dictionary<string, string> _activeAttentionsByRoom = new(StringComparer.OrdinalIgnoreCase);
+    private readonly Dictionary<string, string> _patientToRoom = new(StringComparer.OrdinalIgnoreCase);
+
+    /// <summary>Returns any active attention patient (first in dictionary) or null. Kept for backward compatibility.</summary>
+    public string? CurrentAttentionPatientId =>
+        _activeAttentionsByRoom.Count > 0 ? _activeAttentionsByRoom.Values.First() : null;
+
+    /// <summary>Returns the state of the current attention patient, or null if none. Kept for backward compatibility.</summary>
+    public string? CurrentAttentionState =>
+        CurrentAttentionPatientId is not null ? GetPatientState(CurrentAttentionPatientId) : null;
+
     private readonly Dictionary<string, string> _patientStates = new(StringComparer.OrdinalIgnoreCase);
     private readonly Dictionary<string, int> _paymentAttempts = new(StringComparer.OrdinalIgnoreCase);
     private readonly Dictionary<string, int> _cashierAbsenceRetries = new(StringComparer.OrdinalIgnoreCase);
@@ -157,9 +169,10 @@ public sealed class WaitingQueue : AggregateRoot
         WaitingQueueInvariants.ValidateConsultingRoomActive(
             _activeConsultingRooms.Contains(request.StationId!),
             request.StationId!);
+        // HU-R4: Check per-room occupancy instead of global single-attention check.
+        WaitingQueueInvariants.ValidateRoomNotOccupied(_activeAttentionsByRoom, request.StationId!);
 
         WaitingQueueInvariants.ValidateQueueHasPatients(Patients.Count);
-        WaitingQueueInvariants.ValidateNoActiveAttention(CurrentAttentionPatientId);
 
         var nextPatient = Patients
             .OrderByDescending(p => p.Priority.Level)
@@ -409,7 +422,8 @@ public sealed class WaitingQueue : AggregateRoot
         if (request is null)
             throw new ArgumentNullException(nameof(request));
 
-        WaitingQueueInvariants.ValidateCurrentAttention(CurrentAttentionPatientId, request.PatientId.Value);
+        // HU-R4: Validate patient is in active attention in ANY room (not just the global one).
+        WaitingQueueInvariants.ValidatePatientInActiveAttention(_patientToRoom, request.PatientId.Value);
 
         var currentState = GetPatientState(request.PatientId.Value);
         WaitingQueueInvariants.ValidateStateTransition(
@@ -433,7 +447,8 @@ public sealed class WaitingQueue : AggregateRoot
         if (request is null)
             throw new ArgumentNullException(nameof(request));
 
-        WaitingQueueInvariants.ValidateCurrentAttention(CurrentAttentionPatientId, request.PatientId.Value);
+        // HU-R4: Validate patient is in active attention in ANY room.
+        WaitingQueueInvariants.ValidatePatientInActiveAttention(_patientToRoom, request.PatientId.Value);
 
         var currentState = GetPatientState(request.PatientId.Value);
         WaitingQueueInvariants.ValidateStateTransition(
@@ -468,7 +483,8 @@ public sealed class WaitingQueue : AggregateRoot
         if (request is null)
             throw new ArgumentNullException(nameof(request));
 
-        WaitingQueueInvariants.ValidateCurrentAttention(CurrentAttentionPatientId, request.PatientId.Value);
+        // HU-R4: Validate patient is in active attention in ANY room.
+        WaitingQueueInvariants.ValidatePatientInActiveAttention(_patientToRoom, request.PatientId.Value);
 
         var currentState = GetPatientState(request.PatientId.Value);
         WaitingQueueInvariants.ValidateStateTransition(
@@ -580,8 +596,12 @@ public sealed class WaitingQueue : AggregateRoot
 
     private void When(PatientClaimedForAttention @event)
     {
-        CurrentAttentionPatientId = @event.PatientId;
-        CurrentAttentionState = WaitingQueueInvariants.ClaimedState;
+        // HU-R4: Track per-room and per-patient mappings for parallel consultation support.
+        if (@event.StationId is not null)
+        {
+            _activeAttentionsByRoom[@event.StationId] = @event.PatientId;
+            _patientToRoom[@event.PatientId] = @event.StationId;
+        }
         _patientStates[@event.PatientId] = WaitingQueueInvariants.ClaimedState;
         LastModifiedAt = @event.Metadata.OccurredAt;
     }
@@ -590,15 +610,18 @@ public sealed class WaitingQueue : AggregateRoot
     {
         _consultationAbsenceRetries[@event.PatientId] = @event.RetryNumber;
         _patientStates[@event.PatientId] = WaitingQueueInvariants.WaitingConsultationState;
-        CurrentAttentionPatientId = null;
-        CurrentAttentionState = null;
+        // HU-R4: Free only the room this patient was occupying; patient returns to waiting list.
+        if (_patientToRoom.TryGetValue(@event.PatientId, out var room))
+        {
+            _activeAttentionsByRoom.Remove(room);
+            _patientToRoom.Remove(@event.PatientId);
+        }
         LastModifiedAt = @event.Metadata.OccurredAt;
     }
 
     private void When(PatientCalled @event)
     {
-        CurrentAttentionPatientId = @event.PatientId;
-        CurrentAttentionState = WaitingQueueInvariants.CalledState;
+        // Room assignment unchanged; patient stays in same room after call.
         _patientStates[@event.PatientId] = WaitingQueueInvariants.CalledState;
         LastModifiedAt = @event.Metadata.OccurredAt;
     }
@@ -610,8 +633,12 @@ public sealed class WaitingQueue : AggregateRoot
         _consultationAbsenceRetries.Remove(@event.PatientId);
         _paymentAttempts.Remove(@event.PatientId);
         _cashierAbsenceRetries.Remove(@event.PatientId);
-        CurrentAttentionPatientId = null;
-        CurrentAttentionState = null;
+        // HU-R4: Free only the room this patient was occupying.
+        if (_patientToRoom.TryGetValue(@event.PatientId, out var room))
+        {
+            _activeAttentionsByRoom.Remove(room);
+            _patientToRoom.Remove(@event.PatientId);
+        }
         LastModifiedAt = @event.Metadata.OccurredAt;
     }
 
@@ -622,8 +649,12 @@ public sealed class WaitingQueue : AggregateRoot
         _consultationAbsenceRetries.Remove(@event.PatientId);
         _paymentAttempts.Remove(@event.PatientId);
         _cashierAbsenceRetries.Remove(@event.PatientId);
-        CurrentAttentionPatientId = null;
-        CurrentAttentionState = null;
+        // HU-R4: Free only the room this patient was occupying.
+        if (_patientToRoom.TryGetValue(@event.PatientId, out var room))
+        {
+            _activeAttentionsByRoom.Remove(room);
+            _patientToRoom.Remove(@event.PatientId);
+        }
         LastModifiedAt = @event.Metadata.OccurredAt;
     }
 

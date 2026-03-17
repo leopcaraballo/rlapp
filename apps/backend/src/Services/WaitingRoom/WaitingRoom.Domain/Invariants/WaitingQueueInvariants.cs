@@ -144,4 +144,30 @@ public static class WaitingQueueInvariants
         if (!isActive)
             throw new DomainException($"Consulting room '{consultingRoomId}' is already inactive");
     }
+
+    /// <summary>
+    /// Validates that a specific consulting room does not already have a patient in active attention.
+    /// Used by ClaimNextPatient to enforce CRITERIO-R4.2.
+    /// </summary>
+    public static void ValidateRoomNotOccupied(
+        IDictionary<string, string> activeAttentionsByRoom,
+        string stationId)
+    {
+        if (activeAttentionsByRoom.ContainsKey(stationId))
+            throw new DomainException(
+                $"Consulting room '{stationId}' already has a patient in active attention");
+    }
+
+    /// <summary>
+    /// Validates that the given patient is currently in active attention in any consulting room.
+    /// Used by CallPatient, CompleteAttention and MarkAbsentAtConsultation.
+    /// </summary>
+    public static void ValidatePatientInActiveAttention(
+        IDictionary<string, string> patientToRoom,
+        string patientId)
+    {
+        if (!patientToRoom.ContainsKey(patientId))
+            throw new DomainException(
+                $"Patient {patientId} is not in active attention in any consulting room");
+    }
 }
