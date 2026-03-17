@@ -318,6 +318,47 @@
   color: #fff;
 }
 
+/* ── Inputs de acción dentro de la tarjeta seleccionada ── */
+.actionForm {
+  display: flex;
+  flex-direction: column;
+  gap: 12px;
+  padding: 16px 0;
+  border-top: 1px solid #f1f5f9;
+}
+.fieldGroup {
+  display: flex;
+  flex-direction: column;
+  gap: 4px;
+}
+.fieldLabel {
+  font-size: 11px;
+  font-weight: 700;
+  color: #64748b;
+  text-transform: uppercase;
+  letter-spacing: 0.5px;
+}
+.required {
+  color: #dc2626;
+}
+.fieldInput {
+  padding: 8px 12px;
+  font-size: 13px;
+  border: 1px solid #e2e8f0;
+  border-radius: 8px;
+  background: #f8fafc;
+  color: #0b1324;
+  outline: none;
+  transition: border-color 0.15s ease;
+  font-family: var(--font-stack);
+  width: 100%;
+  box-sizing: border-box;
+}
+.fieldInput:focus {
+  border-color: #3b82f6;
+  background: #fff;
+}
+
 /* ── Estado sin selección ── */
 .noSelection {
   flex: 1;

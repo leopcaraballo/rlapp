@@ -38,6 +38,8 @@ export default function CashierPage() {
   // Paciente seleccionado de la lista
   const [selected, setSelected] = useState<PatientInQueueDto | null>(null);
   const [searchQuery, setSearchQuery] = useState("");
+  const [paymentReference, setPaymentReference] = useState("");
+  const [pendingReason, setPendingReason] = useState("");
 
   // Propagar errores del hook al sistema de alertas
   useEffect(() => {
@@ -91,12 +93,23 @@ export default function CashierPage() {
 
     const cmd = { queueId, patientId: selected.patientId };
 
-    if (action === "validate") await cashier.validate(cmd);
-    else if (action === "pending") await cashier.markPending(cmd);
-    else if (action === "absent") await cashier.markAbsent(cmd);
-    else if (action === "cancel") await cashier.cancel(cmd);
+    if (action === "validate") {
+      if (!paymentReference.trim()) {
+        alert.showError("La referencia de comprobante es obligatoria para validar el pago.");
+        return;
+      }
+      await cashier.validate({ ...cmd, paymentReference: paymentReference.trim() });
+    } else if (action === "pending") {
+      await cashier.markPending({ ...cmd, reason: pendingReason.trim() || null });
+    } else if (action === "absent") {
+      await cashier.markAbsent(cmd);
+    } else if (action === "cancel") {
+      await cashier.cancel(cmd);
+    }
 
     // Limpiar selección y refrescar la cola
+    setPaymentReference("");
+    setPendingReason("");
     setSelected(null);
     refresh();
   }
@@ -238,6 +251,39 @@ export default function CashierPage() {
                 <span className={localStyles.detailValue}>
                   {new Date(selected.checkInTime).toLocaleTimeString()}
                 </span>
+              </div>
+            </div>
+
+            <div className={localStyles.actionForm}>
+              <div className={localStyles.fieldGroup}>
+                <label className={localStyles.fieldLabel} htmlFor="paymentRef">
+                  Referencia de pago <span className={localStyles.required} aria-hidden="true">*</span>
+                </label>
+                <input
+                  id="paymentRef"
+                  type="text"
+                  className={localStyles.fieldInput}
+                  value={paymentReference}
+                  onChange={(e) => setPaymentReference(e.target.value)}
+                  placeholder="Nro. comprobante"
+                  autoComplete="off"
+                  maxLength={100}
+                />
+              </div>
+              <div className={localStyles.fieldGroup}>
+                <label className={localStyles.fieldLabel} htmlFor="pendingReason">
+                  Razón pago pendiente
+                </label>
+                <input
+                  id="pendingReason"
+                  type="text"
+                  className={localStyles.fieldInput}
+                  value={pendingReason}
+                  onChange={(e) => setPendingReason(e.target.value)}
+                  placeholder="Motivo (ej. sin efectivo)"
+                  autoComplete="off"
+                  maxLength={200}
+                />
               </div>
             </div>
 

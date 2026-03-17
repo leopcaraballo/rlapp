@@ -158,6 +158,7 @@ export default function ReceptionPage() {
               {filteredPatients.map((p) => (
                 <li key={p.patientId} className={styles.patientItem}>
                   <div className={styles.patientInfo}>
+                    <span className={styles.turnNumber}>Turno #{p.turnNumber}</span>
                     <span className={styles.patientName}>{p.patientName}</span>
                     <span className={styles.patientId}>{p.patientId}</span>
                   </div>

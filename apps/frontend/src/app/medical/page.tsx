@@ -7,6 +7,7 @@ import * as z from "zod";
 
 import { env } from "@/config/env";
 import { useAlert } from "@/context/AlertContext";
+import { useAuth } from "@/context/AuthContext";
 import { useConsultingRooms } from "@/hooks/useConsultingRooms";
 import { useMedicalStation } from "@/hooks/useMedicalStation";
 import { useWaitingRoom } from "@/hooks/useWaitingRoom";
@@ -30,6 +31,7 @@ export default function MedicalPage() {
   const alert = useAlert();
   const medical = useMedicalStation();
   const rooms = useConsultingRooms();
+  const { role } = useAuth();
   const busy = medical.busy || rooms.busy;
 
   const initialQueueId = search?.get("queue") || env.DEFAULT_QUEUE_ID;
@@ -208,22 +210,26 @@ export default function MedicalPage() {
             >
               Llamar siguiente
             </button>
-            <button
-              type="button"
-              onClick={handleSubmit(onActivate)}
-              disabled={busy}
-              className={styles.btnActivate}
-            >
-              Activar estación
-            </button>
-            <button
-              type="button"
-              onClick={handleSubmit(onDeactivate)}
-              disabled={busy}
-              className={styles.btnDeactivate}
-            >
-              Desactivar estación
-            </button>
+            {role === "admin" && (
+              <>
+                <button
+                  type="button"
+                  onClick={handleSubmit(onActivate)}
+                  disabled={busy}
+                  className={styles.btnActivate}
+                >
+                  Activar estación
+                </button>
+                <button
+                  type="button"
+                  onClick={handleSubmit(onDeactivate)}
+                  disabled={busy}
+                  className={styles.btnDeactivate}
+                >
+                  Desactivar estación
+                </button>
+              </>
+            )}
           </div>
         </div>
 

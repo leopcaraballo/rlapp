@@ -80,6 +80,7 @@ const NEXT_TURN: NextTurnView = {
   queueId: "Q1",
   patientId: "p1",
   patientName: "Juan",
+  turnNumber: 1,
   priority: "Medium",
   consultationType: "General",
   status: "Called",
