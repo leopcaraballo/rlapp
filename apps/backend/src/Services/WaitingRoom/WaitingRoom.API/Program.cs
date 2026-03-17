@@ -7,6 +7,7 @@ using WaitingRoom.API.Validation;
 using WaitingRoom.API.Middleware;
 using WaitingRoom.API.Endpoints;
 using WaitingRoom.API.Hubs;
+using WaitingRoom.API.Services;
 using WaitingRoom.Application.CommandHandlers;
 using WaitingRoom.Application.DTOs;
 using WaitingRoom.Application.Commands;
@@ -180,6 +181,7 @@ services.AddOpenApi(options =>
     });
 });
 services.AddSignalR();
+services.AddSingleton<IWaitingRoomNotifier, WaitingRoomNotifier>();
 
 services.AddCors(options =>
 {
@@ -354,6 +356,7 @@ commandGroup.MapPost("/api/waiting-room/check-in", async (
     CheckInPatientCommandHandler handler,
     IProjection projection,
     IEventStore eventStore,
+    IWaitingRoomNotifier notifier,
     ILogger<Program> logger,
     CancellationToken cancellationToken) =>
 {
@@ -385,6 +388,7 @@ commandGroup.MapPost("/api/waiting-room/check-in", async (
     if (!string.IsNullOrWhiteSpace(queueId))
     {
         await ProjectQueueAsync(projection, eventStore, queueId, cancellationToken);
+        await notifier.NotifyQueueUpdatedAsync(queueId, cancellationToken);
     }
 
     logger.LogInformation(
@@ -420,6 +424,7 @@ commandGroup.MapPost("/api/reception/register", async (
     CheckInPatientCommandHandler handler,
     IProjection projection,
     IEventStore eventStore,
+    IWaitingRoomNotifier notifier,
     CancellationToken cancellationToken) =>
 {
     var correlationId = httpContext.Items["CorrelationId"]?.ToString() ?? Guid.NewGuid().ToString();
@@ -443,6 +448,7 @@ commandGroup.MapPost("/api/reception/register", async (
     if (!string.IsNullOrWhiteSpace(queueId))
     {
         await ProjectQueueAsync(projection, eventStore, queueId, cancellationToken);
+        await notifier.NotifyQueueUpdatedAsync(queueId, cancellationToken);
     }
 
     return Results.Ok(new
@@ -473,6 +479,7 @@ commandGroup.MapPost("/api/cashier/call-next", async (
     CallNextCashierCommandHandler handler,
     IProjection projection,
     IEventStore eventStore,
+    IWaitingRoomNotifier notifier,
     CancellationToken cancellationToken) =>
 {
     var correlationId = httpContext.Items["CorrelationId"]?.ToString() ?? Guid.NewGuid().ToString();
@@ -487,6 +494,7 @@ commandGroup.MapPost("/api/cashier/call-next", async (
 
     var result = await handler.HandleAsync(command, cancellationToken);
     await ProjectQueueAsync(projection, eventStore, dto.QueueId, cancellationToken);
+    await notifier.NotifyQueueUpdatedAsync(dto.QueueId, cancellationToken);
 
     return Results.Ok(new
     {
@@ -515,6 +523,7 @@ commandGroup.MapPost("/api/cashier/validate-payment", async (
     ValidatePaymentCommandHandler handler,
     IProjection projection,
     IEventStore eventStore,
+    IWaitingRoomNotifier notifier,
     CancellationToken cancellationToken) =>
 {
     var correlationId = httpContext.Items["CorrelationId"]?.ToString() ?? Guid.NewGuid().ToString();
@@ -530,6 +539,7 @@ commandGroup.MapPost("/api/cashier/validate-payment", async (
 
     var eventCount = await handler.HandleAsync(command, cancellationToken);
     await ProjectQueueAsync(projection, eventStore, dto.QueueId, cancellationToken);
+    await notifier.NotifyQueueUpdatedAsync(dto.QueueId, cancellationToken);
 
     return Results.Ok(new
     {
@@ -558,6 +568,7 @@ commandGroup.MapPost("/api/cashier/mark-payment-pending", async (
     MarkPaymentPendingCommandHandler handler,
     IProjection projection,
     IEventStore eventStore,
+    IWaitingRoomNotifier notifier,
     CancellationToken cancellationToken) =>
 {
     var correlationId = httpContext.Items["CorrelationId"]?.ToString() ?? Guid.NewGuid().ToString();
@@ -573,6 +584,7 @@ commandGroup.MapPost("/api/cashier/mark-payment-pending", async (
 
     var eventCount = await handler.HandleAsync(command, cancellationToken);
     await ProjectQueueAsync(projection, eventStore, dto.QueueId, cancellationToken);
+    await notifier.NotifyQueueUpdatedAsync(dto.QueueId, cancellationToken);
 
     return Results.Ok(new
     {
@@ -601,6 +613,7 @@ commandGroup.MapPost("/api/cashier/mark-absent", async (
     MarkAbsentAtCashierCommandHandler handler,
     IProjection projection,
     IEventStore eventStore,
+    IWaitingRoomNotifier notifier,
     CancellationToken cancellationToken) =>
 {
     var correlationId = httpContext.Items["CorrelationId"]?.ToString() ?? Guid.NewGuid().ToString();
@@ -615,6 +628,7 @@ commandGroup.MapPost("/api/cashier/mark-absent", async (
 
     var eventCount = await handler.HandleAsync(command, cancellationToken);
     await ProjectQueueAsync(projection, eventStore, dto.QueueId, cancellationToken);
+    await notifier.NotifyQueueUpdatedAsync(dto.QueueId, cancellationToken);
 
     return Results.Ok(new
     {
@@ -643,6 +657,7 @@ commandGroup.MapPost("/api/cashier/cancel-payment", async (
     CancelByPaymentCommandHandler handler,
     IProjection projection,
     IEventStore eventStore,
+    IWaitingRoomNotifier notifier,
     CancellationToken cancellationToken) =>
 {
     var correlationId = httpContext.Items["CorrelationId"]?.ToString() ?? Guid.NewGuid().ToString();
@@ -658,6 +673,7 @@ commandGroup.MapPost("/api/cashier/cancel-payment", async (
 
     var eventCount = await handler.HandleAsync(command, cancellationToken);
     await ProjectQueueAsync(projection, eventStore, dto.QueueId, cancellationToken);
+    await notifier.NotifyQueueUpdatedAsync(dto.QueueId, cancellationToken);
 
     return Results.Ok(new
     {
@@ -686,6 +702,7 @@ commandGroup.MapPost("/api/medical/call-next", async (
     ClaimNextPatientCommandHandler handler,
     IProjection projection,
     IEventStore eventStore,
+    IWaitingRoomNotifier notifier,
     CancellationToken cancellationToken) =>
 {
     var correlationId = httpContext.Items["CorrelationId"]?.ToString() ?? Guid.NewGuid().ToString();
@@ -700,6 +717,7 @@ commandGroup.MapPost("/api/medical/call-next", async (
 
     var result = await handler.HandleAsync(command, cancellationToken);
     await ProjectQueueAsync(projection, eventStore, dto.QueueId, cancellationToken);
+    await notifier.NotifyQueueUpdatedAsync(dto.QueueId, cancellationToken);
 
     return Results.Ok(new
     {
@@ -729,6 +747,7 @@ commandGroup.MapPost("/api/medical/consulting-room/activate", async (
     ActivateConsultingRoomCommandHandler handler,
     IProjection projection,
     IEventStore eventStore,
+    IWaitingRoomNotifier notifier,
     CancellationToken cancellationToken) =>
 {
     var correlationId = httpContext.Items["CorrelationId"]?.ToString() ?? Guid.NewGuid().ToString();
@@ -743,6 +762,7 @@ commandGroup.MapPost("/api/medical/consulting-room/activate", async (
 
     var eventCount = await handler.HandleAsync(command, cancellationToken);
     await ProjectQueueAsync(projection, eventStore, dto.QueueId, cancellationToken);
+    await notifier.NotifyQueueUpdatedAsync(dto.QueueId, cancellationToken);
 
     return Results.Ok(new
     {
@@ -771,6 +791,7 @@ commandGroup.MapPost("/api/medical/consulting-room/deactivate", async (
     DeactivateConsultingRoomCommandHandler handler,
     IProjection projection,
     IEventStore eventStore,
+    IWaitingRoomNotifier notifier,
     CancellationToken cancellationToken) =>
 {
     var correlationId = httpContext.Items["CorrelationId"]?.ToString() ?? Guid.NewGuid().ToString();
@@ -785,6 +806,7 @@ commandGroup.MapPost("/api/medical/consulting-room/deactivate", async (
 
     var eventCount = await handler.HandleAsync(command, cancellationToken);
     await ProjectQueueAsync(projection, eventStore, dto.QueueId, cancellationToken);
+    await notifier.NotifyQueueUpdatedAsync(dto.QueueId, cancellationToken);
 
     return Results.Ok(new
     {
@@ -813,6 +835,7 @@ commandGroup.MapPost("/api/medical/start-consultation", async (
     CallPatientCommandHandler handler,
     IProjection projection,
     IEventStore eventStore,
+    IWaitingRoomNotifier notifier,
     CancellationToken cancellationToken) =>
 {
     var correlationId = httpContext.Items["CorrelationId"]?.ToString() ?? Guid.NewGuid().ToString();
@@ -827,6 +850,7 @@ commandGroup.MapPost("/api/medical/start-consultation", async (
 
     var eventCount = await handler.HandleAsync(command, cancellationToken);
     await ProjectQueueAsync(projection, eventStore, dto.QueueId, cancellationToken);
+    await notifier.NotifyQueueUpdatedAsync(dto.QueueId, cancellationToken);
 
     return Results.Ok(new
     {
@@ -855,6 +879,7 @@ commandGroup.MapPost("/api/medical/finish-consultation", async (
     CompleteAttentionCommandHandler handler,
     IProjection projection,
     IEventStore eventStore,
+    IWaitingRoomNotifier notifier,
     CancellationToken cancellationToken) =>
 {
     var correlationId = httpContext.Items["CorrelationId"]?.ToString() ?? Guid.NewGuid().ToString();
@@ -871,6 +896,7 @@ commandGroup.MapPost("/api/medical/finish-consultation", async (
 
     var eventCount = await handler.HandleAsync(command, cancellationToken);
     await ProjectQueueAsync(projection, eventStore, dto.QueueId, cancellationToken);
+    await notifier.NotifyQueueUpdatedAsync(dto.QueueId, cancellationToken);
 
     return Results.Ok(new
     {
@@ -899,6 +925,7 @@ commandGroup.MapPost("/api/medical/mark-absent", async (
     MarkAbsentAtConsultationCommandHandler handler,
     IProjection projection,
     IEventStore eventStore,
+    IWaitingRoomNotifier notifier,
     CancellationToken cancellationToken) =>
 {
     var correlationId = httpContext.Items["CorrelationId"]?.ToString() ?? Guid.NewGuid().ToString();
@@ -913,6 +940,7 @@ commandGroup.MapPost("/api/medical/mark-absent", async (
 
     var eventCount = await handler.HandleAsync(command, cancellationToken);
     await ProjectQueueAsync(projection, eventStore, dto.QueueId, cancellationToken);
+    await notifier.NotifyQueueUpdatedAsync(dto.QueueId, cancellationToken);
 
     return Results.Ok(new
     {
@@ -941,10 +969,13 @@ commandGroup.MapPost("/api/waiting-room/claim-next", async (
     ClaimNextPatientCommandHandler handler,
     IProjection projection,
     IEventStore eventStore,
+    IWaitingRoomNotifier notifier,
     ILogger<Program> logger,
     CancellationToken cancellationToken) =>
 {
     var correlationId = httpContext.Items["CorrelationId"]?.ToString() ?? Guid.NewGuid().ToString();
+    httpContext.Response.Headers["Deprecation"] = "true";
+    httpContext.Response.Headers["Link"] = "</api/medical/call-next>; rel=\"successor-version\"";
 
     logger.LogInformation(
         "ClaimNext request received. CorrelationId: {CorrelationId}, QueueId: {QueueId}",
@@ -961,6 +992,7 @@ commandGroup.MapPost("/api/waiting-room/claim-next", async (
 
     var result = await handler.HandleAsync(command, cancellationToken);
     await ProjectQueueAsync(projection, eventStore, dto.QueueId, cancellationToken);
+    await notifier.NotifyQueueUpdatedAsync(dto.QueueId, cancellationToken);
 
     return Results.Ok(new
     {
@@ -974,7 +1006,7 @@ commandGroup.MapPost("/api/waiting-room/claim-next", async (
 })
 .WithName("ClaimNextPatient")
 .WithTags("WaitingRoom")
-.WithSummary("Reclamar siguiente paciente")
+.WithSummary("[DEPRECATED] Reclamar siguiente paciente — usar /api/medical/call-next")
 .WithDescription("Reclama el siguiente paciente disponible en la cola para atencion. Asigna la estacion indicada al paciente.")
 .AddEndpointFilter<DoctorOnlyFilter>()
 .Accepts<ClaimNextPatientDto>("application/json")
@@ -990,9 +1022,12 @@ commandGroup.MapPost("/api/waiting-room/call-patient", async (
     CallPatientCommandHandler handler,
     IProjection projection,
     IEventStore eventStore,
+    IWaitingRoomNotifier notifier,
     CancellationToken cancellationToken) =>
 {
     var correlationId = httpContext.Items["CorrelationId"]?.ToString() ?? Guid.NewGuid().ToString();
+    httpContext.Response.Headers["Deprecation"] = "true";
+    httpContext.Response.Headers["Link"] = "</api/medical/start-consultation>; rel=\"successor-version\"";
 
     var command = new CallPatientCommand
     {
@@ -1004,6 +1039,7 @@ commandGroup.MapPost("/api/waiting-room/call-patient", async (
 
     var eventCount = await handler.HandleAsync(command, cancellationToken);
     await ProjectQueueAsync(projection, eventStore, dto.QueueId, cancellationToken);
+    await notifier.NotifyQueueUpdatedAsync(dto.QueueId, cancellationToken);
 
     return Results.Ok(new
     {
@@ -1016,7 +1052,7 @@ commandGroup.MapPost("/api/waiting-room/call-patient", async (
 })
 .WithName("CallPatient")
 .WithTags("WaitingRoom")
-.WithSummary("Llamar paciente especifico")
+.WithSummary("[DEPRECATED] Llamar paciente — usar /api/medical/start-consultation")
 .WithDescription("Llama a un paciente especifico de la cola para atencion. Genera evento PatientCalled.")
 .AddEndpointFilter<DoctorOnlyFilter>()
 .Accepts<CallPatientDto>("application/json")
@@ -1032,9 +1068,12 @@ commandGroup.MapPost("/api/waiting-room/complete-attention", async (
     CompleteAttentionCommandHandler handler,
     IProjection projection,
     IEventStore eventStore,
+    IWaitingRoomNotifier notifier,
     CancellationToken cancellationToken) =>
 {
     var correlationId = httpContext.Items["CorrelationId"]?.ToString() ?? Guid.NewGuid().ToString();
+    httpContext.Response.Headers["Deprecation"] = "true";
+    httpContext.Response.Headers["Link"] = "</api/medical/finish-consultation>; rel=\"successor-version\"";
 
     var command = new CompleteAttentionCommand
     {
@@ -1048,6 +1087,7 @@ commandGroup.MapPost("/api/waiting-room/complete-attention", async (
 
     var eventCount = await handler.HandleAsync(command, cancellationToken);
     await ProjectQueueAsync(projection, eventStore, dto.QueueId, cancellationToken);
+    await notifier.NotifyQueueUpdatedAsync(dto.QueueId, cancellationToken);
 
     return Results.Ok(new
     {
@@ -1060,7 +1100,7 @@ commandGroup.MapPost("/api/waiting-room/complete-attention", async (
 })
 .WithName("CompleteAttention")
 .WithTags("WaitingRoom")
-.WithSummary("Completar atencion del paciente")
+.WithSummary("[DEPRECATED] Completar atencion — usar /api/medical/finish-consultation")
 .WithDescription("Marca la atencion del paciente como finalizada con resultado y notas opcionales. Genera evento AttentionCompleted.")
 .AddEndpointFilter<DoctorOnlyFilter>()
 .Accepts<CompleteAttentionDto>("application/json")
