@@ -269,10 +269,15 @@ public sealed class WaitingQueue : AggregateRoot
         WaitingQueueInvariants.ValidateCurrentCashier(CurrentCashierPatientId, request.PatientId.Value);
 
         var currentState = GetPatientState(request.PatientId.Value);
-        WaitingQueueInvariants.ValidateStateTransition(
-            currentState,
-            WaitingQueueInvariants.CashierCalledState,
-            "validate-payment");
+
+        // FIX (HU-R1): Accept BOTH "EnTaquilla" and "PagoPendiente" as valid source states.
+        // Scenario: cajero marca pago pendiente → paciente regresa con comprobante → validar debe funcionar.
+        if (!string.Equals(currentState, WaitingQueueInvariants.CashierCalledState, StringComparison.OrdinalIgnoreCase)
+            && !string.Equals(currentState, WaitingQueueInvariants.PaymentPendingState, StringComparison.OrdinalIgnoreCase))
+        {
+            throw new DomainException(
+                $"Invalid state transition for validate-payment. Expected '{WaitingQueueInvariants.CashierCalledState}' or '{WaitingQueueInvariants.PaymentPendingState}' but was '{currentState ?? "none"}'");
+        }
 
         var patient = Patients.FirstOrDefault(p =>
             string.Equals(p.PatientId.Value, request.PatientId.Value, StringComparison.OrdinalIgnoreCase));
