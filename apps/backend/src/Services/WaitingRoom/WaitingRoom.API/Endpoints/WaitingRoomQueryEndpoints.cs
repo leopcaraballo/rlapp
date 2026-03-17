@@ -2,6 +2,8 @@ namespace WaitingRoom.API.Endpoints;
 
 using Microsoft.AspNetCore.Http;
 using Microsoft.AspNetCore.Routing;
+using BuildingBlocks.EventSourcing;
+using WaitingRoom.Application.Ports;
 using WaitingRoom.Projections.Abstractions;
 using WaitingRoom.Projections.Views;
 
@@ -69,6 +71,14 @@ public static class WaitingRoomQueryEndpoints
             .WithDescription("Initiates full projection rebuild from event store. Returns 202 Accepted. Use for recovery or schema migration.")
             .Produces(StatusCodes.Status202Accepted)
             .Produces<ErrorResponse>(StatusCodes.Status500InternalServerError);
+
+        // HU-R5: New GET endpoint — returns active consulting rooms from aggregate state.
+        group.MapGet("/{queueId}/consulting-rooms", GetConsultingRoomsAsync)
+            .WithName("GetConsultingRooms")
+            .WithSummary("Get active consulting rooms state")
+            .WithDescription("Returns the list of active consulting room IDs for a queue, loaded from the event-sourced aggregate.")
+            .Produces<ConsultingRoomsView>(StatusCodes.Status200OK)
+            .Produces<ErrorResponse>(StatusCodes.Status404NotFound);
     }
 
     /// <summary>
@@ -229,6 +239,50 @@ public static class WaitingRoomQueryEndpoints
     }
 
     /// <summary>
+    /// GET /api/v1/waiting-room/{queueId}/consulting-rooms  (HU-R5)
+    ///
+    /// Returns active consulting rooms by loading the aggregate from the event store.
+    /// Used by the /consulting-rooms frontend page to show correct initial state.
+    /// </summary>
+    private static readonly string[] AllKnownRooms = ["CONS-01", "CONS-02", "CONS-03", "CONS-04"];
+
+    private static async Task<IResult> GetConsultingRoomsAsync(
+        string queueId,
+        IEventStore eventStore,
+        CancellationToken cancellationToken)
+    {
+        if (string.IsNullOrWhiteSpace(queueId))
+            return Results.BadRequest(new ErrorResponse
+            {
+                Error = "QueueId required",
+                StatusCode = 400
+            });
+
+        try
+        {
+            var queue = await eventStore.LoadAsync(queueId, cancellationToken);
+
+            if (queue is null)
+                return Results.NotFound(new ErrorResponse
+                {
+                    Error = $"Queue '{queueId}' not found",
+                    StatusCode = 404
+                });
+
+            return Results.Ok(new ConsultingRoomsView
+            {
+                QueueId = queueId,
+                ActiveRooms = queue.ActiveConsultingRooms.ToList(),
+                AllRooms = AllKnownRooms
+            });
+        }
+        catch (Exception)
+        {
+            return Results.InternalServerError();
+        }
+    }
+
+    /// <summary>
     /// POST /api/v1/waiting-room/{queueId}/rebuild
     ///
     /// Initiates asynchronous projection rebuild.
@@ -291,4 +345,15 @@ public record ErrorResponse
     public required int StatusCode { get; init; }
     public string? Detail { get; init; }
     public DateTimeOffset Timestamp { get; init; } = DateTimeOffset.UtcNow;
+}
+
+/// <summary>
+/// View model for consulting room state query (HU-R5).
+/// </summary>
+public record ConsultingRoomsView
+{
+    public required string QueueId { get; init; }
+    public required IReadOnlyList<string> ActiveRooms { get; init; }
+    public required IReadOnlyList<string> AllRooms { get; init; }
+    public DateTimeOffset ProjectedAt { get; init; } = DateTimeOffset.UtcNow;
 }

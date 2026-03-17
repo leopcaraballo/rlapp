@@ -329,6 +329,19 @@ export async function markAbsentMedical(dto: {
   );
 }
 
+/** HU-R5: Fetch the active/inactive state of all known consulting rooms. */
+export async function getConsultingRoomsState(
+  queueId: string,
+): Promise<{ activeRooms: string[]; allRooms: string[] }> {
+  const res = await fetch(
+    `${API_BASE}/api/v1/waiting-room/${encodeURIComponent(queueId)}/consulting-rooms`,
+    { headers: baseHeaders() },
+  );
+  if (res.status === 404) return { activeRooms: [], allRooms: [] };
+  const data = await handleResponse<{ activeRooms: string[]; allRooms: string[] }>(res);
+  return data;
+}
+
 export default {
   getMonitor,
   getQueueState,

@@ -4,6 +4,7 @@ import React, { useEffect, useState } from "react";
 
 import { useAlert } from "@/context/AlertContext";
 import { useConsultingRooms } from "@/hooks/useConsultingRooms";
+import { getConsultingRoomsState } from "@/services/api/waitingRoom";
 import sharedStyles from "@/styles/page.module.css";
 
 import styles from "./page.module.css";
@@ -24,6 +25,24 @@ export default function ConsultingRoomsPage() {
   const [rooms, setRooms] = useState<RoomStatus[]>(
     DEFAULT_STATIONS.map((id) => ({ stationId: id, active: false })),
   );
+
+  // HU-R5: Fetch initial consulting room state from backend on mount.
+  useEffect(() => {
+    let cancelled = false;
+    getConsultingRoomsState(queueId)
+      .then(({ activeRooms, allRooms }) => {
+        if (cancelled) return;
+        const knownRooms = allRooms.length > 0 ? allRooms : DEFAULT_STATIONS;
+        setRooms(
+          knownRooms.map((id) => ({ stationId: id, active: activeRooms.includes(id) })),
+        );
+      })
+      .catch(() => {
+        // Backend may not be reachable in dev; fall back to default (all inactive)
+      });
+    return () => { cancelled = true; };
+  // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [queueId]);
 
   useEffect(() => {
     if (error) {
