@@ -34,6 +34,7 @@ function buildConn(state = "Connected") {
     onreconnecting: jest.fn((cb: (...args: unknown[]) => void) => {
       capturedEvents["_onreconnecting"] = cb;
     }),
+    invoke: jest.fn().mockResolvedValue(undefined),
   };
 }
 
@@ -199,7 +200,15 @@ describe("waitingRoomSignalR", () => {
     expect(getActiveQueueId()).toBeNull();
   });
 
-  // ── 15. connect() no lanza si start() falla (captura internamente) ────────
+  // ── 15. connect() invokes JoinQueue after start ──────────────────────────
+  it("invoca JoinQueue tras iniciar la conexión", async () => {
+    const conn = buildConn("Disconnected");
+    mockBuildFn.mockReturnValue(conn);
+    await connect("Q1");
+    expect(conn.invoke).toHaveBeenCalledWith("JoinQueue", "Q1");
+  });
+
+  // ── 16. connect() no lanza si start() falla (captura internamente) ────────
   it("connect() no lanza al llamador si start() falla tras maxAttempts", async () => {
     mockStart.mockRejectedValue(new Error("connection refused"));
     await expect(connect("Q1")).resolves.not.toThrow();

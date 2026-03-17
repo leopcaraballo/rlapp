@@ -119,6 +119,10 @@ export async function connect(queueId: string, handlers: WaitingRoomHandlers = {
 
   newConn.onreconnected((connectionId?: string | null) => {
     console.info("SignalR reconectado", connectionId);
+    // Re-join queue group after reconnection
+    void newConn.invoke("JoinQueue", queueId).catch(() => {
+      console.warn("SignalR: no se pudo re-registrar en grupo tras reconexión");
+    });
     handlers.onConnected?.();
   });
 
@@ -133,8 +137,9 @@ export async function connect(queueId: string, handlers: WaitingRoomHandlers = {
   });
 
   try {
-    // isActive: verifica que esta instancia sigue siendo la conexión vigente
     await startWithRetry(newConn, () => connection === newConn);
+    // Explicitly join the queue group (safety net alongside X-Queue-Id header)
+    await newConn.invoke("JoinQueue", queueId);
     console.info(`SignalR: conectado al hub para la cola ${queueId}`);
     handlers.onConnected?.();
   } catch (err) {
