@@ -4,6 +4,7 @@ using BuildingBlocks.EventSourcing;
 using WaitingRoom.Application.Commands;
 using WaitingRoom.Application.Exceptions;
 using WaitingRoom.Application.Ports;
+using WaitingRoom.Domain.Aggregates;
 using WaitingRoom.Domain.Commands;
 
 public sealed class ActivateConsultingRoomCommandHandler
@@ -26,11 +27,11 @@ public sealed class ActivateConsultingRoomCommandHandler
         ActivateConsultingRoomCommand command,
         CancellationToken cancellationToken = default)
     {
-        var queue = await _eventStore.LoadAsync(command.QueueId, cancellationToken)
-            ?? throw new AggregateNotFoundException(command.QueueId);
+        var queue = await _eventStore.LoadAsync<WaitingQueue>(command.ServiceId, cancellationToken)
+            ?? throw new AggregateNotFoundException(command.ServiceId);
 
         var metadata = EventMetadata.CreateNew(
-            aggregateId: command.QueueId,
+            aggregateId: command.ServiceId,
             actor: command.Actor,
             correlationId: command.CorrelationId ?? Guid.NewGuid().ToString());
 
@@ -38,6 +39,7 @@ public sealed class ActivateConsultingRoomCommandHandler
         {
             ConsultingRoomId = command.ConsultingRoomId,
             ActivatedAt = _clock.UtcNow,
+            Actor = command.Actor,
             Metadata = metadata
         };
 

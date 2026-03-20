@@ -68,12 +68,12 @@ process.env.NEXT_PUBLIC_API_BASE_URL = "http://localhost:5000";
 import {
   connect,
   disconnect,
-  getActiveQueueId,
+  getActiveServiceId,
   isConnected,
-} from "@/services/signalr/waitingRoomSignalR";
+} from "@/services/signalr/atencionSignalR";
 
 // ── suite ─────────────────────────────────────────────────────────────────────
-describe("waitingRoomSignalR", () => {
+describe("atencionSignalR", () => {
   beforeEach(() => {
     const conn = buildConn("Disconnected");
     mockBuildFn.mockReturnValue(conn);
@@ -97,10 +97,10 @@ describe("waitingRoomSignalR", () => {
     expect(mockStart).toHaveBeenCalled();
   });
 
-  // ── 3. getActiveQueueId almacena el queueId ───────────────────────────────
-  it("getActiveQueueId() devuelve el queueId usado en connect()", async () => {
+  // ── 3. getActiveServiceId almacena el serviceId ───────────────────────────────
+  it("getActiveServiceId() devuelve el serviceId usado en connect()", async () => {
     await connect("Q1");
-    expect(getActiveQueueId()).toBe("Q1");
+    expect(getActiveServiceId()).toBe("Q1");
   });
 
   // ── 4. isConnected refleja estado Connected ───────────────────────────────
@@ -120,13 +120,13 @@ describe("waitingRoomSignalR", () => {
     expect(onMonitor).toHaveBeenCalledWith({ data: "monitor-payload" });
   });
 
-  // ── 6. handler onQueueState — QueueStateUpdated ───────────────────────────
-  it("onQueueState handler se invoca al recibir QueueStateUpdated", async () => {
-    const onQueueState = jest.fn();
-    await connect("Q1", { onQueueState });
-    const handler = capturedEvents["QueueStateUpdated"] as (p: unknown) => void;
+  // ── 6. handler onAtencionState — AtencionStateUpdated ───────────────────────────
+  it("onAtencionState handler se invoca al recibir AtencionStateUpdated", async () => {
+    const onAtencionState = jest.fn();
+    await connect("Q1", { onAtencionState });
+    const handler = capturedEvents["AtencionStateUpdated"] as (p: unknown) => void;
     handler?.({ count: 3 });
-    expect(onQueueState).toHaveBeenCalledWith({ count: 3 });
+    expect(onAtencionState).toHaveBeenCalledWith({ count: 3 });
   });
 
   // ── 7. handler onNextTurn — NextTurn ──────────────────────────────────────
@@ -193,19 +193,25 @@ describe("waitingRoomSignalR", () => {
   });
 
   // ── 14. disconnect() limpia la conexión ──────────────────────────────────
-  it("disconnect() llama a stop() y deja getActiveQueueId = null", async () => {
+  it("disconnect() llama a stop() y deja getActiveServiceId = null", async () => {
     await connect("Q1");
     await disconnect();
     expect(mockStop).toHaveBeenCalled();
-    expect(getActiveQueueId()).toBeNull();
+    expect(getActiveServiceId()).toBeNull();
   });
 
-  // ── 15. connect() invokes JoinQueue after start ──────────────────────────
-  it("invoca JoinQueue tras iniciar la conexión", async () => {
+  // ── 15. connect() no invoca JoinAtencion; usa header X-Atencion-Id ─────────
+  it("no invoca JoinAtencion y envía X-Atencion-Id al conectar", async () => {
     const conn = buildConn("Disconnected");
     mockBuildFn.mockReturnValue(conn);
     await connect("Q1");
-    expect(conn.invoke).toHaveBeenCalledWith("JoinQueue", "Q1");
+    expect(conn.invoke).not.toHaveBeenCalled();
+    expect(mockWithUrlFn).toHaveBeenCalledWith(
+      expect.stringContaining("/ws/waiting-room"),
+      expect.objectContaining({
+        headers: expect.objectContaining({ "X-Atencion-Id": "Q1" }),
+      }),
+    );
   });
 
   // ── 16. connect() no lanza si start() falla (captura internamente) ────────
@@ -241,7 +247,7 @@ describe("waitingRoomSignalR", () => {
     process.env.NEXT_PUBLIC_WS_DISABLED = "true";
     // Reiniciar módulo para que la constante WS_DISABLED se re-evalúe
     jest.resetModules();
-    const { connect: connectFresh } = await import("@/services/signalr/waitingRoomSignalR");
+    const { connect: connectFresh } = await import("@/services/signalr/atencionSignalR");
     try {
       const result = await connectFresh("Q1");
       expect(result).toBeNull();

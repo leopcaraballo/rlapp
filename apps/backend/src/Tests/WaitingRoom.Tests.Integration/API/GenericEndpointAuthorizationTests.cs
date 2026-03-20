@@ -9,8 +9,8 @@ using Xunit;
 /// <summary>
 /// Pruebas de autorizacion para los endpoints genericos de sala de espera.
 ///
-/// Verifica que los endpoints /api/waiting-room/claim-next, /api/waiting-room/call-patient
-/// y /api/waiting-room/complete-attention requieren rol Doctor o Admin (DoctorOnlyFilter).
+/// Verifica que los endpoints /api/atencion/claim-next, /api/atencion/call-patient
+/// y /api/atencion/complete-attention requieren rol Doctor o Admin (DoctorOnlyFilter).
 ///
 /// Estos endpoints fueron identificados como desprotegidos en la auditoria de seguridad
 /// (hallazgos S-05 y S-06) y corregidos con DoctorOnlyFilter.
@@ -29,9 +29,9 @@ public sealed class GenericEndpointAuthorizationTests : IClassFixture<WaitingRoo
     // ============================================================
 
     [Theory]
-    [InlineData("/api/waiting-room/claim-next")]
-    [InlineData("/api/waiting-room/call-patient")]
-    [InlineData("/api/waiting-room/complete-attention")]
+    [InlineData("/api/atencion/claim-next")]
+    [InlineData("/api/atencion/call-patient")]
+    [InlineData("/api/atencion/complete-attention")]
     public async Task GenericEndpoints_WithoutAuthentication_ReturnUnauthorized(string endpoint)
     {
         // Arrange
@@ -39,10 +39,11 @@ public sealed class GenericEndpointAuthorizationTests : IClassFixture<WaitingRoo
         {
             Content = JsonContent.Create(new
             {
-                QueueId = "AUTH-QUEUE-01",
+                ServiceId = "AUTH-QUEUE-01",
                 PatientId = "AUTH-PAT-01",
                 Actor = "test-actor",
-                StationId = "CONS-01"
+                StationId = "CONS-01",
+                Outcome = "Completed"
             }),
             Headers =
             {
@@ -64,12 +65,12 @@ public sealed class GenericEndpointAuthorizationTests : IClassFixture<WaitingRoo
     // ============================================================
 
     [Theory]
-    [InlineData("/api/waiting-room/claim-next", "Receptionist")]
-    [InlineData("/api/waiting-room/claim-next", "Cashier")]
-    [InlineData("/api/waiting-room/call-patient", "Receptionist")]
-    [InlineData("/api/waiting-room/call-patient", "Cashier")]
-    [InlineData("/api/waiting-room/complete-attention", "Receptionist")]
-    [InlineData("/api/waiting-room/complete-attention", "Cashier")]
+    [InlineData("/api/atencion/claim-next", "Receptionist")]
+    [InlineData("/api/atencion/claim-next", "Cashier")]
+    [InlineData("/api/atencion/call-patient", "Receptionist")]
+    [InlineData("/api/atencion/call-patient", "Cashier")]
+    [InlineData("/api/atencion/complete-attention", "Receptionist")]
+    [InlineData("/api/atencion/complete-attention", "Cashier")]
     public async Task GenericEndpoints_WithWrongRole_ReturnForbidden(
         string endpoint, string wrongRole)
     {
@@ -78,10 +79,11 @@ public sealed class GenericEndpointAuthorizationTests : IClassFixture<WaitingRoo
         {
             Content = JsonContent.Create(new
             {
-                QueueId = "AUTH-QUEUE-01",
+                ServiceId = "AUTH-QUEUE-01",
                 PatientId = "AUTH-PAT-01",
                 Actor = "test-actor",
-                StationId = "CONS-01"
+                StationId = "CONS-01",
+                Outcome = "Completed"
             }),
             Headers =
             {
@@ -103,9 +105,9 @@ public sealed class GenericEndpointAuthorizationTests : IClassFixture<WaitingRoo
     // ============================================================
 
     [Theory]
-    [InlineData("/api/waiting-room/claim-next")]
-    [InlineData("/api/waiting-room/call-patient")]
-    [InlineData("/api/waiting-room/complete-attention")]
+    [InlineData("/api/atencion/claim-next")]
+    [InlineData("/api/atencion/call-patient")]
+    [InlineData("/api/atencion/complete-attention")]
     public async Task GenericEndpoints_WithDoctorRole_DoNotReturnForbiddenOrUnauthorized(
         string endpoint)
     {
@@ -114,7 +116,7 @@ public sealed class GenericEndpointAuthorizationTests : IClassFixture<WaitingRoo
         {
             Content = JsonContent.Create(new
             {
-                QueueId = "AUTH-QUEUE-01",
+                ServiceId = "AUTH-QUEUE-01",
                 PatientId = "AUTH-PAT-01",
                 Actor = "doctor-01",
                 StationId = "CONS-01"
@@ -139,9 +141,9 @@ public sealed class GenericEndpointAuthorizationTests : IClassFixture<WaitingRoo
     // ============================================================
 
     [Theory]
-    [InlineData("/api/waiting-room/claim-next")]
-    [InlineData("/api/waiting-room/call-patient")]
-    [InlineData("/api/waiting-room/complete-attention")]
+    [InlineData("/api/atencion/claim-next")]
+    [InlineData("/api/atencion/call-patient")]
+    [InlineData("/api/atencion/complete-attention")]
     public async Task GenericEndpoints_WithAdminRole_DoNotReturnForbiddenOrUnauthorized(
         string endpoint)
     {
@@ -150,7 +152,7 @@ public sealed class GenericEndpointAuthorizationTests : IClassFixture<WaitingRoo
         {
             Content = JsonContent.Create(new
             {
-                QueueId = "AUTH-QUEUE-01",
+                ServiceId = "AUTH-QUEUE-01",
                 PatientId = "AUTH-PAT-01",
                 Actor = "admin-01",
                 StationId = "CONS-01"

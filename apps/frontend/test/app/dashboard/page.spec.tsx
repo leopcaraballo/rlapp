@@ -10,8 +10,8 @@ import { render, screen, waitFor } from "@testing-library/react";
 import CompletedHistoryDashboard from "@/app/dashboard/page";
 
 // Mock del hook que usa RealtimeAppointments
-jest.mock("@/hooks/useQueueAsAppointments", () => ({
-  useQueueAsAppointments: jest.fn(() => ({
+jest.mock("@/hooks/useAtencionAsAppointments", () => ({
+  useAtencionAsAppointments: jest.fn(() => ({
     appointments: [
       {
         id: "apt-wait-001",
@@ -175,8 +175,8 @@ describe("CompletedHistoryDashboard (Dashboard Page)", () => {
   describe("Error Handling", () => {
     it("should display error message when connection fails", async () => {
       jest.resetModules();
-      jest.mock("@/hooks/useQueueAsAppointments", () => ({
-        useQueueAsAppointments: jest.fn(() => ({
+      jest.mock("@/hooks/useAtencionAsAppointments", () => ({
+        useAtencionAsAppointments: jest.fn(() => ({
           appointments: [],
           error: "Connection failed",
           connected: false,
@@ -186,9 +186,9 @@ describe("CompletedHistoryDashboard (Dashboard Page)", () => {
       }));
 
       const {
-        useQueueAsAppointments,
-      } = require("@/hooks/useQueueAsAppointments");
-      useQueueAsAppointments.mockReturnValue({
+        useAtencionAsAppointments,
+      } = require("@/hooks/useAtencionAsAppointments");
+      useAtencionAsAppointments.mockReturnValue({
         appointments: [],
         error: "Connection failed",
         connected: false,
@@ -205,8 +205,8 @@ describe("CompletedHistoryDashboard (Dashboard Page)", () => {
 
     it("should display loading state while connecting", async () => {
       jest.resetModules();
-      jest.mock("@/hooks/useQueueAsAppointments", () => ({
-        useQueueAsAppointments: jest.fn(() => ({
+      jest.mock("@/hooks/useAtencionAsAppointments", () => ({
+        useAtencionAsAppointments: jest.fn(() => ({
           appointments: [],
           error: null,
           connected: false,
@@ -216,9 +216,9 @@ describe("CompletedHistoryDashboard (Dashboard Page)", () => {
       }));
 
       const {
-        useQueueAsAppointments,
-      } = require("@/hooks/useQueueAsAppointments");
-      useQueueAsAppointments.mockReturnValue({
+        useAtencionAsAppointments,
+      } = require("@/hooks/useAtencionAsAppointments");
+      useAtencionAsAppointments.mockReturnValue({
         appointments: [],
         error: null,
         connected: false,

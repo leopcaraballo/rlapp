@@ -6,6 +6,7 @@ using Microsoft.Extensions.Logging.Abstractions;
 using WaitingRoom.Domain.Events;
 using WaitingRoom.Infrastructure.Projections;
 using WaitingRoom.Projections.Handlers;
+using Microsoft.Extensions.Logging;
 using BuildingBlocks.EventSourcing;
 
 /// <summary>
@@ -20,12 +21,12 @@ using BuildingBlocks.EventSourcing;
 public sealed class PatientCheckedInIdempotencyTests
 {
     private readonly PatientCheckedInProjectionHandler _handler;
-    private readonly InMemoryWaitingRoomProjectionContext _context;
+    private readonly InMemoryAtencionProjectionContext _context;
 
     public PatientCheckedInIdempotencyTests()
     {
         _handler = new PatientCheckedInProjectionHandler();
-        _context = new InMemoryWaitingRoomProjectionContext(new NullLogger<InMemoryWaitingRoomProjectionContext>());
+        _context = new InMemoryAtencionProjectionContext(new NullLogger<InMemoryAtencionProjectionContext>());
     }
 
     [Fact]
@@ -33,7 +34,7 @@ public sealed class PatientCheckedInIdempotencyTests
     {
         // Arrange
         var evt = CreatePatientCheckedInEvent(
-            queueId: "queue-1",
+            serviceId: "queue-1",
             patientId: "patient-123",
             patientName: "John Doe",
             priority: "high");
@@ -65,7 +66,7 @@ public sealed class PatientCheckedInIdempotencyTests
     {
         // Arrange
         var evt = CreatePatientCheckedInEvent(
-            queueId: "queue-1",
+            serviceId: "queue-1",
             patientId: "patient-high",
             patientName: "High Priority Patient",
             priority: "high");
@@ -87,7 +88,7 @@ public sealed class PatientCheckedInIdempotencyTests
     {
         // Arrange
         var evt = CreatePatientCheckedInEvent(
-            queueId: "queue-1",
+            serviceId: "queue-1",
             patientId: "patient-normal",
             patientName: "Normal Priority Patient",
             priority: "normal");
@@ -108,7 +109,7 @@ public sealed class PatientCheckedInIdempotencyTests
     {
         // Arrange
         var evt = CreatePatientCheckedInEvent(
-            queueId: "queue-1",
+            serviceId: "queue-1",
             patientId: "patient-001",
             patientName: "Patient One",
             priority: "normal");
@@ -131,19 +132,19 @@ public sealed class PatientCheckedInIdempotencyTests
     {
         // Arrange - Add patients in order: normal, low, high
         var normal = CreatePatientCheckedInEvent(
-            queueId: "queue-1",
+            serviceId: "queue-1",
             patientId: "patient-1",
             patientName: "Normal Patient",
             priority: "normal");
 
         var low = CreatePatientCheckedInEvent(
-            queueId: "queue-1",
+            serviceId: "queue-1",
             patientId: "patient-2",
             patientName: "Low Patient",
             priority: "low");
 
         var high = CreatePatientCheckedInEvent(
-            queueId: "queue-1",
+            serviceId: "queue-1",
             patientId: "patient-3",
             patientName: "High Patient",
             priority: "high");
@@ -167,7 +168,7 @@ public sealed class PatientCheckedInIdempotencyTests
     {
         // Arrange
         var evt = CreatePatientCheckedInEvent(
-            queueId: "queue-1",
+            serviceId: "queue-1",
             patientId: "patient-123",
             patientName: "Same Patient",
             priority: "high");
@@ -186,14 +187,14 @@ public sealed class PatientCheckedInIdempotencyTests
     }
 
     private static PatientCheckedIn CreatePatientCheckedInEvent(
-        string queueId,
+        string serviceId,
         string patientId,
         string patientName,
         string priority)
     {
         return new PatientCheckedIn
         {
-            QueueId = queueId,
+            ServiceId = serviceId,
             PatientId = patientId,
             PatientName = patientName,
             Priority = priority,
@@ -203,7 +204,7 @@ public sealed class PatientCheckedInIdempotencyTests
             CheckInTime = DateTime.UtcNow,
             Metadata = new EventMetadata
             {
-                AggregateId = queueId,
+                AggregateId = serviceId,
                 EventId = Guid.NewGuid().ToString(),
                 CorrelationId = Guid.NewGuid().ToString(),
                 CausationId = Guid.NewGuid().ToString(),

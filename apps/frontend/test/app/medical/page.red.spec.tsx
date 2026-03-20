@@ -48,15 +48,20 @@ jest.mock("@/hooks/useConsultingRooms", () => ({
   useConsultingRooms: () => roomsMock,
 }));
 
-jest.mock("@/hooks/useWaitingRoom", () => ({
-  useWaitingRoom: () => ({
-    queueState: { patientsInQueue: [], currentCount: 0, maxCapacity: 10, availableSpots: 10 },
-    nextTurn: null,
-    refresh: jest.fn(),
+jest.mock("@/hooks/useAtencion", () => ({
+  useAtencion: () => ({
     monitor: null,
+    queueState: { serviceId: "Q1", patientsInQueue: [], currentCount: 0, maxCapacity: 10, availableSpots: 10 },
+    fullState: null,
+    nextTurn: null,
     history: [],
     connectionState: "online",
     lastUpdated: null,
+    refresh: jest.fn(),
+    setMonitor: jest.fn(),
+    setQueueState: jest.fn(),
+    setFullState: jest.fn(),
+    setNextTurn: jest.fn(),
   }),
 }));
 

@@ -67,7 +67,7 @@ public sealed class ApiResponseTimeTests : IClassFixture<WaitingRoomApiFactory>
         // Act
         var sw = Stopwatch.StartNew();
         var response = await PostWithAuthAsync(
-            "/api/waiting-room/check-in", dto, "Receptionist");
+            "/api/atencion/check-in", dto, "Receptionist");
         sw.Stop();
 
         // Assert
@@ -121,7 +121,7 @@ public sealed class ApiResponseTimeTests : IClassFixture<WaitingRoomApiFactory>
 
                 var sw = Stopwatch.StartNew();
                 var resp = await PostWithAuthAsync(
-                    "/api/waiting-room/check-in", dto, "Receptionist");
+                    "/api/atencion/check-in", dto, "Receptionist");
                 sw.Stop();
                 return (resp.StatusCode, sw.ElapsedMilliseconds);
             });
@@ -171,7 +171,7 @@ public sealed class ApiResponseTimeTests : IClassFixture<WaitingRoomApiFactory>
 
                 var reqSw = Stopwatch.StartNew();
                 var resp = await PostWithAuthAsync(
-                    "/api/waiting-room/check-in", dto, "Receptionist");
+                    "/api/atencion/check-in", dto, "Receptionist");
                 reqSw.Stop();
                 results.Add((resp.StatusCode, reqSw.ElapsedMilliseconds));
             });
@@ -212,22 +212,22 @@ public sealed class ApiResponseTimeTests : IClassFixture<WaitingRoomApiFactory>
             Actor = "receptionist-perf"
         };
         var checkInResp = await PostWithAuthAsync(
-            "/api/waiting-room/check-in", checkInDto, "Receptionist");
-        var queueId = (await DeserializeAsync(checkInResp)).GetProperty("queueId").GetString()!;
+            "/api/atencion/check-in", checkInDto, "Receptionist");
+        var serviceId = (await DeserializeAsync(checkInResp)).GetProperty("serviceId").GetString()!;
 
         // Paso 2: Activar consultorio
         await PostWithAuthAsync(
             "/api/medical/consulting-room/activate",
             new ActivateConsultingRoomDto
             {
-                QueueId = queueId, ConsultingRoomId = "PERF-CONS",
+                ServiceId = serviceId, ConsultingRoomId = "PERF-CONS",
                 Actor = "coordinator-perf"
             }, "Admin");
 
         // Paso 3: Caja — llamar
         var cashierResp = await PostWithAuthAsync(
             "/api/cashier/call-next",
-            new CallNextCashierDto { QueueId = queueId, Actor = "cashier-perf" },
+            new CallNextCashierDto { ServiceId = serviceId, Actor = "cashier-perf" },
             "Cashier");
         var patientId = (await DeserializeAsync(cashierResp)).GetProperty("patientId").GetString()!;
 
@@ -236,7 +236,7 @@ public sealed class ApiResponseTimeTests : IClassFixture<WaitingRoomApiFactory>
             "/api/cashier/validate-payment",
             new ValidatePaymentDto
             {
-                QueueId = queueId, PatientId = patientId,
+                ServiceId = serviceId, PatientId = patientId,
                 Actor = "cashier-perf", PaymentReference = "PAY-PERF"
             }, "Cashier");
 
@@ -245,7 +245,7 @@ public sealed class ApiResponseTimeTests : IClassFixture<WaitingRoomApiFactory>
             "/api/medical/call-next",
             new ClaimNextPatientDto
             {
-                QueueId = queueId, Actor = "doctor-perf", StationId = "PERF-CONS"
+                ServiceId = serviceId, Actor = "doctor-perf", StationId = "PERF-CONS"
             }, "Doctor");
 
         // Paso 6: Consulta — iniciar
@@ -253,7 +253,7 @@ public sealed class ApiResponseTimeTests : IClassFixture<WaitingRoomApiFactory>
             "/api/medical/start-consultation",
             new CallPatientDto
             {
-                QueueId = queueId, PatientId = patientId, Actor = "doctor-perf"
+                ServiceId = serviceId, PatientId = patientId, Actor = "doctor-perf"
             }, "Doctor");
 
         // Paso 7: Consulta — completar
@@ -261,7 +261,7 @@ public sealed class ApiResponseTimeTests : IClassFixture<WaitingRoomApiFactory>
             "/api/medical/finish-consultation",
             new CompleteAttentionDto
             {
-                QueueId = queueId, PatientId = patientId,
+                ServiceId = serviceId, PatientId = patientId,
                 Actor = "doctor-perf", Outcome = "Completado"
             }, "Doctor");
 
@@ -294,7 +294,7 @@ public sealed class ApiResponseTimeTests : IClassFixture<WaitingRoomApiFactory>
                 ConsultationType = "General",
                 Actor = "receptionist-perf"
             };
-            await PostWithAuthAsync("/api/waiting-room/check-in", dto, "Receptionist");
+            await PostWithAuthAsync("/api/atencion/check-in", dto, "Receptionist");
         }
 
         sw.Stop();

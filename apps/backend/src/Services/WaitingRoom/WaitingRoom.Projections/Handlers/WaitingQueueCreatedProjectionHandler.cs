@@ -16,7 +16,7 @@ public sealed class WaitingQueueCreatedProjectionHandler : IProjectionHandler
         if (@event is not WaitingQueueCreated evt)
             throw new ArgumentException($"Expected {nameof(WaitingQueueCreated)}, got {@event.GetType().Name}");
 
-        var idempotencyKey = $"queue-created:{evt.QueueId}:{evt.Metadata.AggregateId}:{evt.Metadata.EventId}";
+        var idempotencyKey = $"queue-created:{evt.ServiceId}:{evt.Metadata.AggregateId}:{evt.Metadata.EventId}";
 
         if (await context.AlreadyProcessedAsync(idempotencyKey, cancellationToken))
             return;

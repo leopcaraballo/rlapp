@@ -6,6 +6,7 @@ using WaitingRoom.Application.Ports;
 using WaitingRoom.Domain.Aggregates;
 using WaitingRoom.Domain.Commands;
 using WaitingRoom.Domain.Events;
+using WaitingRoom.Domain.Aggregates;
 using WaitingRoom.Domain.ValueObjects;
 
 /// <summary>
@@ -30,23 +31,23 @@ public sealed class CheckInPatientCommandHandler
     private readonly IEventStore _eventStore;
     private readonly IEventPublisher _eventPublisher;
     private readonly IClock _clock;
-    private readonly IQueueIdGenerator _queueIdGenerator;
+    private readonly IServiceIdGenerator _serviceIdGenerator;
     private readonly IPatientIdentityRegistry _patientIdentityRegistry;
 
-    public string? LastGeneratedQueueId { get; private set; }
+    public string? LastGeneratedServiceId { get; private set; }
     public int? LastTurnNumber { get; private set; }
 
     public CheckInPatientCommandHandler(
         IEventStore eventStore,
         IEventPublisher eventPublisher,
         IClock clock,
-        IQueueIdGenerator? queueIdGenerator = null,
+        IServiceIdGenerator? serviceIdGenerator = null,
         IPatientIdentityRegistry? patientIdentityRegistry = null)
     {
         _eventStore = eventStore ?? throw new ArgumentNullException(nameof(eventStore));
         _eventPublisher = eventPublisher ?? throw new ArgumentNullException(nameof(eventPublisher));
         _clock = clock ?? throw new ArgumentNullException(nameof(clock));
-        _queueIdGenerator = queueIdGenerator ?? new DefaultQueueIdGenerator();
+        _serviceIdGenerator = serviceIdGenerator ?? new DefaultServiceIdGenerator();
         _patientIdentityRegistry = patientIdentityRegistry ?? new NoOpPatientIdentityRegistry();
     }
 
@@ -74,32 +75,33 @@ public sealed class CheckInPatientCommandHandler
         CheckInPatientCommand command,
         CancellationToken cancellationToken = default)
     {
-        var queueId = string.IsNullOrWhiteSpace(command.QueueId)
-            ? _queueIdGenerator.Generate()
-            : command.QueueId;
+        var serviceId = string.IsNullOrWhiteSpace(command.ServiceId)
+            ? _serviceIdGenerator.Generate()
+            : command.ServiceId;
 
-        LastGeneratedQueueId = queueId;
+        LastGeneratedServiceId = serviceId;
 
         await _patientIdentityRegistry.EnsureRegisteredAsync(
             patientId: command.PatientId,
+            patientIdentity: command.PatientId,  // legacy model: patientId is the cedula
             patientName: command.PatientName,
             actor: command.Actor,
             cancellationToken: cancellationToken);
 
         // STEP 1: Load the aggregate from event store
         // This reconstructs the complete aggregate state from all past events
-        var queue = await _eventStore.LoadAsync(queueId, cancellationToken);
+        var queue = await _eventStore.LoadAsync<WaitingQueue>(serviceId, cancellationToken);
 
         if (queue is null)
         {
             var queueMetadata = EventMetadata.CreateNew(
-                aggregateId: queueId,
+                aggregateId: serviceId,
                 actor: command.Actor,
                 correlationId: command.CorrelationId ?? Guid.NewGuid().ToString());
 
             queue = WaitingQueue.Create(
-                queueId: queueId,
-                queueName: queueId,
+                serviceId: serviceId,
+                queueName: serviceId,
                 maxCapacity: DefaultQueueCapacity,
                 metadata: queueMetadata);
         }
@@ -111,7 +113,7 @@ public sealed class CheckInPatientCommandHandler
 
         // Build metadata once
         var metadata = EventMetadata.CreateNew(
-            aggregateId: queueId,
+            aggregateId: serviceId,
             actor: command.Actor,
             correlationId: command.CorrelationId ?? Guid.NewGuid().ToString());
 
@@ -151,7 +153,7 @@ public sealed class CheckInPatientCommandHandler
         return eventsToPublish.Count;
     }
 
-    private sealed class DefaultQueueIdGenerator : IQueueIdGenerator
+    private sealed class DefaultServiceIdGenerator : IServiceIdGenerator
     {
         public string Generate() => Guid.NewGuid().ToString("D");
     }
@@ -160,9 +162,12 @@ public sealed class CheckInPatientCommandHandler
     {
         public Task EnsureRegisteredAsync(
             string patientId,
+            string patientIdentity,
             string patientName,
             string actor,
             CancellationToken cancellationToken = default) => Task.CompletedTask;
+
+        public Task<string?> GetPatientIdByIdentityAsync(string identity, CancellationToken ct = default) => Task.FromResult<string?>(null);
     }
 
     private static string ResolvePriority(CheckInPatientCommand command)

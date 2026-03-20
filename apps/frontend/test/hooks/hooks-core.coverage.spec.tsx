@@ -39,7 +39,7 @@ beforeEach(() => {
 // useCheckIn
 // ===========================================================================
 describe("useCheckIn", () => {
-  const input = { queueId: "q1", patientId: "p1", patientName: "Juan Pérez" };
+  const input = { serviceId: "q1", patientId: "p1", patientName: "Juan Pérez" };
 
   it("estado inicial: busy=false, error=null, lastResult=null", () => {
     const { result } = renderHook(() => useCheckIn());
@@ -124,7 +124,7 @@ describe("useMedicalStation", () => {
   it("claim exitoso actualiza lastResult", async () => {
     mockAdapter.claimNextPatient.mockResolvedValue({ success: true } as never);
     const { result } = renderHook(() => useMedicalStation());
-    await act(async () => { await result.current.claim({ queueId: "q1" }); });
+    await act(async () => { await result.current.claim({ serviceId: "q1" }); });
     expect(result.current.lastResult).toEqual({ success: true });
     expect(result.current.error).toBeNull();
   });
@@ -132,14 +132,14 @@ describe("useMedicalStation", () => {
   it("claim con error establece mensaje", async () => {
     mockAdapter.claimNextPatient.mockRejectedValue(new Error("cola vacía"));
     const { result } = renderHook(() => useMedicalStation());
-    await act(async () => { await result.current.claim({ queueId: "q1" }); });
+    await act(async () => { await result.current.claim({ serviceId: "q1" }); });
     expect(result.current.error).toBe("cola vacía");
   });
 
   it("claim usa actor DEFAULT_ACTOR cuando no se provee", async () => {
     mockAdapter.claimNextPatient.mockResolvedValue({ success: true } as never);
     const { result } = renderHook(() => useMedicalStation());
-    await act(async () => { await result.current.claim({ queueId: "q1" }); });
+    await act(async () => { await result.current.claim({ serviceId: "q1" }); });
     expect(mockAdapter.claimNextPatient).toHaveBeenCalledWith(
       expect.objectContaining({ actor: "doctor" }),
     );
@@ -148,28 +148,28 @@ describe("useMedicalStation", () => {
   it("call exitoso actualiza lastResult", async () => {
     mockAdapter.callPatient.mockResolvedValue({ success: true } as never);
     const { result } = renderHook(() => useMedicalStation());
-    await act(async () => { await result.current.call({ queueId: "q1", patientId: "p1" }); });
+    await act(async () => { await result.current.call({ serviceId: "q1", patientId: "p1" }); });
     expect(result.current.lastResult).toEqual({ success: true });
   });
 
   it("complete exitoso actualiza lastResult", async () => {
     mockAdapter.completeAttention.mockResolvedValue({ success: true } as never);
     const { result } = renderHook(() => useMedicalStation());
-    await act(async () => { await result.current.complete({ queueId: "q1", patientId: "p1" }); });
+    await act(async () => { await result.current.complete({ serviceId: "q1", patientId: "p1" }); });
     expect(result.current.lastResult).toEqual({ success: true });
   });
 
   it("markAbsent exitoso actualiza lastResult", async () => {
     mockAdapter.markAbsentAtMedical.mockResolvedValue({ success: true } as never);
     const { result } = renderHook(() => useMedicalStation());
-    await act(async () => { await result.current.markAbsent({ queueId: "q1", patientId: "p1" }); });
+    await act(async () => { await result.current.markAbsent({ serviceId: "q1", patientId: "p1" }); });
     expect(result.current.lastResult).toEqual({ success: true });
   });
 
   it("clearError limpia el error", async () => {
     mockAdapter.claimNextPatient.mockRejectedValue(new Error("fallo"));
     const { result } = renderHook(() => useMedicalStation());
-    await act(async () => { await result.current.claim({ queueId: "q1" }); });
+    await act(async () => { await result.current.claim({ serviceId: "q1" }); });
     act(() => { result.current.clearError(); });
     expect(result.current.error).toBeNull();
   });
@@ -177,7 +177,7 @@ describe("useMedicalStation", () => {
   it("error no-Error usa String(e)", async () => {
     mockAdapter.callPatient.mockRejectedValue("error literal");
     const { result } = renderHook(() => useMedicalStation());
-    await act(async () => { await result.current.call({ queueId: "q1", patientId: "p1" }); });
+    await act(async () => { await result.current.call({ serviceId: "q1", patientId: "p1" }); });
     expect(result.current.error).toBe("error literal");
   });
 });

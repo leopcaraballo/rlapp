@@ -3,9 +3,9 @@ import React from "react";
 
 import styles from "@/styles/page.module.css";
 
-import type { QueueStateView } from "../../services/api/types";
+import type { AtencionStateView } from "../../services/api/types";
 
-type Props = { queueState: QueueStateView | null };
+type Props = { queueState: AtencionStateView | null };
 
 export default function QueueStateCard({ queueState }: Props) {
   if (!queueState) {
@@ -30,7 +30,7 @@ export default function QueueStateCard({ queueState }: Props) {
       <div>
         <div className={styles.subHeading}>Pacientes próximos</div>
         <div className={styles.patientList}>
-          {queueState.patientsInQueue.map(p => (
+          {queueState.patientsInQueue.map((p) => (
             <div key={p.patientId} className={styles.patientItem}>
               <div className={styles.patientName}>{p.patientName}</div>
               <div className={styles.patientMeta}>{p.priority} · {p.waitTimeMinutes} min</div>

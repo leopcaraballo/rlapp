@@ -78,13 +78,13 @@ public sealed class WaitingQueue : AggregateRoot
     /// <summary>
     /// Creates a new waiting queue with initial capacity and metadata.
     /// </summary>
-    /// <param name="queueId">Unique queue identifier.</param>
+    /// <param name="serviceId">Unique queue identifier.</param>
     /// <param name="queueName">Human-readable queue name.</param>
     /// <param name="maxCapacity">Maximum patients allowed.</param>
     /// <param name="metadata">Event metadata for traceability.</param>
     /// <returns>New WaitingQueue aggregate.</returns>
     public static WaitingQueue Create(
-        string queueId,
+        string serviceId,
         string queueName,
         int maxCapacity,
         EventMetadata metadata)
@@ -99,7 +99,7 @@ public sealed class WaitingQueue : AggregateRoot
         var @event = new WaitingQueueCreated
         {
             Metadata = metadata.WithVersion(queue.Version + 1),
-            QueueId = queueId,
+            ServiceId = serviceId,
             QueueName = queueName,
             MaxCapacity = maxCapacity,
             CreatedAt = metadata.OccurredAt
@@ -146,7 +146,7 @@ public sealed class WaitingQueue : AggregateRoot
         var @event = new PatientCheckedIn
         {
             Metadata = request.Metadata.WithVersion(Version + 1),
-            QueueId = Id,
+            ServiceId = Id,
             PatientId = request.PatientId.Value,
             PatientName = request.PatientName,
             Priority = request.Priority.Value,
@@ -185,7 +185,7 @@ public sealed class WaitingQueue : AggregateRoot
         var @event = new PatientClaimedForAttention
         {
             Metadata = request.Metadata.WithVersion(Version + 1),
-            QueueId = Id,
+            ServiceId = Id,
             PatientId = nextPatient.PatientId.Value,
             PatientName = nextPatient.PatientName,
             Priority = nextPatient.Priority.Value,
@@ -212,11 +212,11 @@ public sealed class WaitingQueue : AggregateRoot
         var @event = new ConsultingRoomActivated
         {
             Metadata = request.Metadata.WithVersion(Version + 1),
-            QueueId = Id,
-            ConsultingRoomId = request.ConsultingRoomId,
-            ActivatedAt = request.ActivatedAt
+            ServiceId = Id,
+            RoomId = request.ConsultingRoomId,
+            ActivatedAt = DateTime.UtcNow,
+            ActivatedBy = request.Actor
         };
-
         RaiseEvent(@event);
     }
 
@@ -233,11 +233,11 @@ public sealed class WaitingQueue : AggregateRoot
         var @event = new ConsultingRoomDeactivated
         {
             Metadata = request.Metadata.WithVersion(Version + 1),
-            QueueId = Id,
-            ConsultingRoomId = request.ConsultingRoomId,
-            DeactivatedAt = request.DeactivatedAt
+            ServiceId = Id,
+            RoomId = request.ConsultingRoomId,
+            DeactivatedAt = DateTime.UtcNow,
+            DeactivatedBy = request.Actor
         };
-
         RaiseEvent(@event);
     }
 
@@ -260,7 +260,7 @@ public sealed class WaitingQueue : AggregateRoot
         var @event = new PatientCalledAtCashier
         {
             Metadata = request.Metadata.WithVersion(Version + 1),
-            QueueId = Id,
+            ServiceId = Id,
             PatientId = nextPatient.PatientId.Value,
             PatientName = nextPatient.PatientName,
             Priority = nextPatient.Priority.Value,
@@ -301,7 +301,7 @@ public sealed class WaitingQueue : AggregateRoot
         var @event = new PatientPaymentValidated
         {
             Metadata = request.Metadata.WithVersion(Version + 1),
-            QueueId = Id,
+            ServiceId = Id,
             PatientId = patient.PatientId.Value,
             PatientName = patient.PatientName,
             Priority = patient.Priority.Value,
@@ -342,7 +342,7 @@ public sealed class WaitingQueue : AggregateRoot
         var @event = new PatientPaymentPending
         {
             Metadata = request.Metadata.WithVersion(Version + 1),
-            QueueId = Id,
+            ServiceId = Id,
             PatientId = patient.PatientId.Value,
             PatientName = patient.PatientName,
             Priority = patient.Priority.Value,
@@ -377,7 +377,7 @@ public sealed class WaitingQueue : AggregateRoot
         var @event = new PatientAbsentAtCashier
         {
             Metadata = request.Metadata.WithVersion(Version + 1),
-            QueueId = Id,
+            ServiceId = Id,
             PatientId = request.PatientId.Value,
             AbsentAt = request.AbsentAt,
             RetryNumber = retryNumber
@@ -408,7 +408,7 @@ public sealed class WaitingQueue : AggregateRoot
         var @event = new PatientCancelledByPayment
         {
             Metadata = request.Metadata.WithVersion(Version + 1),
-            QueueId = Id,
+            ServiceId = Id,
             PatientId = request.PatientId.Value,
             CancelledAt = request.CancelledAt,
             Reason = request.Reason
@@ -434,7 +434,7 @@ public sealed class WaitingQueue : AggregateRoot
         var @event = new PatientCalled
         {
             Metadata = request.Metadata.WithVersion(Version + 1),
-            QueueId = Id,
+            ServiceId = Id,
             PatientId = request.PatientId.Value,
             CalledAt = request.CalledAt
         };
@@ -465,7 +465,7 @@ public sealed class WaitingQueue : AggregateRoot
         var @event = new PatientAttentionCompleted
         {
             Metadata = request.Metadata.WithVersion(Version + 1),
-            QueueId = Id,
+            ServiceId = Id,
             PatientId = patient.PatientId.Value,
             PatientName = patient.PatientName,
             Priority = patient.Priority.Value,
@@ -499,7 +499,7 @@ public sealed class WaitingQueue : AggregateRoot
             var absentEvent = new PatientAbsentAtConsultation
             {
                 Metadata = request.Metadata.WithVersion(Version + 1),
-                QueueId = Id,
+                ServiceId = Id,
                 PatientId = request.PatientId.Value,
                 AbsentAt = request.AbsentAt,
                 RetryNumber = retryNumber
@@ -512,7 +512,7 @@ public sealed class WaitingQueue : AggregateRoot
         var cancelledEvent = new PatientCancelledByAbsence
         {
             Metadata = request.Metadata.WithVersion(Version + 1),
-            QueueId = Id,
+            ServiceId = Id,
             PatientId = request.PatientId.Value,
             CancelledAt = request.AbsentAt,
             TotalAbsences = retryNumber
@@ -660,19 +660,19 @@ public sealed class WaitingQueue : AggregateRoot
 
     private void When(ConsultingRoomActivated @event)
     {
-        _activeConsultingRooms.Add(@event.ConsultingRoomId);
+        _activeConsultingRooms.Add(@event.RoomId);
         LastModifiedAt = @event.Metadata.OccurredAt;
     }
 
     private void When(ConsultingRoomDeactivated @event)
     {
-        _activeConsultingRooms.Remove(@event.ConsultingRoomId);
+        _activeConsultingRooms.Remove(@event.RoomId);
         LastModifiedAt = @event.Metadata.OccurredAt;
     }
 
     private void When(WaitingQueueCreated @event)
     {
-        Id = @event.QueueId;
+        Id = @event.ServiceId;
         QueueName = @event.QueueName;
         MaxCapacity = @event.MaxCapacity;
         CreatedAt = @event.CreatedAt;

@@ -13,10 +13,10 @@ const DEFAULT_QUEUE_ID = process.env.NEXT_PUBLIC_DEFAULT_QUEUE_ID || "QUEUE-01";
 /** Listado de vínculos de navegación global */
 const NAV_LINKS: Array<{ href: string; label: string }> = [
   { href: "/reception", label: "Recepción" },
-  { href: "/cashier", label: "Caja" },
+  { href: "/payment", label: "Caja" },
   { href: "/medical", label: "Médico" },
-  { href: "/consulting-rooms", label: "Consultorios" },
-  { href: `/waiting-room/${DEFAULT_QUEUE_ID}`, label: "Sala de espera" },
+  { href: "/stations", label: "Consultorios" },
+  { href: `/atencion/${DEFAULT_QUEUE_ID}`, label: "Sala de espera" },
   { href: "/dashboard", label: "Dashboard" },
 ];
 
@@ -32,7 +32,7 @@ export default function Navbar(): React.ReactNode {
   const isHidden =
     pathname === "/" ||
     pathname === "/login" ||
-    pathname.startsWith("/display");
+    pathname.startsWith("/monitor");
 
   if (isHidden || isPublicPath(pathname)) {
     return null;

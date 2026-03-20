@@ -11,7 +11,7 @@ using Xunit;
 
 /// <summary>
 /// High-concurrency stress tests to validate:
-/// 1. No duplicate queueIds under concurrent load
+/// 1. No duplicate serviceIds under concurrent load
 /// 2. Race condition safety with 1000+ simultaneous check-ins
 /// 3. Event store atomic persistence
 /// 4. Patient uniqueness despite concurrent access
@@ -23,7 +23,7 @@ public class ConcurrencyStressTests
     {
         // Arrange
         const int ConcurrentCheckInCount = 1000;
-        var queueIds = new System.Collections.Generic.HashSet<string>();
+        var serviceIds = new System.Collections.Generic.HashSet<string>();
         var lockObj = new object();
 
         var tasks = Enumerable.Range(0, ConcurrentCheckInCount)
@@ -39,7 +39,7 @@ public class ConcurrencyStressTests
 
                 lock (lockObj)
                 {
-                    queueIds.Add(queue.Id);
+                    serviceIds.Add(queue.Id);
                 }
             }))
             .ToList();
@@ -48,7 +48,7 @@ public class ConcurrencyStressTests
         await Task.WhenAll(tasks);
 
         // Assert
-        queueIds.Should().HaveCount(ConcurrentCheckInCount,
+        serviceIds.Should().HaveCount(ConcurrentCheckInCount,
             "All queue IDs should be unique even under high concurrent load");
     }
 
@@ -111,28 +111,28 @@ public class ConcurrencyStressTests
     }
 
     [Fact]
-    public async Task GivenHighConcurrencyScenario_WhenQueueProcesses_ThenNeverDuplicateQueueIds()
+    public async Task GivenHighConcurrencyScenario_WhenQueueProcesses_ThenNeverDuplicateServiceIds()
     {
         // Arrange
         const int QueueCount = 100;
         const int PatientPerQueueCount = 50;
-        var allQueueIds = new ConcurrentDictionary<string, bool>();
+        var allServiceIds = new ConcurrentDictionary<string, bool>();
         var allPatientIds = new ConcurrentDictionary<string, bool>();
 
         var tasks = Enumerable.Range(0, QueueCount)
             .SelectMany(queueIndex =>
             {
-                var queueId = $"queue-{queueIndex}";
+                var serviceId = $"queue-{queueIndex}";
                 return Enumerable.Range(0, PatientPerQueueCount)
                     .Select(patientIndex => Task.Run(async () =>
                     {
-                        var metadata = EventMetadata.CreateNew(queueId, $"nurse-{patientIndex}");
-                        var queue = WaitingQueue.Create(queueId, $"Queue {queueIndex}", 200, metadata);
+                        var metadata = EventMetadata.CreateNew(serviceId, $"nurse-{patientIndex}");
+                        var queue = WaitingQueue.Create(serviceId, $"Queue {queueIndex}", 200, metadata);
 
-                        allQueueIds.TryAdd(queue.Id, true);
+                        allServiceIds.TryAdd(queue.Id, true);
 
                         var patientId = $"PAT-{queueIndex}-{patientIndex}";
-                        var checkInMeta = EventMetadata.CreateNew(queueId, "reception");
+                        var checkInMeta = EventMetadata.CreateNew(serviceId, "reception");
                         var request = new CheckInPatientRequest
                         {
                             PatientId = PatientId.Create(patientId),
@@ -162,7 +162,7 @@ public class ConcurrencyStressTests
         await Task.WhenAll(tasks);
 
         // Assert
-        allQueueIds.Count.Should().Be(QueueCount, "Each queue should have unique ID");
+        allServiceIds.Count.Should().Be(QueueCount, "Each queue should have unique ID");
         allPatientIds.Count.Should().BeGreaterThan(0, "At least some patients should check in successfully");
     }
 }

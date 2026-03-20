@@ -4,6 +4,7 @@ using BuildingBlocks.EventSourcing;
 using WaitingRoom.Application.Commands;
 using WaitingRoom.Application.Exceptions;
 using WaitingRoom.Application.Ports;
+using WaitingRoom.Domain.Aggregates;
 using WaitingRoom.Domain.Commands;
 using WaitingRoom.Domain.ValueObjects;
 
@@ -27,11 +28,11 @@ public sealed class MarkAbsentAtCashierCommandHandler
         MarkAbsentAtCashierCommand command,
         CancellationToken cancellationToken = default)
     {
-        var queue = await _eventStore.LoadAsync(command.QueueId, cancellationToken)
-            ?? throw new AggregateNotFoundException(command.QueueId);
+        var queue = await _eventStore.LoadAsync<WaitingQueue>(command.ServiceId, cancellationToken)
+            ?? throw new AggregateNotFoundException(command.ServiceId);
 
         var metadata = EventMetadata.CreateNew(
-            aggregateId: command.QueueId,
+            aggregateId: command.ServiceId,
             actor: command.Actor,
             correlationId: command.CorrelationId ?? Guid.NewGuid().ToString());
 

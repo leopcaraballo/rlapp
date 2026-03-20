@@ -39,19 +39,36 @@ public sealed class EventTypeRegistry
 
     public static EventTypeRegistry CreateDefault() =>
         new([
+            // Waiting Queue Events
             typeof(WaitingQueueCreated),
-            typeof(ConsultingRoomActivated),
-            typeof(ConsultingRoomDeactivated),
-            typeof(PatientCheckedIn),
-            typeof(PatientCalledAtCashier),
+
+            // Patient Events
+            typeof(PatientRegistered),
+            typeof(PatientMarkedAsWaiting),
+            typeof(PatientConsultingRoomAssigned),
+            typeof(PatientConsultationStarted),
+            typeof(PatientConsultationFinished),
+            typeof(PatientArrivedAtCashier),
             typeof(PatientPaymentValidated),
             typeof(PatientPaymentPending),
-            typeof(PatientAbsentAtCashier),
-            typeof(PatientCancelledByPayment),
-            typeof(PatientClaimedForAttention),
+            typeof(PatientCompleted),
             typeof(PatientAbsentAtConsultation),
+            typeof(PatientMarkedAbsentAtConsultation),
+            typeof(PatientAbsentAtCashier),
+            typeof(PatientMarkedAbsentAtCashier),
+            typeof(PatientCancelledByPayment),
+            typeof(PatientCancelledByAbsence),
+            typeof(PatientCheckedIn),
+            typeof(PatientCalledAtCashier),
+            typeof(PatientClaimedForAttention),
             typeof(PatientCalled),
             typeof(PatientAttentionCompleted),
-            typeof(PatientCancelledByAbsence)
+
+            // Consulting Room Events
+            typeof(ConsultingRoomCreated),
+            typeof(ConsultingRoomActivated),
+            typeof(ConsultingRoomDeactivated),
+            typeof(ConsultingRoomPatientAssigned),
+            typeof(ConsultingRoomPatientLeft)
         ]);
 }

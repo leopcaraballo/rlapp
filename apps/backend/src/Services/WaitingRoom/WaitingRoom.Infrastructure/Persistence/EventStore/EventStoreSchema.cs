@@ -11,6 +11,7 @@ internal static class EventStoreSchema
 CREATE TABLE IF NOT EXISTS waiting_room_events (
     event_id UUID PRIMARY KEY,
     aggregate_id TEXT NOT NULL,
+    aggregate_type TEXT NOT NULL,         -- 'Patient' or 'ConsultingRoom'
     version BIGINT NOT NULL,
     event_name TEXT NOT NULL,
     occurred_at TIMESTAMPTZ NOT NULL,
@@ -27,6 +28,9 @@ CREATE UNIQUE INDEX IF NOT EXISTS ux_waiting_room_events_aggregate_version
 
 CREATE UNIQUE INDEX IF NOT EXISTS ux_waiting_room_events_idempotency
     ON waiting_room_events (idempotency_key);
+
+CREATE INDEX IF NOT EXISTS ix_waiting_room_events_aggregate_type
+    ON waiting_room_events (aggregate_type);
 ";
 
     public const string CreateOutboxTableSql = @"
@@ -54,12 +58,16 @@ CREATE INDEX IF NOT EXISTS ix_waiting_room_outbox_pending
     public const string CreatePatientsTableSql = @"
 CREATE TABLE IF NOT EXISTS waiting_room_patients (
     patient_id TEXT PRIMARY KEY,
-    patient_name TEXT NOT NULL,
+    patient_identity TEXT NOT NULL,
+    patient_name VARCHAR(255) NOT NULL,
+    phone_number VARCHAR(20),
+    registration_date DATE NOT NULL DEFAULT CURRENT_DATE,
     created_at TIMESTAMPTZ NOT NULL,
     created_by TEXT NOT NULL
 );
 
-CREATE UNIQUE INDEX IF NOT EXISTS ux_waiting_room_patients_patient_id
-    ON waiting_room_patients (patient_id);
+-- Uniqueness scoped per day: same person can register again on a different day
+CREATE UNIQUE INDEX IF NOT EXISTS ux_waiting_room_patients_identity_date
+    ON waiting_room_patients (patient_identity, registration_date);
 ";
 }

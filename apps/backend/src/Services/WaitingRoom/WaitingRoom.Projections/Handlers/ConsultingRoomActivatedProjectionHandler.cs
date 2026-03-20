@@ -16,7 +16,7 @@ public sealed class ConsultingRoomActivatedProjectionHandler : IProjectionHandle
         if (@event is not ConsultingRoomActivated evt)
             throw new ArgumentException($"Expected {nameof(ConsultingRoomActivated)}, got {@event.GetType().Name}");
 
-        var idempotencyKey = $"consulting-room-activated:{evt.QueueId}:{evt.ConsultingRoomId}:{evt.Metadata.EventId}";
+        var idempotencyKey = $"consulting-room-activated:{evt.ServiceId}:{evt.RoomId}:{evt.Metadata.EventId}";
 
         if (await context.AlreadyProcessedAsync(idempotencyKey, cancellationToken))
             return;

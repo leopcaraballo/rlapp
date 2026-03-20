@@ -7,7 +7,7 @@ import type {
 } from "../../domain/ports/ICommandGateway";
 
 export interface CheckInInput {
-  queueId: string;
+  serviceId: string;
   patientId: string;
   patientName: string;
   priority: AppointmentPriority;
@@ -33,7 +33,7 @@ export async function checkInPatient(
   input: CheckInInput,
 ): Promise<CommandResult> {
   const cmd: CheckInPatientCommand = {
-    queueId: input.queueId,
+    serviceId: input.serviceId,
     patientId: input.patientId,
     patientName: input.patientName.trim(),
     priority: input.priority,

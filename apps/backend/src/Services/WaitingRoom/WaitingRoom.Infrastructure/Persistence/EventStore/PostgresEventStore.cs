@@ -85,21 +85,23 @@ ORDER BY version;";
         return rows.Select(row => _serializer.Deserialize(row.EventName, row.Payload)).ToList();
     }
 
-    public async Task<WaitingQueue?> LoadAsync(
+    public async Task<T?> LoadAsync<T>(
         string aggregateId,
         CancellationToken cancellationToken = default)
+        where T : AggregateRoot
     {
         var events = (await GetEventsAsync(aggregateId, cancellationToken)).ToList();
 
         if (events.Count == 0)
             return null;
 
-        return AggregateRoot.LoadFromHistory<WaitingQueue>(aggregateId, events);
+        return AggregateRoot.LoadFromHistory<T>(aggregateId, events);
     }
 
-    public async Task SaveAsync(
-        WaitingQueue aggregate,
+    public async Task SaveAsync<T>(
+        T aggregate,
         CancellationToken cancellationToken = default)
+        where T : AggregateRoot
     {
         if (aggregate == null)
             throw new ArgumentNullException(nameof(aggregate));
@@ -109,6 +111,7 @@ ORDER BY version;";
 
         var uncommitted = aggregate.UncommittedEvents.ToList();
         var expectedVersion = aggregate.Version - uncommitted.Count;
+        var aggregateType = typeof(T).Name;
 
         await using var connection = new NpgsqlConnection(_connectionString);
         await connection.OpenAsync(cancellationToken);
@@ -127,6 +130,7 @@ ORDER BY version;";
 INSERT INTO waiting_room_events (
     event_id,
     aggregate_id,
+    aggregate_type,
     version,
     event_name,
     occurred_at,
@@ -140,6 +144,7 @@ INSERT INTO waiting_room_events (
 VALUES (
     @EventId,
     @AggregateId,
+    @AggregateType,
     @Version,
     @EventName,
     @OccurredAt,
@@ -168,6 +173,7 @@ ON CONFLICT (idempotency_key) DO NOTHING;
                 {
                     EventId = Guid.Parse(updatedEvent.Metadata.EventId),
                     AggregateId = updatedEvent.Metadata.AggregateId,
+                    AggregateType = aggregateType,
                     Version = updatedEvent.Metadata.Version,
                     EventName = updatedEvent.EventName,
                     OccurredAt = updatedEvent.Metadata.OccurredAt,

@@ -3,9 +3,9 @@ import React from "react";
 
 import styles from "@/styles/page.module.css";
 
-import type { WaitingRoomMonitorView } from "../../services/api/types";
+import type { AtencionMonitorView } from "../../services/api/types";
 
-type Props = { monitor: WaitingRoomMonitorView | null };
+type Props = { monitor: AtencionMonitorView | null };
 
 export default function MonitorCard({ monitor }: Props) {
   if (!monitor) {

@@ -62,7 +62,7 @@ public sealed class ApiContractTests : IClassFixture<WaitingRoomApiFactory>
 
         // Act
         var response = await PostWithAuthAsync(
-            "/api/waiting-room/check-in", dto, "Receptionist");
+            "/api/atencion/check-in", dto, "Receptionist");
         var result = await DeserializeAsync(response);
 
         // Assert: campos obligatorios del contrato
@@ -70,8 +70,8 @@ public sealed class ApiContractTests : IClassFixture<WaitingRoomApiFactory>
         result.TryGetProperty("success", out var successProp).Should().BeTrue("'success' es campo obligatorio");
         successProp.ValueKind.Should().Be(JsonValueKind.True, "'success' debe ser booleano true");
 
-        result.TryGetProperty("queueId", out var queueIdProp).Should().BeTrue("'queueId' es campo obligatorio");
-        queueIdProp.GetString().Should().NotBeNullOrEmpty("'queueId' no debe estar vacio");
+        result.TryGetProperty("serviceId", out var serviceIdProp).Should().BeTrue("'serviceId' es campo obligatorio");
+        serviceIdProp.GetString().Should().NotBeNullOrEmpty("'serviceId' no debe estar vacio");
 
         result.TryGetProperty("eventCount", out var eventCountProp).Should().BeTrue("'eventCount' es campo obligatorio");
         eventCountProp.ValueKind.Should().Be(JsonValueKind.Number, "'eventCount' debe ser numerico");
@@ -88,12 +88,12 @@ public sealed class ApiContractTests : IClassFixture<WaitingRoomApiFactory>
     public async Task CTR002_CashierCallNextResponse_ContainsPatientId()
     {
         // Arrange: check-in first
-        var queueId = await CheckInAndGetQueueIdAsync("CTR-002-PAT", "Contract Caja");
+        var serviceId = await CheckInAndGetServiceIdAsync("CTR-002-PAT", "Contract Caja");
 
         // Act
         var response = await PostWithAuthAsync(
             "/api/cashier/call-next",
-            new CallNextCashierDto { QueueId = queueId, Actor = "cashier-ctr" },
+            new CallNextCashierDto { ServiceId = serviceId, Actor = "cashier-ctr" },
             "Cashier");
         var result = await DeserializeAsync(response);
 
@@ -116,7 +116,7 @@ public sealed class ApiContractTests : IClassFixture<WaitingRoomApiFactory>
     public async Task CTR003_ErrorResponse_HasConsistentStructure()
     {
         // Arrange: enviar solicitud sin body para provocar error de validacion
-        var request = new HttpRequestMessage(HttpMethod.Post, "/api/waiting-room/check-in")
+        var request = new HttpRequestMessage(HttpMethod.Post, "/api/atencion/check-in")
         {
             Content = JsonContent.Create(new
             {
@@ -151,7 +151,7 @@ public sealed class ApiContractTests : IClassFixture<WaitingRoomApiFactory>
     [Fact]
     public async Task CTR004_UnauthorizedResponse_Returns401WithoutSensitiveData()
     {
-        var request = new HttpRequestMessage(HttpMethod.Post, "/api/waiting-room/check-in")
+        var request = new HttpRequestMessage(HttpMethod.Post, "/api/atencion/check-in")
         {
             Content = JsonContent.Create(new CheckInPatientDto
             {
@@ -200,7 +200,7 @@ public sealed class ApiContractTests : IClassFixture<WaitingRoomApiFactory>
             Actor = "receptionist-ctr"
         };
 
-        var request = new HttpRequestMessage(HttpMethod.Post, "/api/waiting-room/check-in")
+        var request = new HttpRequestMessage(HttpMethod.Post, "/api/atencion/check-in")
         {
             Content = JsonContent.Create(dto)
         };
@@ -238,11 +238,11 @@ public sealed class ApiContractTests : IClassFixture<WaitingRoomApiFactory>
 
         // Primera solicitud
         await PostWithAuthAsync(
-            "/api/waiting-room/check-in", dto, "Receptionist", idempotencyKey);
+            "/api/atencion/check-in", dto, "Receptionist", idempotencyKey);
 
         // Segunda solicitud con la misma clave
         var response2 = await PostWithAuthAsync(
-            "/api/waiting-room/check-in", dto, "Receptionist", idempotencyKey);
+            "/api/atencion/check-in", dto, "Receptionist", idempotencyKey);
 
         // Assert: la segunda respuesta debe indicar que es un replay
         response2.StatusCode.Should().Be(HttpStatusCode.OK);
@@ -271,12 +271,60 @@ public sealed class ApiContractTests : IClassFixture<WaitingRoomApiFactory>
         };
 
         var response = await PostWithAuthAsync(
-            "/api/waiting-room/check-in", dto, "Receptionist");
+            "/api/atencion/check-in", dto, "Receptionist");
 
         response.StatusCode.Should().Be(HttpStatusCode.OK);
         response.Content.Headers.ContentType?.MediaType
             .Should().Be("application/json",
                 "Las respuestas exitosas deben tener Content-Type: application/json");
+    }
+
+    // ============================================================
+    // CTR-008: GET /api/v1/atencion/{serviceId}/full-state contract
+    // ============================================================
+
+    /// <summary>
+    /// Valida que el endpoint full-state devuelve la estructura esperada por el frontend
+    /// (AtencionFullStateView): serviceId, waiting, inConsultation, waitingPayment, projectedAt.
+    /// </summary>
+    [Fact]
+    public async Task CTR008_FullStateEndpoint_AfterCheckIn_ReturnsExpectedStructure()
+    {
+        // Arrange: check-in to ensure projection is populated
+        var serviceId = await CheckInAndGetServiceIdAsync("CTR-008-PAT", "Full State Contract");
+
+        // Act
+        var response = await _client.GetAsync($"/api/v1/atencion/{serviceId}/full-state");
+        var result = await DeserializeAsync(response);
+
+        // Assert: HTTP 200
+        response.StatusCode.Should().Be(HttpStatusCode.OK);
+
+        // Required fields from AtencionFullStateView
+        result.TryGetProperty("serviceId", out var sidProp).Should().BeTrue("'serviceId' es campo obligatorio");
+        sidProp.GetString().Should().Be(serviceId);
+
+        result.TryGetProperty("waiting", out var waitingProp).Should().BeTrue("'waiting' es campo obligatorio");
+        waitingProp.ValueKind.Should().Be(JsonValueKind.Array, "'waiting' debe ser un array");
+
+        result.TryGetProperty("inConsultation", out var inConsProp).Should().BeTrue("'inConsultation' es campo obligatorio");
+        inConsProp.ValueKind.Should().Be(JsonValueKind.Array, "'inConsultation' debe ser un array");
+
+        result.TryGetProperty("waitingPayment", out var payProp).Should().BeTrue("'waitingPayment' es campo obligatorio");
+        payProp.ValueKind.Should().Be(JsonValueKind.Array, "'waitingPayment' debe ser un array");
+
+        result.TryGetProperty("projectedAt", out _).Should().BeTrue("'projectedAt' es campo obligatorio");
+    }
+
+    /// <summary>
+    /// Valida que full-state devuelve 404 para una cola inexistente (comportamiento esperado por el frontend).
+    /// </summary>
+    [Fact]
+    public async Task CTR009_FullStateEndpoint_UnknownServiceId_Returns404()
+    {
+        var response = await _client.GetAsync("/api/v1/atencion/unknown-service-does-not-exist/full-state");
+
+        response.StatusCode.Should().Be(HttpStatusCode.NotFound);
     }
 
     // ============================================================
@@ -295,10 +343,10 @@ public sealed class ApiContractTests : IClassFixture<WaitingRoomApiFactory>
         return await _client.SendAsync(request);
     }
 
-    private async Task<string> CheckInAndGetQueueIdAsync(string patientId, string name)
+    private async Task<string> CheckInAndGetServiceIdAsync(string patientId, string name)
     {
         var response = await PostWithAuthAsync(
-            "/api/waiting-room/check-in",
+            "/api/atencion/check-in",
             new CheckInPatientDto
             {
                 PatientId = patientId,
@@ -309,7 +357,7 @@ public sealed class ApiContractTests : IClassFixture<WaitingRoomApiFactory>
             },
             "Receptionist");
         var result = await DeserializeAsync(response);
-        return result.GetProperty("queueId").GetString()!;
+        return result.GetProperty("serviceId").GetString()!;
     }
 
     private static async Task<JsonElement> DeserializeAsync(HttpResponseMessage response)

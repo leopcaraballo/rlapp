@@ -10,7 +10,7 @@ import AppointmentSkeleton from "@/components/AppointmentSkeleton";
 import WebSocketStatus from "@/components/WebSocketStatus";
 import { ConnectionStatus } from "@/components/WebSocketStatus";
 import { Appointment } from "@/domain/Appointment";
-import { useQueueAsAppointments } from "@/hooks/useQueueAsAppointments";
+import { useAtencionAsAppointments } from "@/hooks/useAtencionAsAppointments";
 import { audioService } from "@/services/AudioService";
 import styles from "@/styles/page.module.css";
 
@@ -18,8 +18,8 @@ type Props = {
   layout?: "split" | "container";
   showCompleted?: boolean;
   title?: string;
-  /** ID de la cola que se debe observar en tiempo real (polling REST). */
-  queueId?: string;
+  /** ID del servicio que se debe observar en tiempo real (polling REST). */
+  serviceId?: string;
   /** Si es true, el contenedor ocupa el 100% del ancho. Si es false, se restringe al 70%. */
   fullWidth?: boolean;
 };
@@ -28,7 +28,7 @@ export default function RealtimeAppointments({
   layout = "split",
   showCompleted = false,
   title = "Turnos Disponibles",
-  queueId = process.env.NEXT_PUBLIC_DEFAULT_QUEUE_ID || "QUEUE-01",
+  serviceId = process.env.NEXT_PUBLIC_DEFAULT_QUEUE_ID || "QUEUE-01",
   fullWidth = true,
 }: Props) {
   const [audioEnabled, setAudioEnabled] = useState(() => audioService.isEnabled());
@@ -47,7 +47,7 @@ export default function RealtimeAppointments({
   }, []);
 
   const { appointments, error, isConnecting, connectionStatus } =
-    useQueueAsAppointments(queueId);
+    useAtencionAsAppointments(serviceId);
 
   // Notificaciones de audio y toast cuando llega un turno llamado
   useEffect(() => {

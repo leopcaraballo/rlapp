@@ -6,8 +6,8 @@ import { render, screen } from "@testing-library/react";
 import Home from "@/app/page";
 
 // Mock del hook que usa RealtimeAppointments
-jest.mock("@/hooks/useQueueAsAppointments", () => ({
-  useQueueAsAppointments: () => ({
+jest.mock("@/hooks/useAtencionAsAppointments", () => ({
+  useAtencionAsAppointments: () => ({
     appointments: [
       {
         id: "1",

@@ -51,26 +51,36 @@ jest.mock("@/hooks/useCashierStation", () => ({
   useCashierStation: () => cashierMock,
 }));
 
-jest.mock("@/hooks/useWaitingRoom", () => ({
-  useWaitingRoom: () => ({
+jest.mock("@/hooks/useAtencion", () => ({
+  useAtencion: () => ({
+    monitor: null,
     queueState: { patientsInQueue: patientsQueue },
+    fullState: null,
+    nextTurn: null,
+    history: [],
+    connectionState: "online",
+    lastUpdated: null,
     refresh: refreshMock,
+    setMonitor: jest.fn(),
+    setQueueState: jest.fn(),
+    setFullState: jest.fn(),
+    setNextTurn: jest.fn(),
   }),
 }));
 
-import CashierPage from "@/app/cashier/page";
+import PaymentPage from "@/app/payment/page";
 
 // ── helpers ─────────────────────────────────────────────────────────────────
 /** Renderiza la página y selecciona al PATIENT_A de la lista */
 async function renderAndSelectPatient() {
   const user = userEvent.setup();
-  render(<CashierPage />);
+  render(<PaymentPage />);
   await user.click(screen.getByRole("button", { name: /Carlos Ruiz/i }));
   return user;
 }
 
 // ── suite ────────────────────────────────────────────────────────────────────
-describe("CashierPage — RED", () => {
+describe("PaymentPage — RED", () => {
   beforeEach(() => {
     jest.clearAllMocks();
     patientsQueue = [PATIENT_A];
@@ -84,9 +94,9 @@ describe("CashierPage — RED", () => {
   });
 
   // ── 1. Llamar siguiente ────────────────────────────────────────────────────
-  it("llama a callNext con el queueId correcto al pulsar 'Llamar siguiente'", async () => {
+  it("llama a callNext con el serviceId correcto al pulsar 'Llamar siguiente'", async () => {
     const user = userEvent.setup();
-    render(<CashierPage />);
+    render(<PaymentPage />);
 
     await user.click(screen.getByRole("button", { name: /Llamar siguiente/i }));
 
@@ -97,7 +107,7 @@ describe("CashierPage — RED", () => {
 
   it("ejecuta refresh después de llamar al siguiente paciente", async () => {
     const user = userEvent.setup();
-    render(<CashierPage />);
+    render(<PaymentPage />);
 
     await user.click(screen.getByRole("button", { name: /Llamar siguiente/i }));
 
@@ -117,14 +127,20 @@ describe("CashierPage — RED", () => {
     async (btnRegex, method) => {
       const hookMethod = cashierMock[method] as jest.Mock;
       const user = await renderAndSelectPatient();
+      if (method === "validate") {
+        await user.type(screen.getByLabelText(/Referencia de pago/i), "REF-DOC-123");
+      }
 
       await user.click(screen.getByRole("button", { name: btnRegex }));
 
       await waitFor(() => {
         expect(hookMethod).toHaveBeenCalledWith(
           expect.objectContaining({
-            queueId: "QUEUE-TEST",
+            serviceId: "QUEUE-TEST",
             patientId: "PAT-001",
+            ...(method === "validate"
+              ? { paymentReference: "REF-DOC-123" }
+              : {}),
           }),
         );
       });
@@ -138,6 +154,7 @@ describe("CashierPage — RED", () => {
     // Los botones de acción deben estar visibles tras la selección
     expect(screen.getByRole("button", { name: /Validar pago/i })).toBeInTheDocument();
 
+    await user.type(screen.getByLabelText(/Referencia de pago/i), "PAID-VAL-001");
     await user.click(screen.getByRole("button", { name: /Validar pago/i }));
 
     await waitFor(() => {
@@ -155,7 +172,7 @@ describe("CashierPage — RED", () => {
   // ── 7. Doble submit bloqueado ──────────────────────────────────────────────
   it("deshabilita los botones de acción cuando busy es true", async () => {
     cashierMock.busy = true;
-    render(<CashierPage />);
+    render(<PaymentPage />);
 
     const callNextBtn = screen.getByRole("button", { name: /Llamar siguiente/i });
     expect(callNextBtn).toBeDisabled();
@@ -168,7 +185,7 @@ describe("CashierPage — RED", () => {
     // Redefinimos el mock con un paciente ya seleccionado simulando el estado busy.
     // Forzamos la renderización con busy=true y luego verificamos
     // que los botones de acción estén deshabilitados desde el inicio.
-    render(<CashierPage />);
+    render(<PaymentPage />);
 
     // Hacemos click aunque busy=true (el botón de lista de pacientes no usa busy)
     const patientBtn = screen.getByRole("button", { name: /Carlos Ruiz/i });
@@ -186,7 +203,7 @@ describe("CashierPage — RED", () => {
   // ── 8. Propagación de errores del hook ────────────────────────────────────
   it("muestra el error del hook en la alerta cuando cashier.error no es null", () => {
     cashierMock.error = "Servicio de caja no disponible";
-    render(<CashierPage />);
+    render(<PaymentPage />);
 
     expect(showErrorMock).toHaveBeenCalledWith(
       "Servicio de caja no disponible",
@@ -195,7 +212,7 @@ describe("CashierPage — RED", () => {
 
   it("invoca clearError después de propagar el error al sistema de alertas", () => {
     cashierMock.error = "Error de red";
-    render(<CashierPage />);
+    render(<PaymentPage />);
 
     expect(cashierMock.clearError).toHaveBeenCalled();
   });
@@ -203,7 +220,7 @@ describe("CashierPage — RED", () => {
   // ── 9. Estado vacío ───────────────────────────────────────────────────────
   it("muestra el mensaje de estado vacío cuando no hay pacientes en la cola", () => {
     patientsQueue = [];
-    render(<CashierPage />);
+    render(<PaymentPage />);
 
     expect(
       screen.getByText(/No hay pacientes en la cola/i),

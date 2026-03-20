@@ -22,8 +22,8 @@ jest.mock("@/services/AudioService", () => ({
   },
 }));
 
-jest.mock("@/hooks/useQueueAsAppointments", () => ({
-  useQueueAsAppointments: jest.fn(() => mockHookReturn),
+jest.mock("@/hooks/useAtencionAsAppointments", () => ({
+  useAtencionAsAppointments: jest.fn(() => mockHookReturn),
 }));
 
 describe("CompletedHistoryDashboard coverage", () => {

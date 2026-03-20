@@ -24,7 +24,7 @@ public sealed record CheckInPatientCommand
     /// Optional waiting queue identifier.
     /// When omitted, backend generates it.
     /// </summary>
-    public string? QueueId { get; init; }
+    public string? ServiceId { get; init; }
 
     /// <summary>
     /// Unique identifier for the patient.

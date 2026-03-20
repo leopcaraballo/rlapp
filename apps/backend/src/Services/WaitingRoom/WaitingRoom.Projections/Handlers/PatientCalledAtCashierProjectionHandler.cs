@@ -17,24 +17,24 @@ public sealed class PatientCalledAtCashierProjectionHandler : IProjectionHandler
         if (@event is not PatientCalledAtCashier evt)
             throw new ArgumentException($"Expected {nameof(PatientCalledAtCashier)}, got {@event.GetType().Name}");
 
-        if (context is not IWaitingRoomProjectionContext waitingContext)
-            throw new InvalidOperationException($"Context must implement {nameof(IWaitingRoomProjectionContext)}");
+        if (context is not IAtencionProjectionContext atencionContext)
+            throw new InvalidOperationException($"Context must implement {nameof(IAtencionProjectionContext)}");
 
-        var idempotencyKey = $"patient-called-cashier:{evt.QueueId}:{evt.Metadata.AggregateId}:{evt.Metadata.EventId}";
+        var idempotencyKey = $"patient-called-cashier:{evt.ServiceId}:{evt.Metadata.AggregateId}:{evt.Metadata.EventId}";
 
         if (await context.AlreadyProcessedAsync(idempotencyKey, cancellationToken))
             return;
 
         var normalizedPriority = NormalizePriority(evt.Priority);
 
-        await waitingContext.UpdateMonitorViewAsync(evt.QueueId, normalizedPriority, "decrement", cancellationToken);
-        await waitingContext.RemovePatientFromQueueAsync(evt.QueueId, evt.PatientId, cancellationToken);
+        await atencionContext.UpdateMonitorViewAsync(evt.ServiceId, normalizedPriority, "decrement", cancellationToken);
+        await atencionContext.RemovePatientFromQueueAsync(evt.ServiceId, evt.PatientId, cancellationToken);
 
-        await waitingContext.SetNextTurnViewAsync(
-            evt.QueueId,
+        await atencionContext.SetNextTurnViewAsync(
+            evt.ServiceId,
             new NextTurnView
             {
-                QueueId = evt.QueueId,
+                ServiceId = evt.ServiceId,
                 PatientId = evt.PatientId,
                 PatientName = evt.PatientName,
                 Priority = normalizedPriority,

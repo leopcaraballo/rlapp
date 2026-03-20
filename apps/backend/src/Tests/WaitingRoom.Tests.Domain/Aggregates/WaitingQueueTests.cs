@@ -12,12 +12,12 @@ using Xunit;
 public class WaitingQueueTests
 {
     private static WaitingQueue CreateQueue(
-        string queueId = "QUEUE-01",
+        string serviceId = "QUEUE-01",
         string queueName = "Main Reception",
         int maxCapacity = 10)
     {
-        var metadata = EventMetadata.CreateNew(queueId, "system");
-        var queue = WaitingQueue.Create(queueId, queueName, maxCapacity, metadata);
+        var metadata = EventMetadata.CreateNew(serviceId, "system");
+        var queue = WaitingQueue.Create(serviceId, queueName, maxCapacity, metadata);
         queue.ClearUncommittedEvents();
         return queue;
     }

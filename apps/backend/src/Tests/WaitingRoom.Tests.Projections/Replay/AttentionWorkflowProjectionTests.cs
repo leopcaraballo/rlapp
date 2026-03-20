@@ -13,7 +13,7 @@ public sealed class AttentionWorkflowProjectionTests
     [Fact]
     public async Task ClaimCallComplete_UpdatesNextTurnAndHistory()
     {
-        var context = new InMemoryWaitingRoomProjectionContext(new NullLogger<InMemoryWaitingRoomProjectionContext>());
+        var context = new InMemoryAtencionProjectionContext(new NullLogger<InMemoryAtencionProjectionContext>());
         var checkedInHandler = new PatientCheckedInProjectionHandler();
         var cashierCalledHandler = new PatientCalledAtCashierProjectionHandler();
         var paymentValidatedHandler = new PatientPaymentValidatedProjectionHandler();
@@ -21,32 +21,32 @@ public sealed class AttentionWorkflowProjectionTests
         var calledHandler = new PatientCalledProjectionHandler();
         var completedHandler = new PatientAttentionCompletedProjectionHandler();
 
-        var queueId = "queue-1";
+        var serviceId = "queue-1";
         var patientId = "p-1";
 
-        await checkedInHandler.HandleAsync(CreateCheckedIn(queueId, patientId), context);
-        await cashierCalledHandler.HandleAsync(CreateCashierCalled(queueId, patientId), context);
-        await paymentValidatedHandler.HandleAsync(CreatePaymentValidated(queueId, patientId), context);
-        await claimedHandler.HandleAsync(CreateClaimed(queueId, patientId), context);
-        await calledHandler.HandleAsync(CreateCalled(queueId, patientId), context);
+        await checkedInHandler.HandleAsync(CreateCheckedIn(serviceId, patientId), context);
+        await cashierCalledHandler.HandleAsync(CreateCashierCalled(serviceId, patientId), context);
+        await paymentValidatedHandler.HandleAsync(CreatePaymentValidated(serviceId, patientId), context);
+        await claimedHandler.HandleAsync(CreateClaimed(serviceId, patientId), context);
+        await calledHandler.HandleAsync(CreateCalled(serviceId, patientId), context);
 
-        var nextTurn = await context.GetNextTurnViewAsync(queueId);
+        var nextTurn = await context.GetNextTurnViewAsync(serviceId);
         nextTurn.Should().NotBeNull();
         nextTurn!.Status.Should().Be("called");
 
-        await completedHandler.HandleAsync(CreateCompleted(queueId, patientId), context);
+        await completedHandler.HandleAsync(CreateCompleted(serviceId, patientId), context);
 
-        var nextAfterCompletion = await context.GetNextTurnViewAsync(queueId);
+        var nextAfterCompletion = await context.GetNextTurnViewAsync(serviceId);
         nextAfterCompletion.Should().BeNull();
 
-        var history = await context.GetRecentAttentionHistoryAsync(queueId, 10);
+        var history = await context.GetRecentAttentionHistoryAsync(serviceId, 10);
         history.Should().HaveCount(1);
         history[0].PatientId.Should().Be(patientId);
     }
 
-    private static PatientCheckedIn CreateCheckedIn(string queueId, string patientId) => new()
+    private static PatientCheckedIn CreateCheckedIn(string serviceId, string patientId) => new()
     {
-        QueueId = queueId,
+        ServiceId = serviceId,
         PatientId = patientId,
         PatientName = "Patient",
         Priority = "high",
@@ -54,62 +54,62 @@ public sealed class AttentionWorkflowProjectionTests
         QueuePosition = 0,
         TurnNumber = 1,
         CheckInTime = DateTime.UtcNow,
-        Metadata = NewMetadata(queueId)
+        Metadata = NewMetadata(serviceId)
     };
 
-    private static PatientClaimedForAttention CreateClaimed(string queueId, string patientId) => new()
+    private static PatientClaimedForAttention CreateClaimed(string serviceId, string patientId) => new()
     {
-        QueueId = queueId,
+        ServiceId = serviceId,
         PatientId = patientId,
         PatientName = "Patient",
         Priority = "high",
         ConsultationType = "General",
         ClaimedAt = DateTime.UtcNow,
         TurnNumber = 1,
-        Metadata = NewMetadata(queueId)
+        Metadata = NewMetadata(serviceId)
     };
 
-    private static PatientCalledAtCashier CreateCashierCalled(string queueId, string patientId) => new()
+    private static PatientCalledAtCashier CreateCashierCalled(string serviceId, string patientId) => new()
     {
-        QueueId = queueId,
+        ServiceId = serviceId,
         PatientId = patientId,
         PatientName = "Patient",
         Priority = "high",
         ConsultationType = "General",
         CalledAt = DateTime.UtcNow,
         TurnNumber = 1,
-        Metadata = NewMetadata(queueId)
+        Metadata = NewMetadata(serviceId)
     };
 
-    private static PatientPaymentValidated CreatePaymentValidated(string queueId, string patientId) => new()
+    private static PatientPaymentValidated CreatePaymentValidated(string serviceId, string patientId) => new()
     {
-        QueueId = queueId,
+        ServiceId = serviceId,
         PatientId = patientId,
         PatientName = "Patient",
         Priority = "high",
         ConsultationType = "General",
         ValidatedAt = DateTime.UtcNow,
         TurnNumber = 1,
-        Metadata = NewMetadata(queueId)
+        Metadata = NewMetadata(serviceId)
     };
 
-    private static PatientCalled CreateCalled(string queueId, string patientId) => new()
+    private static PatientCalled CreateCalled(string serviceId, string patientId) => new()
     {
-        QueueId = queueId,
+        ServiceId = serviceId,
         PatientId = patientId,
         CalledAt = DateTime.UtcNow,
-        Metadata = NewMetadata(queueId)
+        Metadata = NewMetadata(serviceId)
     };
 
-    private static PatientAttentionCompleted CreateCompleted(string queueId, string patientId) => new()
+    private static PatientAttentionCompleted CreateCompleted(string serviceId, string patientId) => new()
     {
-        QueueId = queueId,
+        ServiceId = serviceId,
         PatientId = patientId,
         PatientName = "Patient",
         Priority = "high",
         ConsultationType = "General",
         CompletedAt = DateTime.UtcNow,
-        Metadata = NewMetadata(queueId)
+        Metadata = NewMetadata(serviceId)
     };
 
     private static EventMetadata NewMetadata(string aggregateId) => new()

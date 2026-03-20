@@ -72,9 +72,9 @@ public sealed class PrivilegeEscalationTests : IClassFixture<WaitingRoomApiFacto
     [InlineData("/api/medical/start-consultation")]
     [InlineData("/api/medical/finish-consultation")]
     [InlineData("/api/medical/mark-absent")]
-    [InlineData("/api/waiting-room/claim-next")]
-    [InlineData("/api/waiting-room/call-patient")]
-    [InlineData("/api/waiting-room/complete-attention")]
+    [InlineData("/api/atencion/claim-next")]
+    [InlineData("/api/atencion/call-patient")]
+    [InlineData("/api/atencion/complete-attention")]
     public async Task SEC_PRIV_002_Receptionist_CannotAccessMedicalEndpoints(string endpoint)
     {
         var request = CreateRequest(endpoint, "Receptionist");
@@ -94,9 +94,9 @@ public sealed class PrivilegeEscalationTests : IClassFixture<WaitingRoomApiFacto
     [InlineData("/api/medical/consulting-room/activate")]
     [InlineData("/api/medical/start-consultation")]
     [InlineData("/api/medical/finish-consultation")]
-    [InlineData("/api/waiting-room/claim-next")]
-    [InlineData("/api/waiting-room/call-patient")]
-    [InlineData("/api/waiting-room/complete-attention")]
+    [InlineData("/api/atencion/claim-next")]
+    [InlineData("/api/atencion/call-patient")]
+    [InlineData("/api/atencion/complete-attention")]
     public async Task SEC_PRIV_003_Cashier_CannotAccessMedicalEndpoints(string endpoint)
     {
         var request = CreateRequest(endpoint, "Cashier");
@@ -112,7 +112,7 @@ public sealed class PrivilegeEscalationTests : IClassFixture<WaitingRoomApiFacto
     // ============================================================
 
     [Theory]
-    [InlineData("/api/waiting-room/check-in")]
+    [InlineData("/api/atencion/check-in")]
     [InlineData("/api/reception/register")]
     [InlineData("/api/medical/consulting-room/activate")]
     [InlineData("/api/medical/consulting-room/deactivate")]
@@ -151,10 +151,10 @@ public sealed class PrivilegeEscalationTests : IClassFixture<WaitingRoomApiFacto
     // ============================================================
 
     [Theory]
-    [InlineData("/api/waiting-room/check-in")]
+    [InlineData("/api/atencion/check-in")]
     [InlineData("/api/cashier/call-next")]
     [InlineData("/api/medical/call-next")]
-    [InlineData("/api/waiting-room/claim-next")]
+    [InlineData("/api/atencion/claim-next")]
     public async Task SEC_PRIV_006_Admin_HasUniversalAccess(string endpoint)
     {
         var request = CreateRequest(endpoint, "Admin");
@@ -197,7 +197,7 @@ public sealed class PrivilegeEscalationTests : IClassFixture<WaitingRoomApiFacto
         {
             Content = JsonContent.Create(new
             {
-                QueueId = "SEC-PRIV-Q",
+                ServiceId = "SEC-PRIV-Q",
                 PatientId = "SEC-PRIV-P",
                 PatientName = "Privilege Test",
                 Priority = "Low",
@@ -206,7 +206,9 @@ public sealed class PrivilegeEscalationTests : IClassFixture<WaitingRoomApiFacto
                 StationId = "CONS-01",
                 ConsultingRoomId = "CONS-01",
                 PaymentReference = "PAY-SEC",
-                Reason = "Security test"
+                Reason = "Security test",
+                Outcome = "Completed",
+                Notes = "Security testing notes"
             })
         };
         request.Headers.Add("X-User-Role", role);

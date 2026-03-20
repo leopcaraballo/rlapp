@@ -15,6 +15,7 @@ using WaitingRoom.Application.Ports;
 using WaitingRoom.Application.Services;
 using WaitingRoom.Domain.Events;
 using WaitingRoom.Infrastructure.Messaging;
+using WaitingRoom.Infrastructure.Persistence.Repositories;
 using WaitingRoom.Infrastructure.Persistence.EventStore;
 using WaitingRoom.Infrastructure.Persistence;
 using WaitingRoom.Infrastructure.Persistence.Outbox;
@@ -59,6 +60,11 @@ Log.Logger = new LoggerConfiguration()
 
 builder.Host.UseSerilog();
 
+builder.Services.ConfigureHttpJsonOptions(options =>
+{
+    options.SerializerOptions.PropertyNamingPolicy = System.Text.Json.JsonNamingPolicy.CamelCase;
+});
+
 // ==============================================================================
 // CONFIGURATION OPTIONS
 // ==============================================================================
@@ -99,7 +105,7 @@ services.AddSingleton<EventTypeRegistry>(sp => EventTypeRegistry.CreateDefault()
 
 // Infrastructure — Clinical identity + queue id generation
 services.AddSingleton<IPatientIdentityRegistry>(sp => new PostgresPatientIdentityRegistry(connectionString));
-services.AddSingleton<IQueueIdGenerator, GuidQueueIdGenerator>();
+services.AddSingleton<IServiceIdGenerator, GuidServiceIdGenerator>();
 
 // Infrastructure — Event Serializer
 services.AddSingleton<EventSerializer>();
@@ -133,14 +139,27 @@ services.AddScoped<CallPatientCommandHandler>();
 services.AddScoped<CompleteAttentionCommandHandler>();
 services.AddScoped<MarkAbsentAtConsultationCommandHandler>();
 
+// Infrastructure — Repositories
+services.AddSingleton<IPatientStateRepository>(sp => new PostgresPatientStateRepository(connectionString));
+services.AddSingleton<IConsultingRoomOccupancyRepository>(sp => new PostgresConsultingRoomOccupancyRepository(connectionString));
+services.AddSingleton<ICashierQueueRepository>(sp => new PostgresCashierQueueRepository(connectionString));
+services.AddSingleton<IPatientRepository, PatientRepository>();
+services.AddSingleton<IConsultingRoomRepository, ConsultingRoomRepository>();
+
 // Projections (in-memory context for API query runtime)
-services.AddSingleton<IWaitingRoomProjectionContext, InMemoryWaitingRoomProjectionContext>();
+services.AddSingleton<IAtencionProjectionContext, InMemoryAtencionProjectionContext>();
 services.AddSingleton<IProjection>(sp =>
 {
-    var context = sp.GetRequiredService<IWaitingRoomProjectionContext>();
+    var context = sp.GetRequiredService<IAtencionProjectionContext>();
     var eventStore = sp.GetRequiredService<IEventStore>();
     var logger = sp.GetRequiredService<ILogger<WaitingRoomProjectionEngine>>();
-    return new WaitingRoomProjectionEngine(context, eventStore, logger);
+    return new WaitingRoomProjectionEngine(
+            sp.GetRequiredService<IAtencionProjectionContext>(),
+            sp.GetRequiredService<IEventStore>(),
+            sp.GetRequiredService<IPatientStateRepository>(),
+            sp.GetRequiredService<IConsultingRoomOccupancyRepository>(),
+            sp.GetRequiredService<ICashierQueueRepository>(),
+            sp.GetRequiredService<ILogger<WaitingRoomProjectionEngine>>());
 });
 
 // ==============================================================================
@@ -182,6 +201,7 @@ services.AddOpenApi(options =>
 });
 services.AddSignalR();
 services.AddSingleton<IWaitingRoomNotifier, WaitingRoomNotifier>();
+services.AddMediatR(cfg => cfg.RegisterServicesFromAssembly(typeof(RegisterPatientCommandHandler).Assembly));
 
 services.AddCors(options =>
 {
@@ -192,7 +212,8 @@ services.AddCors(options =>
                 "http://localhost:3000",
                 "http://127.0.0.1:3000",
                 "http://localhost:3001",
-                "http://127.0.0.1:3001")
+                "http://127.0.0.1:3001",
+                "http://localhost:3011")
             .AllowAnyHeader()
             .AllowAnyMethod()
             .AllowCredentials();
@@ -312,22 +333,23 @@ app.MapHealthChecks("/health/ready", new Microsoft.AspNetCore.Diagnostics.Health
     Predicate = _ => true // All checks
 });
 
-var queryGroup = app.MapGroup("/api/v1/waiting-room")
+var queryGroup = app.MapGroup("/api/v1/atencion")
     .WithTags("Waiting Room Queries");
-WaitingRoomQueryEndpoints.MapEndpoints(queryGroup);
+app.MapWaitingRoomQueryEndpoints();
+app.MapPatientEndpoints();
+app.MapConsultingRoomEndpoints();
 
 app.MapHub<WaitingRoomHub>("/ws/waiting-room");
 
-var commandGroup = app.MapGroup(string.Empty)
-    .AddEndpointFilterFactory(RequestValidationFilter.Factory);
+var commandGroup = app.MapGroup(string.Empty);
 
 static async Task ProjectQueueAsync(
     IProjection projection,
     IEventStore eventStore,
-    string queueId,
+    string serviceId,
     CancellationToken cancellationToken)
 {
-    var queueEvents = await eventStore.GetEventsAsync(queueId, cancellationToken);
+    var queueEvents = await eventStore.GetEventsAsync(serviceId, cancellationToken);
     await projection.ProcessEventsAsync(queueEvents, cancellationToken);
 }
 
@@ -348,8 +370,7 @@ static async Task ProjectQueueAsync(
 /// - Returns HTTP response
 ///
 /// Flow:
-/// HTTP Request → DTO → Command → Handler → Aggregate → Events → EventStore → Response
-/// </summary>
+/// // LEGACY HANDLERS RESTORED FOR BACKWARD COMPATIBILITY IN TESTS
 commandGroup.MapPost("/api/waiting-room/check-in", async (
     CheckInPatientDto dto,
     HttpContext httpContext,
@@ -370,7 +391,7 @@ commandGroup.MapPost("/api/waiting-room/check-in", async (
     // Map DTO → Command
     var command = new CheckInPatientCommand
     {
-        QueueId = dto.QueueId,
+        ServiceId = dto.ServiceId,
         PatientId = dto.PatientId,
         PatientName = dto.PatientName,
         Priority = dto.Priority,
@@ -384,11 +405,11 @@ commandGroup.MapPost("/api/waiting-room/check-in", async (
 
     // Execute command via handler
     var eventCount = await handler.HandleAsync(command, cancellationToken);
-    var queueId = handler.LastGeneratedQueueId;
-    if (!string.IsNullOrWhiteSpace(queueId))
+    var serviceId = handler.LastGeneratedServiceId;
+    if (!string.IsNullOrWhiteSpace(serviceId))
     {
-        await ProjectQueueAsync(projection, eventStore, queueId, cancellationToken);
-        await notifier.NotifyQueueUpdatedAsync(queueId, cancellationToken);
+        await ProjectQueueAsync(projection, eventStore, serviceId, cancellationToken);
+        await notifier.NotifyQueueUpdatedAsync(serviceId, cancellationToken);
     }
 
     logger.LogInformation(
@@ -398,19 +419,20 @@ commandGroup.MapPost("/api/waiting-room/check-in", async (
 
     return Results.Ok(new
     {
-        Success = true,
-        Message = "Patient checked in successfully",
-        CorrelationId = correlationId,
-        EventCount = eventCount,
-        QueueId = queueId,
-        TurnNumber = handler.LastTurnNumber
+        success = true,
+        message = "Patient checked in successfully",
+        correlationId = correlationId,
+        eventCount = eventCount,
+        serviceId = serviceId,
+        patientId = dto.PatientId,
+        turnNumber = handler.LastTurnNumber
     });
 })
-.WithName("CheckInPatient")
+.WithName("CheckInPatientLegacy")
 .WithTags("WaitingRoom")
 .WithSummary("Registrar paciente en cola de espera")
 .WithDescription("Registra un nuevo paciente en la cola de espera indicada. Genera evento PatientCheckedIn en el Event Store.")
-.AddEndpointFilter<ReceptionistOnlyFilter>()
+.AddEndpointFilter<ReceptionistOnlyFilter>().AddEndpointFilterFactory(RequestValidationFilter.Factory)
 .Accepts<CheckInPatientDto>("application/json")
 .Produces(200)
 .Produces(400)
@@ -431,7 +453,7 @@ commandGroup.MapPost("/api/reception/register", async (
 
     var command = new CheckInPatientCommand
     {
-        QueueId = dto.QueueId,
+        ServiceId = dto.ServiceId,
         PatientId = dto.PatientId,
         PatientName = dto.PatientName,
         Priority = dto.Priority,
@@ -444,28 +466,29 @@ commandGroup.MapPost("/api/reception/register", async (
     };
 
     var eventCount = await handler.HandleAsync(command, cancellationToken);
-    var queueId = handler.LastGeneratedQueueId;
-    if (!string.IsNullOrWhiteSpace(queueId))
+    var serviceId = handler.LastGeneratedServiceId;
+    if (!string.IsNullOrWhiteSpace(serviceId))
     {
-        await ProjectQueueAsync(projection, eventStore, queueId, cancellationToken);
-        await notifier.NotifyQueueUpdatedAsync(queueId, cancellationToken);
+        await ProjectQueueAsync(projection, eventStore, serviceId, cancellationToken);
+        await notifier.NotifyQueueUpdatedAsync(serviceId, cancellationToken);
     }
 
     return Results.Ok(new
     {
-        Success = true,
-        Message = "Patient registered successfully",
-        CorrelationId = correlationId,
-        EventCount = eventCount,
-        QueueId = queueId,
-        TurnNumber = handler.LastTurnNumber
+        success = true,
+        message = "Patient registered successfully",
+        correlationId = correlationId,
+        eventCount = eventCount,
+        serviceId = serviceId,
+        patientId = dto.PatientId,
+        turnNumber = handler.LastTurnNumber
     });
 })
-.WithName("RegisterPatientReception")
+.WithName("RegisterPatientReceptionLegacy")
 .WithTags("Reception")
 .WithSummary("Registrar paciente desde recepcion")
 .WithDescription("Punto de entrada para recepcionistas. Registra paciente con los mismos datos que check-in pero desde el modulo de recepcion.")
-.AddEndpointFilter<ReceptionistOnlyFilter>()
+.AddEndpointFilter<ReceptionistOnlyFilter>().AddEndpointFilterFactory(RequestValidationFilter.Factory)
 .Accepts<CheckInPatientDto>("application/json")
 .Produces(200)
 .Produces(400)
@@ -473,6 +496,59 @@ commandGroup.MapPost("/api/reception/register", async (
 .Produces(409)
 .Produces(500);
 
+commandGroup.MapPost("/api/patients/self-registration", async (
+    CheckInPatientDto dto,
+    HttpContext httpContext,
+    CheckInPatientCommandHandler handler,
+    IProjection projection,
+    IEventStore eventStore,
+    IWaitingRoomNotifier notifier,
+    CancellationToken cancellationToken) =>
+{
+    var correlationId = httpContext.Items["CorrelationId"]?.ToString() ?? Guid.NewGuid().ToString();
+
+    var command = new CheckInPatientCommand
+    {
+        ServiceId = dto.ServiceId,
+        PatientId = dto.PatientId,
+        PatientName = dto.PatientName,
+        Priority = "Medium",
+        ConsultationType = "General",
+        Actor = "patient",
+        CorrelationId = correlationId
+    };
+
+    var eventCount = await handler.HandleAsync(command, cancellationToken);
+    var serviceId = handler.LastGeneratedServiceId;
+    if (!string.IsNullOrWhiteSpace(serviceId))
+    {
+        await ProjectQueueAsync(projection, eventStore, serviceId, cancellationToken);
+        await notifier.NotifyQueueUpdatedAsync(serviceId, cancellationToken);
+    }
+
+    return Results.Ok(new
+    {
+        success = true,
+        message = "Patient self-registered successfully",
+        correlationId = correlationId,
+        eventCount = eventCount,
+        serviceId = serviceId,
+        patientId = dto.PatientId,
+        turnNumber = handler.LastTurnNumber
+    });
+})
+.WithName("SelfRegisterPatient")
+.WithTags("Public")
+.WithSummary("Autoregistro de paciente")
+.WithDescription("Permite que un paciente se registre en la cola por sí mismo desde el kiosco.")
+.AllowAnonymous()
+.AddEndpointFilterFactory(RequestValidationFilter.Factory)
+.Accepts<CheckInPatientDto>("application/json")
+.Produces(200)
+.Produces(400)
+.Produces(500);
+// END OF BLOCK 1
+// START OF BLOCK 2
 commandGroup.MapPost("/api/cashier/call-next", async (
     CallNextCashierDto dto,
     HttpContext httpContext,
@@ -486,30 +562,30 @@ commandGroup.MapPost("/api/cashier/call-next", async (
 
     var command = new CallNextCashierCommand
     {
-        QueueId = dto.QueueId,
+        ServiceId = dto.ServiceId,
         Actor = dto.Actor,
         CashierDeskId = dto.CashierDeskId,
         CorrelationId = correlationId
     };
 
     var result = await handler.HandleAsync(command, cancellationToken);
-    await ProjectQueueAsync(projection, eventStore, dto.QueueId, cancellationToken);
-    await notifier.NotifyQueueUpdatedAsync(dto.QueueId, cancellationToken);
+    await ProjectQueueAsync(projection, eventStore, dto.ServiceId, cancellationToken);
+    await notifier.NotifyQueueUpdatedAsync(dto.ServiceId, cancellationToken);
 
     return Results.Ok(new
     {
-        Success = true,
-        Message = "Patient called at cashier successfully",
-        CorrelationId = correlationId,
-        EventCount = result.EventCount,
-        PatientId = result.PatientId
+        success = true,
+        message = "Next patient called at cashier",
+        correlationId = correlationId,
+        eventCount = result.EventCount,
+        patientId = result.PatientId
     });
 })
-.WithName("CallNextCashier")
+.WithName("CallNextCashierLegacy")
 .WithTags("Cashier")
 .WithSummary("Llamar siguiente paciente a caja")
 .WithDescription("El cajero solicita el siguiente paciente en la cola para proceso de pago. Genera evento PatientCalledToCashier.")
-.AddEndpointFilter<CashierOnlyFilter>()
+.AddEndpointFilter<CashierOnlyFilter>().AddEndpointFilterFactory(RequestValidationFilter.Factory)
 .Accepts<CallNextCashierDto>("application/json")
 .Produces(200)
 .Produces(400)
@@ -530,31 +606,31 @@ commandGroup.MapPost("/api/cashier/validate-payment", async (
 
     var command = new ValidatePaymentCommand
     {
-        QueueId = dto.QueueId,
+        ServiceId = dto.ServiceId,
         PatientId = dto.PatientId,
-        Actor = dto.Actor,
-        PaymentReference = dto.PaymentReference,
+        Actor = dto.Actor ?? "Cashier_01",
         CorrelationId = correlationId
     };
 
-    var eventCount = await handler.HandleAsync(command, cancellationToken);
-    await ProjectQueueAsync(projection, eventStore, dto.QueueId, cancellationToken);
-    await notifier.NotifyQueueUpdatedAsync(dto.QueueId, cancellationToken);
+    var response = await handler.Handle(command, cancellationToken);
+    var eventCount = response.Success ? 1 : 0;
+    await ProjectQueueAsync(projection, eventStore, dto.ServiceId, cancellationToken);
+    await notifier.NotifyQueueUpdatedAsync(dto.ServiceId, cancellationToken);
 
     return Results.Ok(new
     {
-        Success = true,
-        Message = "Payment validated successfully",
-        CorrelationId = correlationId,
-        EventCount = eventCount,
-        PatientId = dto.PatientId
+        success = true,
+        message = "Payment validated successfully",
+        correlationId = correlationId,
+        eventCount = eventCount,
+        patientId = dto.PatientId
     });
 })
-.WithName("ValidatePayment")
+.WithName("ValidatePaymentLegacy")
 .WithTags("Cashier")
 .WithSummary("Validar pago del paciente")
 .WithDescription("Confirma que el paciente ha completado el pago. Genera evento PaymentValidated y avanza el flujo hacia consulta medica.")
-.AddEndpointFilter<CashierOnlyFilter>()
+.AddEndpointFilter<CashierOnlyFilter>().AddEndpointFilterFactory(RequestValidationFilter.Factory)
 .Accepts<ValidatePaymentDto>("application/json")
 .Produces(200)
 .Produces(400)
@@ -575,7 +651,7 @@ commandGroup.MapPost("/api/cashier/mark-payment-pending", async (
 
     var command = new MarkPaymentPendingCommand
     {
-        QueueId = dto.QueueId,
+        ServiceId = dto.ServiceId,
         PatientId = dto.PatientId,
         Actor = dto.Actor,
         Reason = dto.Reason,
@@ -583,23 +659,23 @@ commandGroup.MapPost("/api/cashier/mark-payment-pending", async (
     };
 
     var eventCount = await handler.HandleAsync(command, cancellationToken);
-    await ProjectQueueAsync(projection, eventStore, dto.QueueId, cancellationToken);
-    await notifier.NotifyQueueUpdatedAsync(dto.QueueId, cancellationToken);
+    await ProjectQueueAsync(projection, eventStore, dto.ServiceId, cancellationToken);
+    await notifier.NotifyQueueUpdatedAsync(dto.ServiceId, cancellationToken);
 
     return Results.Ok(new
     {
-        Success = true,
-        Message = "Payment marked as pending",
-        CorrelationId = correlationId,
-        EventCount = eventCount,
-        PatientId = dto.PatientId
+        success = true,
+        message = "Payment marked as pending",
+        correlationId = correlationId,
+        eventCount = eventCount,
+        patientId = dto.PatientId
     });
 })
-.WithName("MarkPaymentPending")
+.WithName("MarkPaymentPendingLegacy")
 .WithTags("Cashier")
 .WithSummary("Marcar pago como pendiente")
 .WithDescription("Indica que el paciente tiene un pago pendiente. El paciente permanece en cola pero no avanza hasta que se resuelva.")
-.AddEndpointFilter<CashierOnlyFilter>()
+.AddEndpointFilter<CashierOnlyFilter>().AddEndpointFilterFactory(RequestValidationFilter.Factory)
 .Accepts<MarkPaymentPendingDto>("application/json")
 .Produces(200)
 .Produces(400)
@@ -620,30 +696,30 @@ commandGroup.MapPost("/api/cashier/mark-absent", async (
 
     var command = new MarkAbsentAtCashierCommand
     {
-        QueueId = dto.QueueId,
+        ServiceId = dto.ServiceId,
         PatientId = dto.PatientId,
         Actor = dto.Actor,
         CorrelationId = correlationId
     };
 
     var eventCount = await handler.HandleAsync(command, cancellationToken);
-    await ProjectQueueAsync(projection, eventStore, dto.QueueId, cancellationToken);
-    await notifier.NotifyQueueUpdatedAsync(dto.QueueId, cancellationToken);
+    await ProjectQueueAsync(projection, eventStore, dto.ServiceId, cancellationToken);
+    await notifier.NotifyQueueUpdatedAsync(dto.ServiceId, cancellationToken);
 
     return Results.Ok(new
     {
-        Success = true,
-        Message = "Patient marked absent at cashier",
-        CorrelationId = correlationId,
-        EventCount = eventCount,
-        PatientId = dto.PatientId
+        success = true,
+        message = "Patient marked absent at cashier",
+        correlationId = correlationId,
+        eventCount = eventCount,
+        patientId = dto.PatientId
     });
 })
-.WithName("MarkAbsentAtCashier")
+.WithName("MarkAbsentAtCashierLegacy")
 .WithTags("Cashier")
 .WithSummary("Marcar paciente ausente en caja")
 .WithDescription("Registra que el paciente no se presento cuando fue llamado a caja. Genera evento de ausencia.")
-.AddEndpointFilter<CashierOnlyFilter>()
+.AddEndpointFilter<CashierOnlyFilter>().AddEndpointFilterFactory(RequestValidationFilter.Factory)
 .Accepts<MarkAbsentAtCashierDto>("application/json")
 .Produces(200)
 .Produces(400)
@@ -664,7 +740,7 @@ commandGroup.MapPost("/api/cashier/cancel-payment", async (
 
     var command = new CancelByPaymentCommand
     {
-        QueueId = dto.QueueId,
+        ServiceId = dto.ServiceId,
         PatientId = dto.PatientId,
         Actor = dto.Actor,
         Reason = dto.Reason,
@@ -672,23 +748,23 @@ commandGroup.MapPost("/api/cashier/cancel-payment", async (
     };
 
     var eventCount = await handler.HandleAsync(command, cancellationToken);
-    await ProjectQueueAsync(projection, eventStore, dto.QueueId, cancellationToken);
-    await notifier.NotifyQueueUpdatedAsync(dto.QueueId, cancellationToken);
+    await ProjectQueueAsync(projection, eventStore, dto.ServiceId, cancellationToken);
+    await notifier.NotifyQueueUpdatedAsync(dto.ServiceId, cancellationToken);
 
     return Results.Ok(new
     {
-        Success = true,
-        Message = "Patient cancelled by payment policy",
-        CorrelationId = correlationId,
-        EventCount = eventCount,
-        PatientId = dto.PatientId
+        success = true,
+        message = "Patient cancelled by payment policy",
+        correlationId = correlationId,
+        eventCount = eventCount,
+        patientId = dto.PatientId
     });
 })
-.WithName("CancelByPayment")
+.WithName("CancelByPaymentLegacy")
 .WithTags("Cashier")
 .WithSummary("Cancelar atencion por politica de pago")
 .WithDescription("Cancela la atencion del paciente por incumplimiento de pago. Genera evento CancelledByPayment.")
-.AddEndpointFilter<CashierOnlyFilter>()
+.AddEndpointFilter<CashierOnlyFilter>().AddEndpointFilterFactory(RequestValidationFilter.Factory)
 .Accepts<CancelByPaymentDto>("application/json")
 .Produces(200)
 .Produces(400)
@@ -709,31 +785,31 @@ commandGroup.MapPost("/api/medical/call-next", async (
 
     var command = new ClaimNextPatientCommand
     {
-        QueueId = dto.QueueId,
+        ServiceId = dto.ServiceId,
         Actor = dto.Actor,
         CorrelationId = correlationId,
         StationId = dto.StationId
     };
 
     var result = await handler.HandleAsync(command, cancellationToken);
-    await ProjectQueueAsync(projection, eventStore, dto.QueueId, cancellationToken);
-    await notifier.NotifyQueueUpdatedAsync(dto.QueueId, cancellationToken);
+    await ProjectQueueAsync(projection, eventStore, dto.ServiceId, cancellationToken);
+    await notifier.NotifyQueueUpdatedAsync(dto.ServiceId, cancellationToken);
 
     return Results.Ok(new
     {
-        Success = true,
-        Message = "Next patient called for medical attention",
-        CorrelationId = correlationId,
-        EventCount = result.EventCount,
-        PatientId = result.PatientId,
-        StationId = result.StationId
+        success = true,
+        message = "Next patient called for medical attention",
+        correlationId = correlationId,
+        eventCount = result.EventCount,
+        patientId = result.PatientId,
+        stationId = result.StationId
     });
 })
-.WithName("MedicalCallNext")
+.WithName("MedicalCallNextLegacy")
 .WithTags("Medical")
 .WithSummary("Llamar siguiente paciente para consulta medica")
 .WithDescription("El medico solicita el siguiente paciente que ya completo el pago. Genera evento PatientClaimedForConsultation.")
-.AddEndpointFilter<DoctorOnlyFilter>()
+.AddEndpointFilter<DoctorOnlyFilter>().AddEndpointFilterFactory(RequestValidationFilter.Factory)
 .Accepts<ClaimNextPatientDto>("application/json")
 .Produces(200)
 .Produces(400)
@@ -754,30 +830,30 @@ commandGroup.MapPost("/api/medical/consulting-room/activate", async (
 
     var command = new ActivateConsultingRoomCommand
     {
-        QueueId = dto.QueueId,
+        ServiceId = dto.ServiceId,
         ConsultingRoomId = dto.ConsultingRoomId,
         Actor = dto.Actor,
         CorrelationId = correlationId
     };
 
     var eventCount = await handler.HandleAsync(command, cancellationToken);
-    await ProjectQueueAsync(projection, eventStore, dto.QueueId, cancellationToken);
-    await notifier.NotifyQueueUpdatedAsync(dto.QueueId, cancellationToken);
+    await ProjectQueueAsync(projection, eventStore, dto.ServiceId, cancellationToken);
+    await notifier.NotifyQueueUpdatedAsync(dto.ServiceId, cancellationToken);
 
     return Results.Ok(new
     {
-        Success = true,
-        Message = "Consulting room activated",
-        CorrelationId = correlationId,
-        EventCount = eventCount,
-        ConsultingRoomId = dto.ConsultingRoomId
+        success = true,
+        message = "Consulting room activated",
+        correlationId = correlationId,
+        eventCount = eventCount,
+        consultingRoomId = dto.ConsultingRoomId
     });
 })
-.WithName("ActivateConsultingRoom")
+.WithName("ActivateConsultingRoomLegacy")
 .WithTags("Medical")
 .WithSummary("Activar consultorio medico")
 .WithDescription("Marca un consultorio como disponible para recibir pacientes. Genera evento ConsultingRoomActivated.")
-.AddEndpointFilter<AdminOnlyFilter>()
+.AddEndpointFilter<AdminOnlyFilter>().AddEndpointFilterFactory(RequestValidationFilter.Factory)
 .Accepts<ActivateConsultingRoomDto>("application/json")
 .Produces(200)
 .Produces(400)
@@ -798,30 +874,30 @@ commandGroup.MapPost("/api/medical/consulting-room/deactivate", async (
 
     var command = new DeactivateConsultingRoomCommand
     {
-        QueueId = dto.QueueId,
+        ServiceId = dto.ServiceId,
         ConsultingRoomId = dto.ConsultingRoomId,
         Actor = dto.Actor,
         CorrelationId = correlationId
     };
 
     var eventCount = await handler.HandleAsync(command, cancellationToken);
-    await ProjectQueueAsync(projection, eventStore, dto.QueueId, cancellationToken);
-    await notifier.NotifyQueueUpdatedAsync(dto.QueueId, cancellationToken);
+    await ProjectQueueAsync(projection, eventStore, dto.ServiceId, cancellationToken);
+    await notifier.NotifyQueueUpdatedAsync(dto.ServiceId, cancellationToken);
 
     return Results.Ok(new
     {
-        Success = true,
-        Message = "Consulting room deactivated",
-        CorrelationId = correlationId,
-        EventCount = eventCount,
-        ConsultingRoomId = dto.ConsultingRoomId
+        success = true,
+        message = "Consulting room deactivated",
+        correlationId = correlationId,
+        eventCount = eventCount,
+        consultingRoomId = dto.ConsultingRoomId
     });
 })
-.WithName("DeactivateConsultingRoom")
+.WithName("DeactivateConsultingRoomLegacy")
 .WithTags("Medical")
 .WithSummary("Desactivar consultorio medico")
 .WithDescription("Marca un consultorio como no disponible. Los pacientes no seran asignados a este consultorio hasta reactivacion.")
-.AddEndpointFilter<AdminOnlyFilter>()
+.AddEndpointFilter<AdminOnlyFilter>().AddEndpointFilterFactory(RequestValidationFilter.Factory)
 .Accepts<DeactivateConsultingRoomDto>("application/json")
 .Produces(200)
 .Produces(400)
@@ -842,30 +918,30 @@ commandGroup.MapPost("/api/medical/start-consultation", async (
 
     var command = new CallPatientCommand
     {
-        QueueId = dto.QueueId,
+        ServiceId = dto.ServiceId,
         PatientId = dto.PatientId,
         Actor = dto.Actor,
         CorrelationId = correlationId
     };
 
     var eventCount = await handler.HandleAsync(command, cancellationToken);
-    await ProjectQueueAsync(projection, eventStore, dto.QueueId, cancellationToken);
-    await notifier.NotifyQueueUpdatedAsync(dto.QueueId, cancellationToken);
+    await ProjectQueueAsync(projection, eventStore, dto.ServiceId, cancellationToken);
+    await notifier.NotifyQueueUpdatedAsync(dto.ServiceId, cancellationToken);
 
     return Results.Ok(new
     {
-        Success = true,
-        Message = "Consultation started successfully",
-        CorrelationId = correlationId,
-        EventCount = eventCount,
-        PatientId = dto.PatientId
+        success = true,
+        message = "Consultation started successfully",
+        correlationId = correlationId,
+        eventCount = eventCount,
+        patientId = dto.PatientId
     });
 })
-.WithName("StartConsultation")
+.WithName("StartConsultationLegacy")
 .WithTags("Medical")
 .WithSummary("Iniciar consulta medica")
 .WithDescription("Registra que el paciente ha ingresado a consulta con el medico. Genera evento ConsultationStarted.")
-.AddEndpointFilter<DoctorOnlyFilter>()
+.AddEndpointFilter<DoctorOnlyFilter>().AddEndpointFilterFactory(RequestValidationFilter.Factory)
 .Accepts<CallPatientDto>("application/json")
 .Produces(200)
 .Produces(400)
@@ -886,7 +962,7 @@ commandGroup.MapPost("/api/medical/finish-consultation", async (
 
     var command = new CompleteAttentionCommand
     {
-        QueueId = dto.QueueId,
+        ServiceId = dto.ServiceId,
         PatientId = dto.PatientId,
         Actor = dto.Actor,
         Outcome = dto.Outcome,
@@ -895,23 +971,23 @@ commandGroup.MapPost("/api/medical/finish-consultation", async (
     };
 
     var eventCount = await handler.HandleAsync(command, cancellationToken);
-    await ProjectQueueAsync(projection, eventStore, dto.QueueId, cancellationToken);
-    await notifier.NotifyQueueUpdatedAsync(dto.QueueId, cancellationToken);
+    await ProjectQueueAsync(projection, eventStore, dto.ServiceId, cancellationToken);
+    await notifier.NotifyQueueUpdatedAsync(dto.ServiceId, cancellationToken);
 
     return Results.Ok(new
     {
-        Success = true,
-        Message = "Consultation finished successfully",
-        CorrelationId = correlationId,
-        EventCount = eventCount,
-        PatientId = dto.PatientId
+        success = true,
+        message = "Consultation finished successfully",
+        correlationId = correlationId,
+        eventCount = eventCount,
+        patientId = dto.PatientId
     });
 })
-.WithName("FinishConsultation")
+.WithName("FinishConsultationLegacy")
 .WithTags("Medical")
 .WithSummary("Finalizar consulta medica")
 .WithDescription("Registra la finalizacion de la consulta con resultado y notas. Genera evento AttentionCompleted.")
-.AddEndpointFilter<DoctorOnlyFilter>()
+.AddEndpointFilter<DoctorOnlyFilter>().AddEndpointFilterFactory(RequestValidationFilter.Factory)
 .Accepts<CompleteAttentionDto>("application/json")
 .Produces(200)
 .Produces(400)
@@ -932,30 +1008,30 @@ commandGroup.MapPost("/api/medical/mark-absent", async (
 
     var command = new MarkAbsentAtConsultationCommand
     {
-        QueueId = dto.QueueId,
+        ServiceId = dto.ServiceId,
         PatientId = dto.PatientId,
         Actor = dto.Actor,
         CorrelationId = correlationId
     };
 
     var eventCount = await handler.HandleAsync(command, cancellationToken);
-    await ProjectQueueAsync(projection, eventStore, dto.QueueId, cancellationToken);
-    await notifier.NotifyQueueUpdatedAsync(dto.QueueId, cancellationToken);
+    await ProjectQueueAsync(projection, eventStore, dto.ServiceId, cancellationToken);
+    await notifier.NotifyQueueUpdatedAsync(dto.ServiceId, cancellationToken);
 
     return Results.Ok(new
     {
-        Success = true,
-        Message = "Patient marked absent at consultation",
-        CorrelationId = correlationId,
-        EventCount = eventCount,
-        PatientId = dto.PatientId
+        success = true,
+        message = "Patient marked absent at consultation",
+        correlationId = correlationId,
+        eventCount = eventCount,
+        patientId = dto.PatientId
     });
 })
-.WithName("MarkAbsentAtConsultation")
+.WithName("MarkAbsentAtConsultationLegacy")
 .WithTags("Medical")
 .WithSummary("Marcar paciente ausente en consulta")
 .WithDescription("Registra que el paciente no se presento a la consulta medica programada. Genera evento de ausencia.")
-.AddEndpointFilter<DoctorOnlyFilter>()
+.AddEndpointFilter<DoctorOnlyFilter>().AddEndpointFilterFactory(RequestValidationFilter.Factory)
 .Accepts<MarkAbsentAtConsultationDto>("application/json")
 .Produces(200)
 .Produces(400)
@@ -978,37 +1054,37 @@ commandGroup.MapPost("/api/waiting-room/claim-next", async (
     httpContext.Response.Headers["Link"] = "</api/medical/call-next>; rel=\"successor-version\"";
 
     logger.LogInformation(
-        "ClaimNext request received. CorrelationId: {CorrelationId}, QueueId: {QueueId}",
+        "ClaimNext request received. CorrelationId: {CorrelationId}, ServiceId: {ServiceId}",
         correlationId,
-        dto.QueueId);
+        dto.ServiceId);
 
     var command = new ClaimNextPatientCommand
     {
-        QueueId = dto.QueueId,
+        ServiceId = dto.ServiceId,
         Actor = dto.Actor,
         CorrelationId = correlationId,
         StationId = dto.StationId
     };
 
     var result = await handler.HandleAsync(command, cancellationToken);
-    await ProjectQueueAsync(projection, eventStore, dto.QueueId, cancellationToken);
-    await notifier.NotifyQueueUpdatedAsync(dto.QueueId, cancellationToken);
+    await ProjectQueueAsync(projection, eventStore, dto.ServiceId, cancellationToken);
+    await notifier.NotifyQueueUpdatedAsync(dto.ServiceId, cancellationToken);
 
     return Results.Ok(new
     {
-        Success = true,
-        Message = "Patient claimed successfully",
-        CorrelationId = correlationId,
-        EventCount = result.EventCount,
-        PatientId = result.PatientId,
-        StationId = result.StationId
+        success = true,
+        message = "Patient claimed successfully",
+        correlationId = correlationId,
+        eventCount = result.EventCount,
+        patientId = result.PatientId,
+        stationId = result.StationId
     });
 })
-.WithName("ClaimNextPatient")
+.WithName("ClaimNextPatientLegacy")
 .WithTags("WaitingRoom")
 .WithSummary("[DEPRECATED] Reclamar siguiente paciente — usar /api/medical/call-next")
 .WithDescription("Reclama el siguiente paciente disponible en la cola para atencion. Asigna la estacion indicada al paciente.")
-.AddEndpointFilter<DoctorOnlyFilter>()
+.AddEndpointFilter<DoctorOnlyFilter>().AddEndpointFilterFactory(RequestValidationFilter.Factory)
 .Accepts<ClaimNextPatientDto>("application/json")
 .Produces(200)
 .Produces(400)
@@ -1031,30 +1107,30 @@ commandGroup.MapPost("/api/waiting-room/call-patient", async (
 
     var command = new CallPatientCommand
     {
-        QueueId = dto.QueueId,
+        ServiceId = dto.ServiceId,
         PatientId = dto.PatientId,
         Actor = dto.Actor,
         CorrelationId = correlationId
     };
 
     var eventCount = await handler.HandleAsync(command, cancellationToken);
-    await ProjectQueueAsync(projection, eventStore, dto.QueueId, cancellationToken);
-    await notifier.NotifyQueueUpdatedAsync(dto.QueueId, cancellationToken);
+    await ProjectQueueAsync(projection, eventStore, dto.ServiceId, cancellationToken);
+    await notifier.NotifyQueueUpdatedAsync(dto.ServiceId, cancellationToken);
 
     return Results.Ok(new
     {
-        Success = true,
-        Message = "Patient called successfully",
-        CorrelationId = correlationId,
-        EventCount = eventCount,
-        PatientId = dto.PatientId
+        success = true,
+        message = "Patient called successfully",
+        correlationId = correlationId,
+        eventCount = eventCount,
+        patientId = dto.PatientId
     });
 })
-.WithName("CallPatient")
+.WithName("CallPatientLegacy")
 .WithTags("WaitingRoom")
 .WithSummary("[DEPRECATED] Llamar paciente — usar /api/medical/start-consultation")
 .WithDescription("Llama a un paciente especifico de la cola para atencion. Genera evento PatientCalled.")
-.AddEndpointFilter<DoctorOnlyFilter>()
+.AddEndpointFilter<DoctorOnlyFilter>().AddEndpointFilterFactory(RequestValidationFilter.Factory)
 .Accepts<CallPatientDto>("application/json")
 .Produces(200)
 .Produces(400)
@@ -1077,7 +1153,7 @@ commandGroup.MapPost("/api/waiting-room/complete-attention", async (
 
     var command = new CompleteAttentionCommand
     {
-        QueueId = dto.QueueId,
+        ServiceId = dto.ServiceId,
         PatientId = dto.PatientId,
         Actor = dto.Actor,
         Outcome = dto.Outcome,
@@ -1086,23 +1162,23 @@ commandGroup.MapPost("/api/waiting-room/complete-attention", async (
     };
 
     var eventCount = await handler.HandleAsync(command, cancellationToken);
-    await ProjectQueueAsync(projection, eventStore, dto.QueueId, cancellationToken);
-    await notifier.NotifyQueueUpdatedAsync(dto.QueueId, cancellationToken);
+    await ProjectQueueAsync(projection, eventStore, dto.ServiceId, cancellationToken);
+    await notifier.NotifyQueueUpdatedAsync(dto.ServiceId, cancellationToken);
 
     return Results.Ok(new
     {
-        Success = true,
-        Message = "Attention completed successfully",
-        CorrelationId = correlationId,
-        EventCount = eventCount,
-        PatientId = dto.PatientId
+        success = true,
+        message = "Attention completed successfully",
+        correlationId = correlationId,
+        eventCount = eventCount,
+        patientId = dto.PatientId
     });
 })
-.WithName("CompleteAttention")
+.WithName("CompleteAttentionLegacy")
 .WithTags("WaitingRoom")
 .WithSummary("[DEPRECATED] Completar atencion — usar /api/medical/finish-consultation")
 .WithDescription("Marca la atencion del paciente como finalizada con resultado y notas opcionales. Genera evento AttentionCompleted.")
-.AddEndpointFilter<DoctorOnlyFilter>()
+.AddEndpointFilter<DoctorOnlyFilter>().AddEndpointFilterFactory(RequestValidationFilter.Factory)
 .Accepts<CompleteAttentionDto>("application/json")
 .Produces(200)
 .Produces(400)
@@ -1110,6 +1186,213 @@ commandGroup.MapPost("/api/waiting-room/complete-attention", async (
 .Produces(409)
 .Produces(500);
 
+// ==============================================================================
+// /api/atencion/* — Compatibility aliases required by integration test contract.
+// Identical behavior to /api/waiting-room/* counterparts:
+// same handlers, same auth filters, same validation.
+// ==============================================================================
+
+commandGroup.MapPost("/api/atencion/check-in", async (
+    CheckInPatientDto dto,
+    HttpContext httpContext,
+    CheckInPatientCommandHandler handler,
+    IProjection projection,
+    IEventStore eventStore,
+    IWaitingRoomNotifier notifier,
+    ILogger<Program> logger,
+    CancellationToken cancellationToken) =>
+{
+    var correlationId = httpContext.Items["CorrelationId"]?.ToString() ?? Guid.NewGuid().ToString();
+
+    logger.LogInformation(
+        "CheckIn (atencion) request received. CorrelationId: {CorrelationId}, PatientId: {PatientId}",
+        correlationId,
+        dto.PatientId);
+
+    var command = new CheckInPatientCommand
+    {
+        ServiceId = dto.ServiceId,
+        PatientId = dto.PatientId,
+        PatientName = dto.PatientName,
+        Priority = dto.Priority,
+        ConsultationType = dto.ConsultationType,
+        Age = dto.Age,
+        IsPregnant = dto.IsPregnant,
+        Notes = dto.Notes,
+        Actor = dto.Actor,
+        CorrelationId = correlationId
+    };
+
+    var eventCount = await handler.HandleAsync(command, cancellationToken);
+    var serviceId = handler.LastGeneratedServiceId;
+    if (!string.IsNullOrWhiteSpace(serviceId))
+    {
+        await ProjectQueueAsync(projection, eventStore, serviceId, cancellationToken);
+        await notifier.NotifyQueueUpdatedAsync(serviceId, cancellationToken);
+    }
+
+    logger.LogInformation(
+        "CheckIn (atencion) completed. CorrelationId: {CorrelationId}, EventCount: {EventCount}",
+        correlationId,
+        eventCount);
+
+    return Results.Ok(new
+    {
+        success = true,
+        message = "Patient checked in successfully",
+        correlationId = correlationId,
+        eventCount = eventCount,
+        serviceId = serviceId,
+        patientId = dto.PatientId,
+        turnNumber = handler.LastTurnNumber
+    });
+})
+.WithName("CheckInPatientAtencion")
+.WithTags("WaitingRoom")
+.WithSummary("Registrar paciente en cola de espera (ruta atencion)")
+.AddEndpointFilter<ReceptionistOnlyFilter>().AddEndpointFilterFactory(RequestValidationFilter.Factory)
+.Accepts<CheckInPatientDto>("application/json")
+.Produces(200)
+.Produces(400)
+.Produces(401)
+.Produces(409)
+.Produces(500);
+
+commandGroup.MapPost("/api/atencion/claim-next", async (
+    ClaimNextPatientDto dto,
+    HttpContext httpContext,
+    ClaimNextPatientCommandHandler handler,
+    IProjection projection,
+    IEventStore eventStore,
+    IWaitingRoomNotifier notifier,
+    CancellationToken cancellationToken) =>
+{
+    var correlationId = httpContext.Items["CorrelationId"]?.ToString() ?? Guid.NewGuid().ToString();
+
+    var command = new ClaimNextPatientCommand
+    {
+        ServiceId = dto.ServiceId,
+        Actor = dto.Actor,
+        CorrelationId = correlationId,
+        StationId = dto.StationId
+    };
+
+    var result = await handler.HandleAsync(command, cancellationToken);
+    await ProjectQueueAsync(projection, eventStore, dto.ServiceId, cancellationToken);
+    await notifier.NotifyQueueUpdatedAsync(dto.ServiceId, cancellationToken);
+
+    return Results.Ok(new
+    {
+        success = true,
+        message = "Patient claimed successfully",
+        correlationId = correlationId,
+        eventCount = result.EventCount,
+        patientId = result.PatientId,
+        stationId = result.StationId
+    });
+})
+.WithName("ClaimNextPatientAtencion")
+.WithTags("WaitingRoom")
+.WithSummary("Reclamar siguiente paciente para consulta (ruta atencion)")
+.AddEndpointFilter<DoctorOnlyFilter>().AddEndpointFilterFactory(RequestValidationFilter.Factory)
+.Accepts<ClaimNextPatientDto>("application/json")
+.Produces(200)
+.Produces(400)
+.Produces(401)
+.Produces(403)
+.Produces(409)
+.Produces(500);
+
+commandGroup.MapPost("/api/atencion/call-patient", async (
+    CallPatientDto dto,
+    HttpContext httpContext,
+    CallPatientCommandHandler handler,
+    IProjection projection,
+    IEventStore eventStore,
+    IWaitingRoomNotifier notifier,
+    CancellationToken cancellationToken) =>
+{
+    var correlationId = httpContext.Items["CorrelationId"]?.ToString() ?? Guid.NewGuid().ToString();
+
+    var command = new CallPatientCommand
+    {
+        ServiceId = dto.ServiceId,
+        PatientId = dto.PatientId,
+        Actor = dto.Actor,
+        CorrelationId = correlationId
+    };
+
+    var eventCount = await handler.HandleAsync(command, cancellationToken);
+    await ProjectQueueAsync(projection, eventStore, dto.ServiceId, cancellationToken);
+    await notifier.NotifyQueueUpdatedAsync(dto.ServiceId, cancellationToken);
+
+    return Results.Ok(new
+    {
+        success = true,
+        message = "Patient called successfully",
+        correlationId = correlationId,
+        eventCount = eventCount,
+        patientId = dto.PatientId
+    });
+})
+.WithName("CallPatientAtencion")
+.WithTags("WaitingRoom")
+.WithSummary("Llamar paciente a consulta (ruta atencion)")
+.AddEndpointFilter<DoctorOnlyFilter>().AddEndpointFilterFactory(RequestValidationFilter.Factory)
+.Accepts<CallPatientDto>("application/json")
+.Produces(200)
+.Produces(400)
+.Produces(401)
+.Produces(403)
+.Produces(409)
+.Produces(500);
+
+commandGroup.MapPost("/api/atencion/complete-attention", async (
+    CompleteAttentionDto dto,
+    HttpContext httpContext,
+    CompleteAttentionCommandHandler handler,
+    IProjection projection,
+    IEventStore eventStore,
+    IWaitingRoomNotifier notifier,
+    CancellationToken cancellationToken) =>
+{
+    var correlationId = httpContext.Items["CorrelationId"]?.ToString() ?? Guid.NewGuid().ToString();
+
+    var command = new CompleteAttentionCommand
+    {
+        ServiceId = dto.ServiceId,
+        PatientId = dto.PatientId,
+        Actor = dto.Actor,
+        Outcome = dto.Outcome,
+        Notes = dto.Notes,
+        CorrelationId = correlationId
+    };
+
+    var eventCount = await handler.HandleAsync(command, cancellationToken);
+    await ProjectQueueAsync(projection, eventStore, dto.ServiceId, cancellationToken);
+    await notifier.NotifyQueueUpdatedAsync(dto.ServiceId, cancellationToken);
+
+    return Results.Ok(new
+    {
+        success = true,
+        message = "Attention completed successfully",
+        correlationId = correlationId,
+        eventCount = eventCount,
+        patientId = dto.PatientId
+    });
+})
+.WithName("CompleteAttentionAtencion")
+.WithTags("WaitingRoom")
+.WithSummary("Completar atencion medica (ruta atencion)")
+.AddEndpointFilter<DoctorOnlyFilter>().AddEndpointFilterFactory(RequestValidationFilter.Factory)
+.Accepts<CompleteAttentionDto>("application/json")
+.Produces(200)
+.Produces(400)
+.Produces(401)
+.Produces(403)
+.Produces(409)
+.Produces(500);
+// END OF LEGACY HANDLERS
 // ==============================================================================
 // STARTUP
 // ==============================================================================

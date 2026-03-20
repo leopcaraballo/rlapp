@@ -16,26 +16,29 @@ public sealed class PatientCalledProjectionHandler : IProjectionHandler
         if (@event is not PatientCalled evt)
             throw new ArgumentException($"Expected {nameof(PatientCalled)}, got {@event.GetType().Name}");
 
-        if (context is not IWaitingRoomProjectionContext waitingContext)
-            throw new InvalidOperationException($"Context must implement {nameof(IWaitingRoomProjectionContext)}");
+        if (context is not IAtencionProjectionContext atencionContext)
+            throw new InvalidOperationException($"Context must implement {nameof(IAtencionProjectionContext)}");
 
-        var idempotencyKey = $"patient-called:{evt.QueueId}:{evt.Metadata.AggregateId}:{evt.Metadata.EventId}";
+        var idempotencyKey = $"patient-called:{evt.ServiceId}:{evt.Metadata.AggregateId}:{evt.Metadata.EventId}";
 
         if (await context.AlreadyProcessedAsync(idempotencyKey, cancellationToken))
             return;
 
-        var currentTurn = await waitingContext.GetNextTurnViewAsync(evt.QueueId, cancellationToken);
+        var currentTurn = await atencionContext.GetNextTurnViewAsync(evt.ServiceId, cancellationToken);
         if (currentTurn != null && string.Equals(currentTurn.PatientId, evt.PatientId, StringComparison.OrdinalIgnoreCase))
         {
-            await waitingContext.SetNextTurnViewAsync(
-                evt.QueueId,
-                currentTurn with
-                {
-                    Status = "called",
-                    CalledAt = evt.CalledAt,
-                    ProjectedAt = DateTimeOffset.UtcNow
-                },
-                cancellationToken);
+            var updatedTurn = currentTurn with
+            {
+                Status = "called",
+                CalledAt = evt.CalledAt,
+                ProjectedAt = DateTimeOffset.UtcNow
+            };
+
+            await atencionContext.SetNextTurnViewAsync(evt.ServiceId, updatedTurn, cancellationToken);
+            
+            // ✅ Move from Waiting to Consultation in the "Full State" view
+            await atencionContext.RemovePatientFromQueueAsync(evt.ServiceId, evt.PatientId, cancellationToken);
+            await atencionContext.AddPatientToConsultationAsync(evt.ServiceId, updatedTurn, cancellationToken);
         }
 
         await context.MarkProcessedAsync(idempotencyKey, cancellationToken);

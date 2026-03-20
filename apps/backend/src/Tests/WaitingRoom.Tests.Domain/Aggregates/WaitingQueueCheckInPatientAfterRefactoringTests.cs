@@ -37,10 +37,10 @@ public class WaitingQueueCheckInPatientAfterRefactoringTests
     /// <summary>
     /// Setup: Creates a valid waiting queue ready for patients.
     /// </summary>
-    private WaitingQueue CreateValidQueue(string queueId = "QUEUE-01", int capacity = 10)
+    private WaitingQueue CreateValidQueue(string serviceId = "QUEUE-01", int capacity = 10)
     {
-        var metadata = EventMetadata.CreateNew(queueId, "system");
-        var queue = WaitingQueue.Create(queueId, "Main Queue", capacity, metadata);
+        var metadata = EventMetadata.CreateNew(serviceId, "system");
+        var queue = WaitingQueue.Create(serviceId, "Main Queue", capacity, metadata);
         queue.ClearUncommittedEvents();
         return queue;
     }
@@ -91,7 +91,7 @@ public class WaitingQueueCheckInPatientAfterRefactoringTests
         var @event = (PatientCheckedIn)queue.UncommittedEvents.First();
         @event.PatientId.Should().Be(request.PatientId.Value);
         @event.PatientName.Should().Be(request.PatientName);
-        @event.QueueId.Should().Be(queue.Id);
+        @event.ServiceId.Should().Be(queue.Id);
     }
 
     [Fact]

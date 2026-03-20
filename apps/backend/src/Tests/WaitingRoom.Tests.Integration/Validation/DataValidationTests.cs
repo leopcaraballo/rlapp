@@ -58,7 +58,7 @@ public sealed class DataValidationTests : IClassFixture<WaitingRoomApiFactory>
         };
 
         var response = await PostWithAuthAsync(
-            "/api/waiting-room/check-in", dto, "Receptionist");
+            "/api/atencion/check-in", dto, "Receptionist");
 
         response.StatusCode.Should().Be(HttpStatusCode.BadRequest,
             $"PatientId vacio/espacios '{emptyId}' debe ser rechazado");
@@ -83,7 +83,7 @@ public sealed class DataValidationTests : IClassFixture<WaitingRoomApiFactory>
         };
 
         var response = await PostWithAuthAsync(
-            "/api/waiting-room/check-in", dto, "Receptionist");
+            "/api/atencion/check-in", dto, "Receptionist");
 
         response.StatusCode.Should().Be(HttpStatusCode.BadRequest,
             "PatientName vacio debe ser rechazado");
@@ -111,7 +111,7 @@ public sealed class DataValidationTests : IClassFixture<WaitingRoomApiFactory>
         };
 
         var response = await PostWithAuthAsync(
-            "/api/waiting-room/check-in", dto, "Receptionist");
+            "/api/atencion/check-in", dto, "Receptionist");
 
         var statusCode = (int)response.StatusCode;
         statusCode.Should().BeInRange(400, 499,
@@ -139,7 +139,7 @@ public sealed class DataValidationTests : IClassFixture<WaitingRoomApiFactory>
         };
 
         var response = await PostWithAuthAsync(
-            "/api/waiting-room/check-in", dto, "Receptionist");
+            "/api/atencion/check-in", dto, "Receptionist");
 
         response.StatusCode.Should().Be(HttpStatusCode.OK,
             $"Prioridad valida '{validPriority}' debe ser aceptada");
@@ -164,7 +164,7 @@ public sealed class DataValidationTests : IClassFixture<WaitingRoomApiFactory>
         };
 
         var response = await PostWithAuthAsync(
-            "/api/waiting-room/check-in", dto, "Receptionist");
+            "/api/atencion/check-in", dto, "Receptionist");
 
         var statusCode = (int)response.StatusCode;
         statusCode.Should().BeInRange(400, 499,
@@ -172,17 +172,17 @@ public sealed class DataValidationTests : IClassFixture<WaitingRoomApiFactory>
     }
 
     // ============================================================
-    // VAL-006: QueueId invalido en operaciones de caja
+    // VAL-006: ServiceId invalido en operaciones de caja
     // ============================================================
 
     [Theory]
     [InlineData("")]
     [InlineData("nonexistent-queue-id-12345")]
-    public async Task VAL006_InvalidQueueId_InCashierOperations_IsRejected(string queueId)
+    public async Task VAL006_InvalidServiceId_InCashierOperations_IsRejected(string serviceId)
     {
         var dto = new CallNextCashierDto
         {
-            QueueId = queueId,
+            ServiceId = serviceId,
             Actor = "cashier-val"
         };
 
@@ -191,7 +191,7 @@ public sealed class DataValidationTests : IClassFixture<WaitingRoomApiFactory>
 
         var statusCode = (int)response.StatusCode;
         statusCode.Should().BeInRange(400, 499,
-            $"QueueId invalido '{queueId}' debe generar error 4xx");
+            $"ServiceId invalido '{serviceId}' debe generar error 4xx");
     }
 
     // ============================================================
@@ -213,7 +213,7 @@ public sealed class DataValidationTests : IClassFixture<WaitingRoomApiFactory>
         };
 
         var response = await PostWithAuthAsync(
-            "/api/waiting-room/check-in", dto, "Receptionist");
+            "/api/atencion/check-in", dto, "Receptionist");
 
         var statusCode = (int)response.StatusCode;
         statusCode.Should().BeInRange(400, 499,
@@ -239,7 +239,7 @@ public sealed class DataValidationTests : IClassFixture<WaitingRoomApiFactory>
         };
 
         var response = await PostWithAuthAsync(
-            "/api/waiting-room/check-in", dto, "Receptionist");
+            "/api/atencion/check-in", dto, "Receptionist");
 
         var statusCode = (int)response.StatusCode;
         statusCode.Should().BeInRange(400, 499,
@@ -263,7 +263,7 @@ public sealed class DataValidationTests : IClassFixture<WaitingRoomApiFactory>
         };
 
         var response = await PostWithAuthAsync(
-            "/api/waiting-room/check-in", dto, "Receptionist");
+            "/api/atencion/check-in", dto, "Receptionist");
 
         response.StatusCode.Should().Be(HttpStatusCode.OK,
             "PatientId con 1 caracter debe ser aceptado (limite minimo)");
@@ -278,7 +278,7 @@ public sealed class DataValidationTests : IClassFixture<WaitingRoomApiFactory>
     {
         var dto = new ClaimNextPatientDto
         {
-            QueueId = Guid.NewGuid().ToString("D"),
+            ServiceId = Guid.NewGuid().ToString("D"),
             Actor = "doctor-val",
             StationId = "CONS-01"
         };
@@ -312,7 +312,7 @@ public sealed class DataValidationTests : IClassFixture<WaitingRoomApiFactory>
         };
 
         var response = await PostWithAuthAsync(
-            "/api/waiting-room/check-in", dto, "Receptionist");
+            "/api/atencion/check-in", dto, "Receptionist");
 
         var statusCode = (int)response.StatusCode;
         statusCode.Should().NotBe(500,
@@ -337,16 +337,16 @@ public sealed class DataValidationTests : IClassFixture<WaitingRoomApiFactory>
         };
 
         var response1 = await PostWithAuthAsync(
-            "/api/waiting-room/check-in", dto, "Receptionist");
+            "/api/atencion/check-in", dto, "Receptionist");
         response1.StatusCode.Should().Be(HttpStatusCode.OK);
 
         var result1 = await DeserializeAsync(response1);
-        var queueId = result1.GetProperty("queueId").GetString()!;
+        var serviceId = result1.GetProperty("serviceId").GetString()!;
 
         // Segundo check-in del mismo paciente en la misma cola
-        dto = dto with { QueueId = queueId };
+        dto = dto with { ServiceId = serviceId };
         var response2 = await PostWithAuthAsync(
-            "/api/waiting-room/check-in", dto, "Receptionist");
+            "/api/atencion/check-in", dto, "Receptionist");
 
         var statusCode = (int)response2.StatusCode;
         statusCode.Should().BeOneOf(new[] { 200, 400, 409 },

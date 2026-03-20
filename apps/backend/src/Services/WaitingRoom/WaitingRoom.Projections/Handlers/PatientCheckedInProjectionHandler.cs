@@ -10,8 +10,8 @@ using WaitingRoom.Projections.Views;
 ///
 /// This handler:
 /// - Listens for PatientCheckedIn events from WaitingQueue aggregate
-/// - Updates WaitingRoomMonitorView (counts by priority)
-/// - Updates QueueStateView (patient list)
+/// - Updates AtencionMonitorView (counts by priority)
+/// - Updates AtencionStateView (patient list)
 /// - Maintains idempotency
 /// - Supports deterministic replay
 ///
@@ -50,8 +50,8 @@ public sealed class PatientCheckedInProjectionHandler : IProjectionHandler
             throw new ArgumentException($"Expected {nameof(PatientCheckedIn)}, got {@event.GetType().Name}");
 
         // Cast to extended context (should always work in practice)
-        if (context is not IWaitingRoomProjectionContext waitingContext)
-            throw new InvalidOperationException($"Context must implement {nameof(IWaitingRoomProjectionContext)}");
+        if (context is not IAtencionProjectionContext atencionContext)
+            throw new InvalidOperationException($"Context must implement {nameof(IAtencionProjectionContext)}");
 
         // Idempotency key prevents duplicate processing
         var idempotencyKey = GenerateIdempotencyKey(evt);
@@ -60,18 +60,18 @@ public sealed class PatientCheckedInProjectionHandler : IProjectionHandler
         if (await context.AlreadyProcessedAsync(idempotencyKey, cancellationToken))
             return; // Already processed, skip
 
-        // ✅ Update WaitingRoomMonitorView
+        // ✅ Update AtencionMonitorView
         // Increment counters based on priority
-        await waitingContext.UpdateMonitorViewAsync(
-            queueId: evt.QueueId,
+        await atencionContext.UpdateMonitorViewAsync(
+            serviceId: evt.ServiceId,
             priority: NormalizePriority(evt.Priority),
             operation: "increment",
             cancellationToken);
 
-        // ✅ Update QueueStateView
+        // ✅ Update AtencionStateView
         // Add patient to queue list
-        await waitingContext.AddPatientToQueueAsync(
-            queueId: evt.QueueId,
+        await atencionContext.AddPatientToQueueAsync(
+            serviceId: evt.ServiceId,
             patient: new PatientInQueueDto
             {
                 PatientId = evt.PatientId,
@@ -90,10 +90,10 @@ public sealed class PatientCheckedInProjectionHandler : IProjectionHandler
     /// <summary>
     /// Generates deterministic idempotency key for this event.
     /// Same event always produces same key.
-    /// Key format: "queueId:aggregateId:eventId"
+    /// Key format: "serviceId:aggregateId:eventId"
     /// </summary>
     private static string GenerateIdempotencyKey(PatientCheckedIn evt)
-        => $"patient-checked-in:{evt.QueueId}:{evt.Metadata.AggregateId}:{evt.Metadata.EventId}";
+        => $"patient-checked-in:{evt.ServiceId}:{evt.Metadata.AggregateId}:{evt.Metadata.EventId}";
 
     private static string NormalizePriority(string priority)
     {

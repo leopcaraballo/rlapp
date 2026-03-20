@@ -89,11 +89,11 @@ async function post<T>(path: string, body: unknown): Promise<T> {
 
   // Notificar a los hooks de React que un comando tuvo éxito (refresco inmediato)
   try {
-    const queueId = (body as Record<string, unknown>)?.queueId as
+    const serviceId = (body as Record<string, unknown>)?.serviceId as
       | string
       | undefined;
     window.dispatchEvent(
-      new CustomEvent("rlapp:command-success", { detail: { queueId, path } }),
+      new CustomEvent("rlapp:command-success", { detail: { serviceId, path } }),
     );
   } catch {
     // ignorar en entornos sin window (tests, SSR)
@@ -104,7 +104,7 @@ async function post<T>(path: string, body: unknown): Promise<T> {
 
 export class HttpCommandAdapter implements ICommandGateway {
   async checkInPatient(cmd: CheckInPatientCommand): Promise<CommandResult> {
-    return post<CommandResult>("/api/reception/register", cmd);
+    return post<CommandResult>("/api/patients/register", cmd);
   }
 
   async callNextAtCashier(
@@ -114,7 +114,7 @@ export class HttpCommandAdapter implements ICommandGateway {
   }
 
   async validatePayment(cmd: ValidatePaymentCommand): Promise<CommandResult> {
-    return post<CommandResult>("/api/cashier/validate-payment", cmd);
+    return post<CommandResult>(`/api/patients/${cmd.patientId}/validate-payment`, cmd);
   }
 
   async markPaymentPending(
@@ -138,13 +138,13 @@ export class HttpCommandAdapter implements ICommandGateway {
   }
 
   async callPatient(cmd: CallPatientCommand): Promise<CommandResult> {
-    return post<CommandResult>("/api/medical/start-consultation", cmd);
+    return post<CommandResult>(`/api/patients/${cmd.patientId}/start-consultation`, cmd);
   }
 
   async completeAttention(
     cmd: CompleteAttentionCommand,
   ): Promise<CommandResult> {
-    return post<CommandResult>("/api/medical/finish-consultation", cmd);
+    return post<CommandResult>(`/api/patients/${cmd.patientId}/finish-consultation`, cmd);
   }
 
   async markAbsentAtMedical(

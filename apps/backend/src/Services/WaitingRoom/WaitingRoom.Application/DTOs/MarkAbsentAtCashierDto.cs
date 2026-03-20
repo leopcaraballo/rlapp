@@ -6,7 +6,7 @@ public sealed record MarkAbsentAtCashierDto
 {
     [Required]
     [MinLength(1)]
-    public required string QueueId { get; init; }
+    public required string ServiceId { get; init; }
 
     [Required]
     [MinLength(1)]

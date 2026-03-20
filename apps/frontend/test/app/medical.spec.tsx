@@ -74,20 +74,25 @@ jest.mock("@/hooks/useConsultingRooms", () => ({
   useConsultingRooms: () => mockRooms,
 }));
 
-// ── mock useWaitingRoom (agregado en PR#51) ───────────────────────────────────
+// ── mock useAtencion (agregado en PR#51) ───────────────────────────────────
 import type { NextTurnView } from "@/services/api/types";
 
 const mockNextTurn: { current: NextTurnView | null } = { current: null };
 
-jest.mock("@/hooks/useWaitingRoom", () => ({
-  useWaitingRoom: () => ({
-    queueState: { patientsInQueue: [] },
-    nextTurn: mockNextTurn.current,
-    refresh: jest.fn(),
+jest.mock("@/hooks/useAtencion", () => ({
+  useAtencion: () => ({
     monitor: null,
+    queueState: { serviceId: "Q1", patientsInQueue: [], currentCount: 0, maxCapacity: 10, availableSpots: 10 },
+    fullState: null,
+    nextTurn: mockNextTurn.current,
     history: [],
     connectionState: "online",
     lastUpdated: null,
+    refresh: jest.fn(),
+    setMonitor: jest.fn(),
+    setQueueState: jest.fn(),
+    setFullState: jest.fn(),
+    setNextTurn: jest.fn(),
   }),
 }));
 

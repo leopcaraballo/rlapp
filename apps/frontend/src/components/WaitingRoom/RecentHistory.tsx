@@ -22,7 +22,7 @@ export default function RecentHistory({ history }: Props) {
       <span className={styles.cardHeading}>Historial reciente</span>
       <ol className={styles.historyList}>
         {history.map(h => (
-          <li key={`${h.queueId}-${h.patientId}`} className={styles.historyItem}>
+          <li key={`${h.serviceId}-${h.patientId}-${h.completedAt}`} className={styles.historyItem}>
             <div className={styles.historyName}>{h.patientName}</div>
             <div className={styles.historyDate}>{new Date(h.completedAt).toLocaleString()}</div>
             {h.outcome && <div className={styles.historyOutcome}>Resultado: {h.outcome}</div>}

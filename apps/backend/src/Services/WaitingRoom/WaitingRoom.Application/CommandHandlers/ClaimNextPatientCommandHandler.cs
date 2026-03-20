@@ -4,6 +4,7 @@ using BuildingBlocks.EventSourcing;
 using WaitingRoom.Application.Commands;
 using WaitingRoom.Application.Exceptions;
 using WaitingRoom.Application.Ports;
+using WaitingRoom.Domain.Aggregates;
 using WaitingRoom.Domain.Commands;
 using WaitingRoom.Domain.Exceptions;
 
@@ -27,8 +28,8 @@ public sealed class ClaimNextPatientCommandHandler
         ClaimNextPatientCommand command,
         CancellationToken cancellationToken = default)
     {
-        var queue = await _eventStore.LoadAsync(command.QueueId, cancellationToken)
-            ?? throw new AggregateNotFoundException(command.QueueId);
+        var queue = await _eventStore.LoadAsync<WaitingQueue>(command.ServiceId, cancellationToken)
+            ?? throw new AggregateNotFoundException(command.ServiceId);
 
         // Si no se indica consultorio, se auto-asigna el primero disponible (activo)
         var resolvedStationId = command.StationId;
@@ -40,7 +41,7 @@ public sealed class ClaimNextPatientCommandHandler
         }
 
         var metadata = EventMetadata.CreateNew(
-            aggregateId: command.QueueId,
+            aggregateId: command.ServiceId,
             actor: command.Actor,
             correlationId: command.CorrelationId ?? Guid.NewGuid().ToString());
 

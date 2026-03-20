@@ -34,15 +34,15 @@ public sealed class ProjectionReplayTests
         // Arrange - Create sequence of events
         var events = new List<PatientCheckedIn>
         {
-            CreateEvent(queueId: "queue-1", patientId: "p1", priority: "high"),
-            CreateEvent(queueId: "queue-1", patientId: "p2", priority: "normal"),
-            CreateEvent(queueId: "queue-1", patientId: "p3", priority: "low"),
-            CreateEvent(queueId: "queue-1", patientId: "p4", priority: "high"),
-            CreateEvent(queueId: "queue-1", patientId: "p5", priority: "normal"),
+            CreateEvent(serviceId: "queue-1", patientId: "p1", priority: "high"),
+            CreateEvent(serviceId: "queue-1", patientId: "p2", priority: "normal"),
+            CreateEvent(serviceId: "queue-1", patientId: "p3", priority: "low"),
+            CreateEvent(serviceId: "queue-1", patientId: "p4", priority: "high"),
+            CreateEvent(serviceId: "queue-1", patientId: "p5", priority: "normal"),
         };
 
         // Act - Process incrementally
-        var incremental = new InMemoryWaitingRoomProjectionContext(new NullLogger<InMemoryWaitingRoomProjectionContext>());
+        var incremental = new InMemoryAtencionProjectionContext(new NullLogger<InMemoryAtencionProjectionContext>());
         foreach (var evt in events)
         {
             await _handler.HandleAsync(evt, incremental);
@@ -52,7 +52,7 @@ public sealed class ProjectionReplayTests
         var incrementalQueue = await incremental.GetQueueStateViewAsync("queue-1");
 
         // Act - Process from rebuild
-        var rebuilt = new InMemoryWaitingRoomProjectionContext(new NullLogger<InMemoryWaitingRoomProjectionContext>());
+        var rebuilt = new InMemoryAtencionProjectionContext(new NullLogger<InMemoryAtencionProjectionContext>());
         foreach (var evt in events)
         {
             await _handler.HandleAsync(evt, rebuilt);
@@ -78,12 +78,12 @@ public sealed class ProjectionReplayTests
     public async Task replay_with_different_event_order_produces_consistent_final_state()
     {
         // Arrange
-        var evt1 = CreateEvent(queueId: "queue-1", patientId: "p1", priority: "normal");
-        var evt2 = CreateEvent(queueId: "queue-1", patientId: "p2", priority: "high");
-        var evt3 = CreateEvent(queueId: "queue-1", patientId: "p3", priority: "low");
+        var evt1 = CreateEvent(serviceId: "queue-1", patientId: "p1", priority: "normal");
+        var evt2 = CreateEvent(serviceId: "queue-1", patientId: "p2", priority: "high");
+        var evt3 = CreateEvent(serviceId: "queue-1", patientId: "p3", priority: "low");
 
         // Act - Process in order
-        var ctx1 = new InMemoryWaitingRoomProjectionContext(new NullLogger<InMemoryWaitingRoomProjectionContext>());
+        var ctx1 = new InMemoryAtencionProjectionContext(new NullLogger<InMemoryAtencionProjectionContext>());
         await _handler.HandleAsync(evt1, ctx1);
         await _handler.HandleAsync(evt2, ctx1);
         await _handler.HandleAsync(evt3, ctx1);
@@ -91,7 +91,7 @@ public sealed class ProjectionReplayTests
         var state1 = await ctx1.GetQueueStateViewAsync("queue-1");
 
         // Act - Process all at once (faster batch)
-        var ctx2 = new InMemoryWaitingRoomProjectionContext(new NullLogger<InMemoryWaitingRoomProjectionContext>());
+        var ctx2 = new InMemoryAtencionProjectionContext(new NullLogger<InMemoryAtencionProjectionContext>());
         foreach (var evt in new[] { evt1, evt2, evt3 })
         {
             await _handler.HandleAsync(evt, ctx2);
@@ -121,13 +121,13 @@ public sealed class ProjectionReplayTests
         for (int i = 1; i <= 100; i++)
         {
             events.Add(CreateEvent(
-                queueId: "queue-1",
+                serviceId: "queue-1",
                 patientId: $"p{i}",
                 priority: priorities[i % 3]));
         }
 
         // Act - First pass
-        var ctx1 = new InMemoryWaitingRoomProjectionContext(new NullLogger<InMemoryWaitingRoomProjectionContext>());
+        var ctx1 = new InMemoryAtencionProjectionContext(new NullLogger<InMemoryAtencionProjectionContext>());
         foreach (var evt in events)
         {
             await _handler.HandleAsync(evt, ctx1);
@@ -137,7 +137,7 @@ public sealed class ProjectionReplayTests
         var queue1 = await ctx1.GetQueueStateViewAsync("queue-1");
 
         // Act - Second pass (rebuild)
-        var ctx2 = new InMemoryWaitingRoomProjectionContext(new NullLogger<InMemoryWaitingRoomProjectionContext>());
+        var ctx2 = new InMemoryAtencionProjectionContext(new NullLogger<InMemoryAtencionProjectionContext>());
         foreach (var evt in events)
         {
             await _handler.HandleAsync(evt, ctx2);
@@ -163,14 +163,14 @@ public sealed class ProjectionReplayTests
     }
 
     private static PatientCheckedIn CreateEvent(
-        string queueId,
+        string serviceId,
         string patientId,
         string priority,
         string? name = null)
     {
         return new PatientCheckedIn
         {
-            QueueId = queueId,
+            ServiceId = serviceId,
             PatientId = patientId,
             PatientName = name ?? $"Patient {patientId}",
             Priority = priority,
@@ -180,7 +180,7 @@ public sealed class ProjectionReplayTests
             CheckInTime = DateTime.UtcNow,
             Metadata = new EventMetadata
             {
-                AggregateId = queueId,
+                AggregateId = serviceId,
                 EventId = Guid.NewGuid().ToString(),
                 CorrelationId = Guid.NewGuid().ToString(),
                 CausationId = Guid.NewGuid().ToString(),

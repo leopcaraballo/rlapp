@@ -1,6 +1,10 @@
 namespace WaitingRoom.Tests.Integration.Fakes;
 
 using System.Collections.Concurrent;
+using System.Collections.Generic;
+using System.Linq;
+using System.Threading;
+using System.Threading.Tasks;
 using BuildingBlocks.EventSourcing;
 using WaitingRoom.Application.Ports;
 using WaitingRoom.Domain.Aggregates;
@@ -25,9 +29,9 @@ internal sealed class InMemoryEventStore : IEventStore
         return Task.FromResult(events);
     }
 
-    public Task SaveAsync(
-        WaitingQueue aggregate,
-        CancellationToken cancellationToken = default)
+    public Task SaveAsync<T>(
+        T aggregate,
+        CancellationToken cancellationToken = default) where T : AggregateRoot
     {
         if (!aggregate.HasUncommittedEvents)
             return Task.CompletedTask;
@@ -47,15 +51,15 @@ internal sealed class InMemoryEventStore : IEventStore
         return Task.CompletedTask;
     }
 
-    public Task<WaitingQueue?> LoadAsync(
+    public Task<T?> LoadAsync<T>(
         string aggregateId,
-        CancellationToken cancellationToken = default)
+        CancellationToken cancellationToken = default) where T : AggregateRoot
     {
         if (!_streams.TryGetValue(aggregateId, out var events) || events.Count == 0)
-            return Task.FromResult<WaitingQueue?>(null);
+            return Task.FromResult<T?>(null);
 
-        var aggregate = AggregateRoot.LoadFromHistory<WaitingQueue>(aggregateId, events);
-        return Task.FromResult<WaitingQueue?>(aggregate);
+        var aggregate = AggregateRoot.LoadFromHistory<T>(aggregateId, events);
+        return Task.FromResult<T?>(aggregate);
     }
 
     public Task<IEnumerable<DomainEvent>> GetAllEventsAsync(

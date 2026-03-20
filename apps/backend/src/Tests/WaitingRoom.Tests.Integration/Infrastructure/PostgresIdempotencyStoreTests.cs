@@ -15,6 +15,7 @@ using Xunit;
 /// 4. TTL and expiry handling
 /// 5. Thread-safe concurrent operations
 /// </summary>
+[Trait("Category", "Infrastructure")]
 public class PostgresIdempotencyStoreTests : IAsyncLifetime
 {
     private readonly string _connectionString;
@@ -53,7 +54,7 @@ public class PostgresIdempotencyStoreTests : IAsyncLifetime
         // Arrange
         var key = Guid.NewGuid().ToString("D");
         var hash = "request-hash-abc123";
-        var response = "{\"status\":\"ok\",\"queueId\":\"queue-123\"}";
+        var response = "{\"status\":\"ok\",\"serviceId\":\"queue-123\"}";
         var statusCode = 200;
 
         // Act: Record
@@ -77,7 +78,7 @@ public class PostgresIdempotencyStoreTests : IAsyncLifetime
     {
         // Arrange
         var key = Guid.NewGuid().ToString("D");
-        var response1 = "{\"status\":\"ok\",\"queueId\":\"queue-1\"}";
+        var response1 = "{\"status\":\"ok\",\"serviceId\":\"queue-1\"}";
         var response2 = "{\"status\":\"error\",\"message\":\"different\"}";
 
         // Act: Record first

@@ -17,21 +17,37 @@ public sealed class PatientAttentionCompletedProjectionHandler : IProjectionHand
         if (@event is not PatientAttentionCompleted evt)
             throw new ArgumentException($"Expected {nameof(PatientAttentionCompleted)}, got {@event.GetType().Name}");
 
-        if (context is not IWaitingRoomProjectionContext waitingContext)
-            throw new InvalidOperationException($"Context must implement {nameof(IWaitingRoomProjectionContext)}");
+        if (context is not IAtencionProjectionContext atencionContext)
+            throw new InvalidOperationException($"Context must implement {nameof(IAtencionProjectionContext)}");
 
-        var idempotencyKey = $"patient-attention-completed:{evt.QueueId}:{evt.Metadata.AggregateId}:{evt.Metadata.EventId}";
+        var idempotencyKey = $"patient-attention-completed:{evt.ServiceId}:{evt.Metadata.AggregateId}:{evt.Metadata.EventId}";
 
         if (await context.AlreadyProcessedAsync(idempotencyKey, cancellationToken))
             return;
 
-        await waitingContext.SetNextTurnViewAsync(evt.QueueId, null, cancellationToken);
+        await atencionContext.SetNextTurnViewAsync(evt.ServiceId, null, cancellationToken);
 
-        await waitingContext.AddRecentAttentionRecordAsync(
-            evt.QueueId,
+        // ✅ Move from Consultation to Payment in the "Full State" view
+        await atencionContext.RemovePatientFromConsultationAsync(evt.ServiceId, evt.PatientId, cancellationToken);
+        
+        var payingPatient = new NextTurnView
+        {
+            ServiceId = evt.ServiceId,
+            PatientId = evt.PatientId,
+            PatientName = evt.PatientName,
+            Priority = NormalizePriority(evt.Priority),
+            ConsultationType = evt.ConsultationType,
+            Status = "waiting-payment",
+            TurnNumber = 0, // DTO simplification
+            ProjectedAt = DateTimeOffset.UtcNow
+        };
+        await atencionContext.AddPatientToPaymentAsync(evt.ServiceId, payingPatient, cancellationToken);
+
+        await atencionContext.AddRecentAttentionRecordAsync(
+            evt.ServiceId,
             new RecentAttentionRecordView
             {
-                QueueId = evt.QueueId,
+                ServiceId = evt.ServiceId,
                 PatientId = evt.PatientId,
                 PatientName = evt.PatientName,
                 Priority = NormalizePriority(evt.Priority),

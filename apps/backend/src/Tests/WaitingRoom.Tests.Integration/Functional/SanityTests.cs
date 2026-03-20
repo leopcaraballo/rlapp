@@ -60,13 +60,13 @@ public sealed class SanityTests : IClassFixture<WaitingRoomApiFactory>
 
         // Act
         var response = await PostWithAuthAsync(
-            "/api/waiting-room/check-in", dto, "Receptionist");
+            "/api/atencion/check-in", dto, "Receptionist");
 
         // Assert
         response.StatusCode.Should().Be(HttpStatusCode.OK);
         var result = await DeserializeAsync(response);
         result.GetProperty("success").GetBoolean().Should().BeTrue();
-        result.GetProperty("queueId").GetString().Should().NotBeNullOrEmpty();
+        result.GetProperty("serviceId").GetString().Should().NotBeNullOrEmpty();
         result.GetProperty("eventCount").GetInt32().Should().BeGreaterOrEqualTo(1);
     }
 
@@ -81,12 +81,12 @@ public sealed class SanityTests : IClassFixture<WaitingRoomApiFactory>
     public async Task SAN002_BasicCashierCall_ReturnsPatient()
     {
         // Arrange: check-in primero
-        var queueId = await CheckInPatientAsync("SAN-PAT-002", "Sanity Caja");
+        var serviceId = await CheckInPatientAsync("SAN-PAT-002", "Sanity Caja");
 
         // Act: llamar en caja
         var response = await PostWithAuthAsync(
             "/api/cashier/call-next",
-            new CallNextCashierDto { QueueId = queueId, Actor = "cashier-sanity" },
+            new CallNextCashierDto { ServiceId = serviceId, Actor = "cashier-sanity" },
             "Cashier");
 
         // Assert
@@ -104,15 +104,15 @@ public sealed class SanityTests : IClassFixture<WaitingRoomApiFactory>
     public async Task SAN003_BasicPaymentValidation_Succeeds()
     {
         // Arrange
-        var queueId = await CheckInPatientAsync("SAN-PAT-003", "Sanity Pago");
-        var patientId = await CallNextCashierAsync(queueId);
+        var serviceId = await CheckInPatientAsync("SAN-PAT-003", "Sanity Pago");
+        var patientId = await CallNextCashierAsync(serviceId);
 
         // Act
         var response = await PostWithAuthAsync(
             "/api/cashier/validate-payment",
             new ValidatePaymentDto
             {
-                QueueId = queueId,
+                ServiceId = serviceId,
                 PatientId = patientId,
                 Actor = "cashier-sanity",
                 PaymentReference = "PAY-SAN-001"
@@ -149,9 +149,9 @@ public sealed class SanityTests : IClassFixture<WaitingRoomApiFactory>
 
         // Act: enviar dos veces con la misma clave
         var response1 = await PostWithAuthAsync(
-            "/api/waiting-room/check-in", dto, "Receptionist", idempotencyKey);
+            "/api/atencion/check-in", dto, "Receptionist", idempotencyKey);
         var response2 = await PostWithAuthAsync(
-            "/api/waiting-room/check-in", dto, "Receptionist", idempotencyKey);
+            "/api/atencion/check-in", dto, "Receptionist", idempotencyKey);
 
         // Assert
         response1.StatusCode.Should().Be(HttpStatusCode.OK);
@@ -170,7 +170,7 @@ public sealed class SanityTests : IClassFixture<WaitingRoomApiFactory>
     public async Task SAN005_UnauthenticatedRequest_Returns401()
     {
         // Arrange: sin header X-User-Role
-        var request = new HttpRequestMessage(HttpMethod.Post, "/api/waiting-room/check-in")
+        var request = new HttpRequestMessage(HttpMethod.Post, "/api/atencion/check-in")
         {
             Content = JsonContent.Create(new CheckInPatientDto
             {
@@ -209,7 +209,7 @@ public sealed class SanityTests : IClassFixture<WaitingRoomApiFactory>
 
         // Act
         var response = await PostWithAuthAsync(
-            "/api/waiting-room/check-in", dto, "Receptionist");
+            "/api/atencion/check-in", dto, "Receptionist");
 
         // Assert
         response.StatusCode.Should().Be(HttpStatusCode.OK);
@@ -245,16 +245,16 @@ public sealed class SanityTests : IClassFixture<WaitingRoomApiFactory>
             Actor = "receptionist-sanity"
         };
         var response = await PostWithAuthAsync(
-            "/api/waiting-room/check-in", dto, "Receptionist");
+            "/api/atencion/check-in", dto, "Receptionist");
         var result = await DeserializeAsync(response);
-        return result.GetProperty("queueId").GetString()!;
+        return result.GetProperty("serviceId").GetString()!;
     }
 
-    private async Task<string> CallNextCashierAsync(string queueId)
+    private async Task<string> CallNextCashierAsync(string serviceId)
     {
         var response = await PostWithAuthAsync(
             "/api/cashier/call-next",
-            new CallNextCashierDto { QueueId = queueId, Actor = "cashier-sanity" },
+            new CallNextCashierDto { ServiceId = serviceId, Actor = "cashier-sanity" },
             "Cashier");
         var result = await DeserializeAsync(response);
         return result.GetProperty("patientId").GetString()!;

@@ -8,144 +8,269 @@ import React from "react";
  * ya resuelto de la promesa (sólo para promesas ya resueltas, como las de test).
  */
 /** Datos mutables para controlar el estado del hook por test */
-let mockParams: { queueId: string };
- 
+let mockParams: { serviceId: string };
+
 jest.spyOn(React, "use").mockImplementation((_: unknown) => mockParams as any);
 
-let mockNextTurn: { patientName: string; stationId?: string } | null = null;
-let mockPatientsInQueue: { patientId: string; patientName: string; priority: string }[] = [];
+let mockFullState: import("@/services/api/types").AtencionFullStateView | null = null;
+let mockConnectionState: string = "online";
 let mockLastUpdated: string | null = null;
 
-jest.mock("@/hooks/useWaitingRoom", () => ({
-  useWaitingRoom: () => ({
-    nextTurn: mockNextTurn,
-    queueState: { patientsInQueue: mockPatientsInQueue },
+jest.mock("@/hooks/useAtencion", () => ({
+  useAtencion: () => ({
+    monitor: null,
+    queueState: null,
+    fullState: mockFullState,
+    nextTurn: null,
+    history: [],
+    connectionState: mockConnectionState,
     lastUpdated: mockLastUpdated,
     refresh: jest.fn(),
+    setMonitor: jest.fn(),
+    setQueueState: jest.fn(),
+    setFullState: jest.fn(),
+    setNextTurn: jest.fn(),
   }),
 }));
 
-import DisplayPage from "@/app/display/[queueId]/page";
+import MonitorPage from "@/app/monitor/[serviceId]/page";
 
 // ── helper ────────────────────────────────────────────────────────────────────
-function renderDisplay(queueId = "QUEUE-DISP") {
-  mockParams = { queueId };
+function renderMonitor(serviceId = "QUEUE-DISP") {
+  mockParams = { serviceId };
   // No se necesita Suspense: React.use está interceptado y es síncrono
-  return render(<DisplayPage params={Promise.resolve({ queueId })} />);
+  return render(<MonitorPage params={Promise.resolve({ serviceId })} />);
 }
 
 // ── suite ────────────────────────────────────────────────────────────────────
-describe("DisplayPage — RED", () => {
+describe("MonitorPage — RED", () => {
   beforeEach(() => {
-    mockParams = { queueId: "QUEUE-DISP" };
-    mockNextTurn = null;
-    mockPatientsInQueue = [];
+    mockParams = { serviceId: "QUEUE-DISP" };
+    mockFullState = null;
+    mockConnectionState = "online";
     mockLastUpdated = null;
   });
 
-  // ── 1. queueId en la cabecera ─────────────────────────────────────────
-  it("muestra el queueId en la cabecera", () => {
-    renderDisplay("QUEUE-DISP");
-    expect(screen.getByText("QUEUE-DISP")).toBeInTheDocument();
+  // ── 1. serviceId en el footer ─────────────────────────────────────────
+  it("muestra el serviceId en el footer", () => {
+    renderMonitor("QUEUE-DISP");
+    expect(screen.getByText("ID Servicio: QUEUE-DISP")).toBeInTheDocument();
   });
 
-  // ── 2. Sin turno activo ──────────────────────────────────────────────
-  it("muestra 'Sin turno activo' cuando nextTurn es null", () => {
-    mockNextTurn = null;
-    renderDisplay();
-    expect(screen.getByText(/Sin turno activo/i)).toBeInTheDocument();
+  // ── 2. Estado vacío en espera ──────────────────────────────────────────
+  it("muestra 'No hay turnos en espera' cuando fullState es null", () => {
+    mockFullState = null;
+    renderMonitor();
+    expect(screen.getByText(/No hay turnos en espera/i)).toBeInTheDocument();
   });
 
-  // ── 3. Nombre del paciente llamado ─────────────────────────────────
-  it("muestra el nombre del paciente cuando hay un turno activo", () => {
-    mockNextTurn = { patientName: "Laura Medina" };
-    renderDisplay();
+  // ── 3. Nombre del paciente en consulta ─────────────────────────────────
+  it("muestra el nombre del paciente en la columna En Consulta", () => {
+    mockFullState = {
+      serviceId: "QUEUE-DISP",
+      waiting: [],
+      inConsultation: [
+        {
+          serviceId: "QUEUE-DISP",
+          patientId: "P1",
+          patientName: "Laura Medina",
+          turnNumber: 1,
+          priority: "High",
+          consultationType: "General",
+          status: "in-consultation",
+          claimedAt: null,
+          calledAt: new Date().toISOString(),
+          stationId: null,
+          projectedAt: new Date().toISOString(),
+        },
+      ],
+      waitingPayment: [],
+      projectedAt: new Date().toISOString(),
+    };
+    renderMonitor();
     expect(screen.getByText("Laura Medina")).toBeInTheDocument();
   });
 
   // ── 4. Consultorio destino ────────────────────────────────────────────
-  it("muestra el consultorio cuando el turno incluye stationId", () => {
-    mockNextTurn = { patientName: "Carlos Ruiz", stationId: "CONS-03" };
-    renderDisplay();
+  it("muestra el stationId cuando el turno incluye stationId", () => {
+    mockFullState = {
+      serviceId: "QUEUE-DISP",
+      waiting: [],
+      inConsultation: [
+        {
+          serviceId: "QUEUE-DISP",
+          patientId: "P1",
+          patientName: "Carlos Ruiz",
+          turnNumber: 1,
+          priority: "High",
+          consultationType: "General",
+          status: "in-consultation",
+          claimedAt: null,
+          calledAt: new Date().toISOString(),
+          stationId: "CONS-03",
+          projectedAt: new Date().toISOString(),
+        },
+      ],
+      waitingPayment: [],
+      projectedAt: new Date().toISOString(),
+    };
+    renderMonitor();
     expect(screen.getByText(/CONS-03/)).toBeInTheDocument();
   });
 
-  // ── 5. Sin consultorio si stationId ausente ────────────────────────────
-  it("no muestra la línea de consultorio si el turno no tiene stationId", () => {
-    mockNextTurn = { patientName: "Ana Torres" };
-    renderDisplay();
-    expect(screen.queryByText(/Diríjase al consultorio/i)).not.toBeInTheDocument();
+  // ── 5. 'LLAMANDO' si stationId ausente ────────────────────────────────────
+  it("muestra 'LLAMANDO' si stationId es null en la columna En Consulta", () => {
+    mockFullState = {
+      serviceId: "QUEUE-DISP",
+      waiting: [],
+      inConsultation: [
+        {
+          serviceId: "QUEUE-DISP",
+          patientId: "P1",
+          patientName: "Ana Torres",
+          turnNumber: 1,
+          priority: "Medium",
+          consultationType: "General",
+          status: "in-consultation",
+          claimedAt: null,
+          calledAt: new Date().toISOString(),
+          stationId: null,
+          projectedAt: new Date().toISOString(),
+        },
+      ],
+      waitingPayment: [],
+      projectedAt: new Date().toISOString(),
+    };
+    renderMonitor();
+    expect(screen.getByText("LLAMANDO")).toBeInTheDocument();
   });
 
-  // ── 6. Lista vacía ──────────────────────────────────────────────────────
+  // ── 6. Lista vacía en espera ────────────────────────────────────────────────
   it("muestra el mensaje vacío cuando no hay pacientes en espera", () => {
-    mockPatientsInQueue = [];
-    renderDisplay();
-    expect(screen.getByText(/No hay pacientes en espera/i)).toBeInTheDocument();
+    mockFullState = {
+      serviceId: "QUEUE-DISP",
+      waiting: [],
+      inConsultation: [],
+      waitingPayment: [],
+      projectedAt: new Date().toISOString(),
+    };
+    renderMonitor();
+    expect(screen.getByText(/No hay turnos en espera/i)).toBeInTheDocument();
   });
 
-  // ── 7. Pacientes en la lista ───────────────────────────────────────────
-  it("renderiza los pacientes de la cola en la lista de espera", () => {
-    mockPatientsInQueue = [
-      { patientId: "P1", patientName: "Mario López", priority: "High" },
-      { patientId: "P2", patientName: "Sofía Vargas", priority: "Medium" },
-    ];
-    renderDisplay();
+  // ── 7. Pacientes en la columna En Consulta ─────────────────────────────────
+  it("renderiza los pacientes de la columna En Consulta", () => {
+    mockFullState = {
+      serviceId: "QUEUE-DISP",
+      waiting: [],
+      inConsultation: [
+        {
+          serviceId: "QUEUE-DISP",
+          patientId: "P1",
+          patientName: "Mario López",
+          turnNumber: 1,
+          priority: "High",
+          consultationType: "General",
+          status: "in-consultation",
+          claimedAt: null,
+          calledAt: new Date().toISOString(),
+          stationId: null,
+          projectedAt: new Date().toISOString(),
+        },
+        {
+          serviceId: "QUEUE-DISP",
+          patientId: "P2",
+          patientName: "Sofía Vargas",
+          turnNumber: 2,
+          priority: "Medium",
+          consultationType: "General",
+          status: "in-consultation",
+          claimedAt: null,
+          calledAt: new Date().toISOString(),
+          stationId: null,
+          projectedAt: new Date().toISOString(),
+        },
+      ],
+      waitingPayment: [],
+      projectedAt: new Date().toISOString(),
+    };
+    renderMonitor();
     expect(screen.getByText("Mario López")).toBeInTheDocument();
     expect(screen.getByText("Sofía Vargas")).toBeInTheDocument();
   });
 
-  // ── 8. Límite de 8 slots ──────────────────────────────────────────────────
-  it("limita la lista de espera a 8 pacientes como máximo", () => {
-    mockPatientsInQueue = Array.from({ length: 10 }, (_, i) => ({
-      patientId: `P${i}`,
-      patientName: `Paciente ${i + 1}`,
-      priority: "Low",
-    }));
-    renderDisplay();
-    for (let i = 1; i <= 8; i++) {
-      expect(screen.getByText(`Paciente ${i}`)).toBeInTheDocument();
+  // ── 8. Límite de 10 slots en espera ──────────────────────────────────────────
+  it("limita la lista de espera a 10 pacientes como máximo", () => {
+    mockFullState = {
+      serviceId: "QUEUE-DISP",
+      waiting: Array.from({ length: 12 }, (_, i) => ({
+        patientId: `P${i}`,
+        patientName: `Paciente ${i + 1}`,
+        priority: "Low",
+        checkInTime: new Date().toISOString(),
+        waitTimeMinutes: 0,
+        turnNumber: i + 1,
+      })),
+      inConsultation: [],
+      waitingPayment: [],
+      projectedAt: new Date().toISOString(),
+    };
+    renderMonitor();
+    for (let i = 1; i <= 10; i++) {
+      expect(screen.getByText(`#${i}`)).toBeInTheDocument();
     }
-    expect(screen.queryByText("Paciente 9")).not.toBeInTheDocument();
-    expect(screen.queryByText("Paciente 10")).not.toBeInTheDocument();
+    expect(screen.queryByText("#11")).not.toBeInTheDocument();
+    expect(screen.queryByText("#12")).not.toBeInTheDocument();
   });
 
   // ── 9. Orden de la lista ──────────────────────────────────────────────────
-  it("renderiza la lista en el orden recibido del hook", () => {
-    mockPatientsInQueue = [
-      { patientId: "P1", patientName: "Primero en cola", priority: "Urgent" },
-      { patientId: "P2", patientName: "Segundo en cola", priority: "High" },
-      { patientId: "P3", patientName: "Tercero en cola", priority: "Low" },
-    ];
-    renderDisplay();
+  it("renderiza la lista de espera en el orden recibido del hook", () => {
+    mockFullState = {
+      serviceId: "QUEUE-DISP",
+      waiting: [
+        { patientId: "P1", patientName: "Primero en cola",  priority: "Urgent", checkInTime: new Date().toISOString(), waitTimeMinutes: 0, turnNumber: 10 },
+        { patientId: "P2", patientName: "Segundo en cola",  priority: "High",   checkInTime: new Date().toISOString(), waitTimeMinutes: 0, turnNumber: 20 },
+        { patientId: "P3", patientName: "Tercero en cola",  priority: "Low",    checkInTime: new Date().toISOString(), waitTimeMinutes: 0, turnNumber: 30 },
+      ],
+      inConsultation: [],
+      waitingPayment: [],
+      projectedAt: new Date().toISOString(),
+    };
+    renderMonitor();
     const items = screen.getAllByRole("listitem");
-    expect(items[0]).toHaveTextContent("Primero en cola");
-    expect(items[1]).toHaveTextContent("Segundo en cola");
-    expect(items[2]).toHaveTextContent("Tercero en cola");
+    expect(items[0]).toHaveTextContent("#10");
+    expect(items[1]).toHaveTextContent("#20");
+    expect(items[2]).toHaveTextContent("#30");
   });
 
   // ── 10-11. Footer: hora de última actualización ───────────────────────────
   it.each([
-    { lastUpdated: "2026-03-02T10:30:00Z", containsDash: false, label: "muestra hora real cuando lastUpdated no es null" },
-    { lastUpdated: null,                   containsDash: true,  label: "muestra '—' cuando lastUpdated es null" },
-  ])("$label", ({ lastUpdated, containsDash }) => {
+    { lastUpdated: "2026-03-02T10:30:00Z", containsPlaceholder: false, label: "muestra hora real cuando lastUpdated no es null" },
+    { lastUpdated: null,                   containsPlaceholder: true,  label: "muestra '...' cuando lastUpdated es null" },
+  ])("$label", ({ lastUpdated, containsPlaceholder }) => {
     mockLastUpdated = lastUpdated;
-    renderDisplay();
-    const footer = screen.getByText(/Última actualización:/i);
-    if (containsDash) {
-      expect(footer.textContent).toContain("—");
+    renderMonitor();
+    const footer = screen.getByText(/Actualización:/i);
+    if (containsPlaceholder) {
+      expect(footer.textContent).toContain("...");
     } else {
-      expect(footer.textContent).not.toContain("—");
+      expect(footer.textContent).not.toContain("...");
     }
   });
 
   // ── 12. Prioridad visible en cada slot ─────────────────────────────────
   it("muestra la prioridad de cada paciente en la lista de espera", () => {
-    mockPatientsInQueue = [
-      { patientId: "P1", patientName: "Paciente Urgente", priority: "Urgent" },
-    ];
-    renderDisplay();
-    expect(screen.getByText("Paciente Urgente")).toBeInTheDocument();
+    mockFullState = {
+      serviceId: "QUEUE-DISP",
+      waiting: [
+        { patientId: "P1", patientName: "Paciente Urgente", priority: "Urgent", checkInTime: new Date().toISOString(), waitTimeMinutes: 0, turnNumber: 1 },
+      ],
+      inConsultation: [],
+      waitingPayment: [],
+      projectedAt: new Date().toISOString(),
+    };
+    renderMonitor();
+    expect(screen.getByText("#1")).toBeInTheDocument();
     expect(screen.getByText("Urgent")).toBeInTheDocument();
   });
 });

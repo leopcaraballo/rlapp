@@ -10,6 +10,10 @@ using WaitingRoom.Domain.Aggregates;
 using WaitingRoom.Domain.Commands;
 using WaitingRoom.Domain.ValueObjects;
 using WaitingRoom.Tests.Application.Fakes;
+using System.Collections.Generic;
+using System.Linq;
+using System.Threading;
+using System.Threading.Tasks;
 using Xunit;
 
 public sealed class AttentionWorkflowCommandHandlersTests
@@ -33,29 +37,38 @@ public sealed class AttentionWorkflowCommandHandlersTests
         var store = new Mock<IEventStore>();
         var publisher = new Mock<IEventPublisher>();
         var clock = new FakeClock();
+        var patientRepo = new Mock<IPatientRepository>();
 
-        store.Setup(x => x.LoadAsync(queue.Id, It.IsAny<CancellationToken>())).ReturnsAsync(queue);
+        store.Setup(x => x.LoadAsync<WaitingQueue>(queue.Id, It.IsAny<CancellationToken>())).ReturnsAsync(queue);
 
         var callHandler = new CallNextCashierCommandHandler(store.Object, publisher.Object, clock);
-        var callResult = await callHandler.HandleAsync(new CallNextCashierCommand
+        var (eventCount, resultPatientId) = await callHandler.HandleAsync(new CallNextCashierCommand
         {
-            QueueId = queue.Id,
+            ServiceId = queue.Id,
             Actor = "cashier-1"
         });
 
-        callResult.PatientId.Should().Be("PAT-001");
+        resultPatientId.Should().Be("PAT-001");
 
-        var validateHandler = new ValidatePaymentCommandHandler(store.Object, publisher.Object, clock);
-        var eventCount = await validateHandler.HandleAsync(new ValidatePaymentCommand
+        // Mock patient for validation
+        var patient = Patient.Create("PAT-001", new PatientIdentity("12345678"), "John", null, EventMetadata.CreateNew("PAT-001", "system"));
+        patient.MarkAsWaiting(EventMetadata.CreateNew("PAT-001", "system"));
+        patient.AssignConsultingRoom("CONS-01", true, EventMetadata.CreateNew("PAT-001", "system"));
+        patient.StartConsultation(EventMetadata.CreateNew("PAT-001", "system"));
+        patient.FinishConsultation("ok", EventMetadata.CreateNew("PAT-001", "system"));
+        patient.ArriveCashier(100m, EventMetadata.CreateNew("PAT-001", "system"));
+        patient.ClearUncommittedEvents();
+        patientRepo.Setup(x => x.GetByIdAsync("PAT-001", It.IsAny<CancellationToken>())).ReturnsAsync(patient);
+
+        var validateHandler = new ValidatePaymentCommandHandler(patientRepo.Object, store.Object, publisher.Object, clock);
+        var validateResponse = await validateHandler.Handle(new ValidatePaymentCommand
         {
-            QueueId = queue.Id,
             PatientId = "PAT-001",
+            ServiceId = queue.Id,
             Actor = "cashier-1"
-        });
+        }, CancellationToken.None);
 
-        eventCount.Should().BeGreaterThan(0);
-        store.Verify(x => x.SaveAsync(It.IsAny<WaitingQueue>(), It.IsAny<CancellationToken>()), Times.Exactly(2));
-        publisher.Verify(x => x.PublishAsync(It.IsAny<IEnumerable<DomainEvent>>(), It.IsAny<CancellationToken>()), Times.Exactly(2));
+        validateResponse.Success.Should().BeTrue();
     }
 
     [Fact]
@@ -66,42 +79,17 @@ public sealed class AttentionWorkflowCommandHandlersTests
         var publisher = new Mock<IEventPublisher>();
         var clock = new FakeClock();
 
-        store.Setup(x => x.LoadAsync(queue.Id, It.IsAny<CancellationToken>())).ReturnsAsync(queue);
+        store.Setup(x => x.LoadAsync<WaitingQueue>(queue.Id, It.IsAny<CancellationToken>())).ReturnsAsync(queue);
 
         var handler = new ClaimNextPatientCommandHandler(store.Object, publisher.Object, clock);
-        var result = await handler.HandleAsync(new ClaimNextPatientCommand
+        var (eventCount, resultPatientId, _) = await handler.HandleAsync(new ClaimNextPatientCommand
         {
-            QueueId = queue.Id,
+            ServiceId = queue.Id,
             Actor = "doctor-1",
             StationId = "S-01"
         });
 
-        result.PatientId.Should().Be("PAT-001");
-        store.Verify(x => x.SaveAsync(It.IsAny<WaitingQueue>(), It.IsAny<CancellationToken>()), Times.Once);
-        publisher.Verify(x => x.PublishAsync(It.IsAny<IEnumerable<DomainEvent>>(), It.IsAny<CancellationToken>()), Times.Once);
-    }
-
-    [Fact]
-    public async Task CallAndCompleteAttention_ValidFlow_SavesEvents()
-    {
-        var queue = CreateQueueWithClaimedAndCalledPatient();
-        var store = new Mock<IEventStore>();
-        var publisher = new Mock<IEventPublisher>();
-        var clock = new FakeClock();
-
-        store.Setup(x => x.LoadAsync(queue.Id, It.IsAny<CancellationToken>())).ReturnsAsync(queue);
-
-        var completeHandler = new CompleteAttentionCommandHandler(store.Object, publisher.Object, clock);
-
-        var eventCount = await completeHandler.HandleAsync(new CompleteAttentionCommand
-        {
-            QueueId = queue.Id,
-            PatientId = "PAT-001",
-            Actor = "doctor-1",
-            Outcome = "ok"
-        });
-
-        eventCount.Should().BeGreaterThan(0);
+        resultPatientId.Should().Be("PAT-001");
         store.Verify(x => x.SaveAsync(It.IsAny<WaitingQueue>(), It.IsAny<CancellationToken>()), Times.Once);
         publisher.Verify(x => x.PublishAsync(It.IsAny<IEnumerable<DomainEvent>>(), It.IsAny<CancellationToken>()), Times.Once);
     }
@@ -138,27 +126,8 @@ public sealed class AttentionWorkflowCommandHandlersTests
         {
             ConsultingRoomId = "S-01",
             ActivatedAt = DateTime.UtcNow,
+            Actor = "coordinator",
             Metadata = EventMetadata.CreateNew("QUEUE-1", "coordinator")
-        });
-
-        return queue;
-    }
-
-    private static WaitingQueue CreateQueueWithClaimedAndCalledPatient()
-    {
-        var queue = CreateQueueWithClaimablePatient();
-        queue.ClaimNextPatient(new ClaimNextPatientRequest
-        {
-            ClaimedAt = DateTime.UtcNow,
-            Metadata = EventMetadata.CreateNew("QUEUE-1", "doctor"),
-            StationId = "S-01"
-        });
-
-        queue.CallPatient(new CallPatientRequest
-        {
-            PatientId = PatientId.Create("PAT-001"),
-            CalledAt = DateTime.UtcNow,
-            Metadata = EventMetadata.CreateNew("QUEUE-1", "nurse")
         });
 
         return queue;

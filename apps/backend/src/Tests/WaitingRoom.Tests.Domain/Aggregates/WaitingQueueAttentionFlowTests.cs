@@ -129,6 +129,7 @@ public sealed class WaitingQueueAttentionFlowTests
         {
             ConsultingRoomId = "S-01",
             ActivatedAt = DateTime.UtcNow,
+            Actor = "coordinator",
             Metadata = EventMetadata.CreateNew(queue.Id, "coordinator")
         });
 
@@ -191,6 +192,7 @@ public sealed class WaitingQueueAttentionFlowTests
         {
             ConsultingRoomId = "S-01",
             ActivatedAt = DateTime.UtcNow,
+            Actor = "coordinator",
             Metadata = EventMetadata.CreateNew(queue.Id, "coordinator")
         });
 
@@ -276,6 +278,7 @@ public sealed class WaitingQueueAttentionFlowTests
         {
             ConsultingRoomId = "S-01",
             ActivatedAt = DateTime.UtcNow,
+            Actor = "coordinator",
             Metadata = EventMetadata.CreateNew(queue.Id, "coordinator")
         });
 
@@ -337,6 +340,7 @@ public sealed class WaitingQueueAttentionFlowTests
         {
             ConsultingRoomId = "CONS-01",
             ActivatedAt = DateTime.UtcNow,
+            Actor = "coordinator",
             Metadata = EventMetadata.CreateNew(queue.Id, "coordinator")
         });
 
@@ -346,6 +350,7 @@ public sealed class WaitingQueueAttentionFlowTests
         {
             ConsultingRoomId = "CONS-01",
             DeactivatedAt = DateTime.UtcNow,
+            Actor = "coordinator",
             Metadata = EventMetadata.CreateNew(queue.Id, "coordinator")
         });
 

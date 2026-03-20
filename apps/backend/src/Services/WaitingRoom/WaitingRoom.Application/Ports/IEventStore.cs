@@ -40,9 +40,10 @@ public interface IEventStore
     /// <param name="aggregate">The aggregate with uncommitted events.</param>
     /// <param name="cancellationToken">Cancellation token.</param>
     /// <exception cref="EventConflictException">If version conflict detected.</exception>
-    Task SaveAsync(
-        WaitingQueue aggregate,
-        CancellationToken cancellationToken = default);
+    Task SaveAsync<T>(
+        T aggregate,
+        CancellationToken cancellationToken = default)
+        where T : AggregateRoot;
 
     /// <summary>
     /// Loads an aggregate from its complete event history.
@@ -51,9 +52,10 @@ public interface IEventStore
     /// <param name="aggregateId">The aggregate identifier.</param>
     /// <param name="cancellationToken">Cancellation token.</param>
     /// <returns>Reconstructed aggregate or null if not found.</returns>
-    Task<WaitingQueue?> LoadAsync(
+    Task<T?> LoadAsync<T>(
         string aggregateId,
-        CancellationToken cancellationToken = default);
+        CancellationToken cancellationToken = default)
+        where T : AggregateRoot;
 
     /// <summary>
     /// Gets all events across all aggregates in deterministic order.

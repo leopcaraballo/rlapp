@@ -196,7 +196,7 @@ public sealed class RabbitMqEventPublisherTests
         var aggregateId = Guid.NewGuid().ToString();
         return new PatientCheckedIn
         {
-            QueueId = aggregateId,
+            ServiceId = aggregateId,
             PatientId = Guid.NewGuid().ToString(),
             PatientName = "Juan Garcia Lopez",
             Priority = "Normal",

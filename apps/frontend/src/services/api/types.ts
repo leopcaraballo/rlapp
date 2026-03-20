@@ -15,12 +15,12 @@ export interface CommandSuccess {
   correlationId: string;
   eventCount: number;
   patientId?: string;
-  queueId?: string;
+  serviceId?: string;
   turnNumber?: number;
 }
 
-export interface WaitingRoomMonitorView {
-  queueId: string;
+export interface AtencionMonitorView {
+  serviceId: string;
   totalPatientsWaiting: number;
   highPriorityCount: number;
   /** Conteo de pacientes con prioridad Urgente (puede no estar presente en versiones anteriores del backend). */
@@ -42,8 +42,8 @@ export interface PatientInQueueDto {
   turnNumber: number;
 }
 
-export interface QueueStateView {
-  queueId: string;
+export interface AtencionStateView {
+  serviceId: string;
   currentCount: number;
   maxCapacity: number;
   isAtCapacity: boolean;
@@ -52,8 +52,16 @@ export interface QueueStateView {
   projectedAt: string;
 }
 
+export interface AtencionFullStateView {
+  serviceId: string;
+  waiting: PatientInQueueDto[];
+  inConsultation: NextTurnView[];
+  waitingPayment: NextTurnView[];
+  projectedAt: string;
+}
+
 export interface NextTurnView {
-  queueId: string;
+  serviceId: string;
   patientId: string;
   patientName: string;
   turnNumber: number;
@@ -67,7 +75,7 @@ export interface NextTurnView {
 }
 
 export interface RecentAttentionRecordView {
-  queueId: string;
+  serviceId: string;
   patientId: string;
   patientName: string;
   priority: string;
@@ -80,7 +88,7 @@ export interface RecentAttentionRecordView {
 // Command DTOs (subset)
 export interface CheckInPatientDto {
   /** Identificador de la cola destino. Cuando se omite, el backend genera uno. */
-  queueId?: string | null;
+  serviceId?: string | null;
   patientId: string;
   patientName: string;
   priority: AppointmentPriority;
@@ -92,26 +100,26 @@ export interface CheckInPatientDto {
 }
 
 export interface CallNextCashierDto {
-  queueId: string;
+  serviceId: string;
   actor: string;
   cashierDeskId?: string | null;
 }
 
 export interface ValidatePaymentDto {
-  queueId: string;
+  serviceId: string;
   patientId: string;
   actor: string;
   paymentReference: string;
 }
 
 export interface ClaimNextPatientDto {
-  queueId: string;
+  serviceId: string;
   actor: string;
   stationId?: string | null;
 }
 
 export interface CompleteAttentionDto {
-  queueId: string;
+  serviceId: string;
   patientId: string;
   actor: string;
   outcome: string;

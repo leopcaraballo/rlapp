@@ -7,7 +7,7 @@ using BuildingBlocks.EventSourcing;
 /// </summary>
 public sealed record PatientCalled : DomainEvent
 {
-    public required string QueueId { get; init; }
+    public required string ServiceId { get; init; }
     public required string PatientId { get; init; }
     public required DateTime CalledAt { get; init; }
 
@@ -17,8 +17,8 @@ public sealed record PatientCalled : DomainEvent
     {
         base.ValidateInvariants();
 
-        if (string.IsNullOrWhiteSpace(QueueId))
-            throw new InvalidOperationException("QueueId is required");
+        if (string.IsNullOrWhiteSpace(ServiceId))
+            throw new InvalidOperationException("ServiceId is required");
 
         if (string.IsNullOrWhiteSpace(PatientId))
             throw new InvalidOperationException("PatientId is required");

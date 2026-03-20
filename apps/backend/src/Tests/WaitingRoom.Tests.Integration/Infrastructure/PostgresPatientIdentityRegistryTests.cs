@@ -10,6 +10,7 @@ using WaitingRoom.Infrastructure.Persistence.Outbox;
 using WaitingRoom.Infrastructure.Serialization;
 using Xunit;
 
+[Trait("Category", "Infrastructure")]
 public sealed class PostgresPatientIdentityRegistryTests : IAsyncLifetime
 {
     private readonly string _connectionString;
@@ -47,8 +48,8 @@ public sealed class PostgresPatientIdentityRegistryTests : IAsyncLifetime
         var registry = new PostgresPatientIdentityRegistry(_connectionString);
 
         // Act
-        await registry.EnsureRegisteredAsync("CC-1001", "Maria Gomez", "reception-1");
-        await registry.EnsureRegisteredAsync("CC-1001", "Maria Gomez", "reception-1");
+        await registry.EnsureRegisteredAsync("CC-1001", "CC-1001", "Maria Gomez", "reception-1");
+        await registry.EnsureRegisteredAsync("CC-1001", "CC-1001", "Maria Gomez", "reception-1");
 
         await using var connection = new NpgsqlConnection(_connectionString);
         await connection.OpenAsync();
@@ -70,11 +71,11 @@ WHERE patient_id = 'CC-1001';";
         // Arrange
         var registry = new PostgresPatientIdentityRegistry(_connectionString);
 
-        await registry.EnsureRegisteredAsync("CC-2002", "Laura Perez", "reception-1");
+        await registry.EnsureRegisteredAsync("CC-2002", "CC-2002", "Laura Perez", "reception-1");
 
         // Act
         var exception = await Assert.ThrowsAsync<PatientIdentityConflictException>(() =>
-            registry.EnsureRegisteredAsync("CC-2002", "Laura P.", "reception-2"));
+            registry.EnsureRegisteredAsync("CC-2002", "CC-2002", "Laura P.", "reception-2"));
 
         // Assert
         exception.PatientId.Should().Be("CC-2002");

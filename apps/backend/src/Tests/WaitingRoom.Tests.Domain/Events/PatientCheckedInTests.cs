@@ -8,19 +8,19 @@ using Xunit;
 public class PatientCheckedInTests
 {
     private static PatientCheckedIn CreateValidEvent(
-        string queueId = "QUEUE-01",
+        string serviceId = "QUEUE-01",
         string patientId = "PAT-001",
         string patientName = "John Doe",
         string priority = "High",
         string consultationType = "General",
         int queuePosition = 0)
     {
-        var metadata = EventMetadata.CreateNew(queueId, "nurse");
+        var metadata = EventMetadata.CreateNew(serviceId, "nurse");
 
         return new PatientCheckedIn
         {
             Metadata = metadata,
-            QueueId = queueId,
+            ServiceId = serviceId,
             PatientId = patientId,
             PatientName = patientName,
             Priority = priority,
@@ -67,14 +67,14 @@ public class PatientCheckedInTests
     }
 
     [Fact]
-    public void Event_WithMissingQueueId_ThrowsWhenValidated()
+    public void Event_WithMissingServiceId_ThrowsWhenValidated()
     {
         // Arrange & Act & Assert
         var metadata = EventMetadata.CreateNew("QUEUE-01", "nurse");
         var invalidEvent = new PatientCheckedIn
         {
             Metadata = metadata,
-            QueueId = "", // Invalid
+            ServiceId = "", // Invalid
             PatientId = "PAT-001",
             PatientName = "John Doe",
             Priority = "High",
@@ -86,7 +86,7 @@ public class PatientCheckedInTests
 
         // Validate would be called by event store
         // For now, just verify structure
-        invalidEvent.QueueId.Should().BeEmpty();
+        invalidEvent.ServiceId.Should().BeEmpty();
     }
 
     [Fact]
@@ -111,7 +111,7 @@ public class PatientCheckedInTests
         var event1 = new PatientCheckedIn
         {
             Metadata = EventMetadata.CreateNew("QUEUE-01", "nurse"),
-            QueueId = "QUEUE-01",
+            ServiceId = "QUEUE-01",
             PatientId = "PAT-001",
             PatientName = "John Doe",
             Priority = "High",
@@ -124,7 +124,7 @@ public class PatientCheckedInTests
         var event2 = new PatientCheckedIn
         {
             Metadata = EventMetadata.CreateNew("QUEUE-01", "nurse"),
-            QueueId = "QUEUE-01",
+            ServiceId = "QUEUE-01",
             PatientId = "PAT-001",
             PatientName = "John Doe",
             Priority = "High",

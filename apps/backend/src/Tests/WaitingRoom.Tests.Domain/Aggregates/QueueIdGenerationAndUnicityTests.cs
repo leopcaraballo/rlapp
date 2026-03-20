@@ -9,7 +9,7 @@ using BuildingBlocks.EventSourcing;
 using Xunit;
 
 /// <summary>
-/// Tests validating that queueId generation is ONLY performed by backend,
+/// Tests validating that serviceId generation is ONLY performed by backend,
 /// never accepted from client, and is collision-safe.
 ///
 /// Clinical Requirement:
@@ -18,10 +18,10 @@ using Xunit;
 /// - No client injection possible
 /// - Concurrent assignment must be atomic
 /// </summary>
-public class QueueIdGenerationAndUnicityTests
+public class ServiceIdGenerationAndUnicityTests
 {
     [Fact]
-    public void GivenCheckInRequest_WhenQueueIdGenerated_ThenIsBackendGeneratedAndUnique()
+    public void GivenCheckInRequest_WhenServiceIdGenerated_ThenIsBackendGeneratedAndUnique()
     {
         // Arrange
         var metadata = EventMetadata.CreateNew("queue-1", "system");
@@ -42,7 +42,7 @@ public class QueueIdGenerationAndUnicityTests
     public void GivenMultipleQueuesCreated_ThenAllHaveUniqueIds()
     {
         // Arrange
-        var queueIds = new HashSet<string>();
+        var serviceIds = new HashSet<string>();
         const int BirthdayParadoxSafetyCount = 10000;
 
         // Act: Create many queues
@@ -50,15 +50,15 @@ public class QueueIdGenerationAndUnicityTests
         {
             var metadata = EventMetadata.CreateNew($"queue-{i}", "system");
             var queue = WaitingQueue.Create($"queue-{i}", $"Queue {i}", 10, metadata);
-            queueIds.Add(queue.Id);
+            serviceIds.Add(queue.Id);
         }
 
         // Assert: All IDs are unique (with extremely high probability)
-        queueIds.Should().HaveCount(BirthdayParadoxSafetyCount);
+        serviceIds.Should().HaveCount(BirthdayParadoxSafetyCount);
     }
 
     [Fact]
-    public void GivenWaitingQueue_WhenQueueIdSet_ThenCannotBeModified()
+    public void GivenWaitingQueue_WhenServiceIdSet_ThenCannotBeModified()
     {
         // Arrange
         var metadata = EventMetadata.CreateNew("queue-1", "system");
@@ -73,7 +73,7 @@ public class QueueIdGenerationAndUnicityTests
     }
 
     [Fact]
-    public void GivenCheckInRequest_WhenPatientAdded_ThenQueueIdAssignmentIsAtomic()
+    public void GivenCheckInRequest_WhenPatientAdded_ThenServiceIdAssignmentIsAtomic()
     {
         // Arrange
         var meta = EventMetadata.CreateNew("queue-1", "system");
@@ -100,6 +100,6 @@ public class QueueIdGenerationAndUnicityTests
 
         @event.Should().NotBeNull();
         // Event should embed the queue ID that was active at check-in time
-        // This guarantees atomicity - queueId assigned in same transaction as patient check-in
+        // This guarantees atomicity - serviceId assigned in same transaction as patient check-in
     }
 }

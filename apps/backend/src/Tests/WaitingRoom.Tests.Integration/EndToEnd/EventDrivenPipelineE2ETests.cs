@@ -17,7 +17,9 @@ using WaitingRoom.Domain.Events;
 using WaitingRoom.Domain.Aggregates;
 using WaitingRoom.Domain.Exceptions;
 using BuildingBlocks.Observability;
+using BuildingBlocks.EventSourcing;
 using WaitingRoom.Infrastructure.Observability;
+using WaitingRoom.Infrastructure.Persistence.Repositories;
 using WaitingRoom.Infrastructure.Messaging;
 using WaitingRoom.Infrastructure.Persistence.EventStore;
 using WaitingRoom.Infrastructure.Persistence.Outbox;
@@ -25,7 +27,6 @@ using WaitingRoom.Infrastructure.Serialization;
 using WaitingRoom.Projections.Abstractions;
 using WaitingRoom.Projections.Implementations;
 using WaitingRoom.Projections.Processing;
-using BuildingBlocks.EventSourcing;
 
 /// <summary>
 /// End-to-End integration tests for the complete event-driven pipeline.
@@ -43,6 +44,7 @@ using BuildingBlocks.EventSourcing;
 /// - RabbitMQ (topic-based messaging)
 /// - Dedicated test database
 /// </summary>
+[Trait("Category", "Infrastructure")]
 public sealed class EventDrivenPipelineE2ETests : IAsyncLifetime
 {
     private readonly string _testConnectionString;
@@ -60,7 +62,7 @@ public sealed class EventDrivenPipelineE2ETests : IAsyncLifetime
     private readonly IOutboxStore _outboxStore;
 
     // Test data
-    private const string TestQueueId = "test-queue-1";
+    private const string TestServiceId = "test-queue-1";
     private const string TestPatientId = "test-patient-1";
     private const string TestPatientName = "Test Patient";
     private const string TestPriority = "HIGH";
@@ -91,6 +93,12 @@ public sealed class EventDrivenPipelineE2ETests : IAsyncLifetime
         services.AddSingleton<IOutboxStore>(sp => sp.GetRequiredService<PostgresOutboxStore>());
         services.AddSingleton<IEventLagTracker>(sp => sp.GetRequiredService<PostgresEventLagTracker>());
         services.AddSingleton<IClock, SystemClock>();
+        services.AddSingleton<IPatientIdentityRegistry>(new PostgresPatientIdentityRegistry(_testConnectionString));
+        services.AddSingleton<IPatientRepository, PatientRepository>();
+        services.AddSingleton<IConsultingRoomRepository, ConsultingRoomRepository>();
+        services.AddSingleton<IPatientStateRepository>(sp => new PostgresPatientStateRepository(_testConnectionString));
+        services.AddSingleton<IConsultingRoomOccupancyRepository>(sp => new PostgresConsultingRoomOccupancyRepository(_testConnectionString));
+        services.AddSingleton<ICashierQueueRepository>(sp => new PostgresCashierQueueRepository(_testConnectionString));
 
         // Application
         services.AddScoped<CheckInPatientCommandHandler>();
@@ -164,11 +172,11 @@ public sealed class EventDrivenPipelineE2ETests : IAsyncLifetime
     public async Task FullPipeline_CheckInPatient_RealizesCorrectly()
     {
         // Arrange
-        await EnsureQueueExistsAsync(TestQueueId, "Test Queue", 50, CancellationToken.None);
+        await EnsureQueueExistsAsync(TestServiceId, "Test Queue", 50, CancellationToken.None);
 
         var command = new CheckInPatientCommand
         {
-            QueueId = TestQueueId,
+            ServiceId = TestServiceId,
             PatientId = TestPatientId,
             PatientName = TestPatientName,
             Priority = TestPriority,
@@ -181,10 +189,10 @@ public sealed class EventDrivenPipelineE2ETests : IAsyncLifetime
         Assert.Equal(1, eventCount);
 
         // Assert: Step 2 - Verify event in EventStore
-        var eventsFromStore = await _eventStore.GetEventsAsync(TestQueueId);
+        var eventsFromStore = await _eventStore.GetEventsAsync(TestServiceId);
         var eventList = eventsFromStore.ToList();
         var patientCheckedInEvent = eventList.OfType<PatientCheckedIn>().Single();
-        Assert.Equal(TestQueueId, patientCheckedInEvent.QueueId);
+        Assert.Equal(TestServiceId, patientCheckedInEvent.ServiceId);
         Assert.Equal(TestPatientId.ToUpperInvariant(), patientCheckedInEvent.PatientId);
         Assert.Equal(TestPatientName, patientCheckedInEvent.PatientName);
 
@@ -227,11 +235,11 @@ public sealed class EventDrivenPipelineE2ETests : IAsyncLifetime
     public async Task ProcessEvent_Idempotent_SameEventTwiceProducesSameState()
     {
         // Arrange
-        await EnsureQueueExistsAsync(TestQueueId, "Test Queue", 50, CancellationToken.None);
+        await EnsureQueueExistsAsync(TestServiceId, "Test Queue", 50, CancellationToken.None);
 
         var command = new CheckInPatientCommand
         {
-            QueueId = TestQueueId,
+            ServiceId = TestServiceId,
             PatientId = TestPatientId,
             PatientName = TestPatientName,
             Priority = TestPriority,
@@ -241,7 +249,7 @@ public sealed class EventDrivenPipelineE2ETests : IAsyncLifetime
 
         // Act: Create and process event first time
         await _commandHandler.HandleAsync(command, CancellationToken.None);
-        var events = (await _eventStore.GetEventsAsync(TestQueueId)).ToList();
+        var events = (await _eventStore.GetEventsAsync(TestServiceId)).ToList();
         var evt = events.OfType<PatientCheckedIn>().First();
 
         await _projectionProcessor.ProcessEventAsync(evt, CancellationToken.None);
@@ -275,7 +283,7 @@ public sealed class EventDrivenPipelineE2ETests : IAsyncLifetime
 
             var command = new CheckInPatientCommand
             {
-                QueueId = $"queue-{i}",
+                ServiceId = $"queue-{i}",
                 PatientId = $"patient-{i}",
                 PatientName = $"Patient {i}",
                 Priority = "HIGH",
@@ -328,7 +336,7 @@ public sealed class EventDrivenPipelineE2ETests : IAsyncLifetime
 
             var command = new CheckInPatientCommand
             {
-                QueueId = $"queue-slow-{i}",
+                ServiceId = $"queue-slow-{i}",
                 PatientId = $"patient-slow-{i}",
                 PatientName = $"Slow Patient {i}",
                 Priority = "HIGH",
@@ -369,7 +377,7 @@ public sealed class EventDrivenPipelineE2ETests : IAsyncLifetime
 
         await _commandHandler.HandleAsync(new CheckInPatientCommand
         {
-            QueueId = "queue-flow-1",
+            ServiceId = "queue-flow-1",
             PatientId = "patient-flow-1",
             PatientName = "Patient Flow",
             Priority = "High",
@@ -379,36 +387,35 @@ public sealed class EventDrivenPipelineE2ETests : IAsyncLifetime
 
         var cashierCall = await _callNextCashierHandler.HandleAsync(new CallNextCashierCommand
         {
-            QueueId = "queue-flow-1",
+            ServiceId = "queue-flow-1",
             Actor = "cashier-1",
             CashierDeskId = "C-01"
         }, CancellationToken.None);
 
-        await _validatePaymentHandler.HandleAsync(new ValidatePaymentCommand
+        await _validatePaymentHandler.Handle(new ValidatePaymentCommand
         {
-            QueueId = "queue-flow-1",
+            ServiceId = "queue-flow-1",
             PatientId = cashierCall.PatientId,
-            Actor = "cashier-1",
-            PaymentReference = "PAY-001"
+            Actor = "cashier-1"
         }, CancellationToken.None);
 
         var claimResult = await _claimHandler.HandleAsync(new ClaimNextPatientCommand
         {
-            QueueId = "queue-flow-1",
+            ServiceId = "queue-flow-1",
             Actor = "doctor-a",
             StationId = "S-10"
         }, CancellationToken.None);
 
         await _callHandler.HandleAsync(new CallPatientCommand
         {
-            QueueId = "queue-flow-1",
+            ServiceId = "queue-flow-1",
             PatientId = claimResult.PatientId,
             Actor = "nurse-a"
         }, CancellationToken.None);
 
         await _completeHandler.HandleAsync(new CompleteAttentionCommand
         {
-            QueueId = "queue-flow-1",
+            ServiceId = "queue-flow-1",
             PatientId = claimResult.PatientId,
             Actor = "doctor-a",
             Outcome = "completed"
@@ -424,15 +431,15 @@ public sealed class EventDrivenPipelineE2ETests : IAsyncLifetime
     [Fact]
     public async Task ClinicOperationalFlow_2Receptions4ConsultRooms1PaymentDesk_WorksUnderLoad()
     {
-        const string queueId = "clinic-main-queue";
+        const string serviceId = "clinic-main-queue";
         const int totalPatients = 24;
         using var cts = new CancellationTokenSource(TimeSpan.FromSeconds(60));
         var cancellationToken = cts.Token;
         var deadlineUtc = DateTime.UtcNow.AddSeconds(60);
 
-        await EnsureQueueExistsAsync(queueId, "Main Clinic Queue", 100, cancellationToken);
+        await EnsureQueueExistsAsync(serviceId, "Main Clinic Queue", 100, cancellationToken);
         await ActivateConsultingRoomsAsync(
-            queueId,
+            serviceId,
             Enumerable.Range(1, 4).Select(i => $"CONS-{i:00}").ToArray(),
             cancellationToken);
 
@@ -454,7 +461,7 @@ public sealed class EventDrivenPipelineE2ETests : IAsyncLifetime
                     {
                         await _commandHandler.HandleAsync(new CheckInPatientCommand
                         {
-                            QueueId = queueId,
+                            ServiceId = serviceId,
                             PatientId = patientId,
                             PatientName = $"Patient {patientId}",
                             Priority = "Medium",
@@ -472,7 +479,7 @@ public sealed class EventDrivenPipelineE2ETests : IAsyncLifetime
                     {
                         await _commandHandler.HandleAsync(new CheckInPatientCommand
                         {
-                            QueueId = queueId,
+                            ServiceId = serviceId,
                             PatientId = patientId,
                             PatientName = $"Patient {patientId}",
                             Priority = "High",
@@ -498,19 +505,18 @@ public sealed class EventDrivenPipelineE2ETests : IAsyncLifetime
                 var cashierCall = await ExecuteWithConcurrencyRetryAsync(async () =>
                     await _callNextCashierHandler.HandleAsync(new CallNextCashierCommand
                     {
-                        QueueId = queueId,
+                        ServiceId = serviceId,
                         Actor = "payment-desk-1",
                         CashierDeskId = "C-01"
                     }, cancellationToken));
 
                 await ExecuteWithConcurrencyRetryAsync(async () =>
                 {
-                    await _validatePaymentHandler.HandleAsync(new ValidatePaymentCommand
+                    await _validatePaymentHandler.Handle(new ValidatePaymentCommand
                     {
-                        QueueId = queueId,
+                        ServiceId = serviceId,
                         PatientId = cashierCall.PatientId,
-                        Actor = "payment-desk-1",
-                        PaymentReference = $"PAY-{cashierCall.PatientId}"
+                        Actor = "payment-desk-1"
                     }, cancellationToken);
                 });
 
@@ -543,7 +549,7 @@ public sealed class EventDrivenPipelineE2ETests : IAsyncLifetime
                         var claim = await ExecuteWithConcurrencyRetryAsync(async () =>
                             await _claimHandler.HandleAsync(new ClaimNextPatientCommand
                             {
-                                QueueId = queueId,
+                                ServiceId = serviceId,
                                 Actor = $"consult-room-{roomNumber}",
                                 StationId = $"CONS-{roomNumber:00}"
                             }, cancellationToken));
@@ -552,7 +558,7 @@ public sealed class EventDrivenPipelineE2ETests : IAsyncLifetime
                         {
                             await _callHandler.HandleAsync(new CallPatientCommand
                             {
-                                QueueId = queueId,
+                                ServiceId = serviceId,
                                 PatientId = claim.PatientId,
                                 Actor = $"consult-room-{roomNumber}-nurse"
                             }, cancellationToken);
@@ -562,7 +568,7 @@ public sealed class EventDrivenPipelineE2ETests : IAsyncLifetime
                         {
                             await _completeHandler.HandleAsync(new CompleteAttentionCommand
                             {
-                                QueueId = queueId,
+                                ServiceId = serviceId,
                                 PatientId = claim.PatientId,
                                 Actor = $"consult-room-{roomNumber}",
                                 Outcome = "completed",
@@ -599,7 +605,7 @@ public sealed class EventDrivenPipelineE2ETests : IAsyncLifetime
         Assert.Equal(totalPatients, completedPatients.Count);
         Assert.Equal(totalPatients, paymentDeskQueue.Count);
 
-        var events = (await _eventStore.GetEventsAsync(queueId, cancellationToken)).ToList();
+        var events = (await _eventStore.GetEventsAsync(serviceId, cancellationToken)).ToList();
 
         Assert.Equal(totalPatients, events.OfType<PatientCheckedIn>().Count());
         Assert.Equal(totalPatients, events.OfType<PatientCalledAtCashier>().Count());
@@ -610,7 +616,7 @@ public sealed class EventDrivenPipelineE2ETests : IAsyncLifetime
     }
 
     private async Task ActivateConsultingRoomsAsync(
-        string queueId,
+        string serviceId,
         IReadOnlyCollection<string> consultingRoomIds,
         CancellationToken cancellationToken)
     {
@@ -618,7 +624,7 @@ public sealed class EventDrivenPipelineE2ETests : IAsyncLifetime
         {
             await _activateConsultingRoomHandler.HandleAsync(new ActivateConsultingRoomCommand
             {
-                QueueId = queueId,
+                ServiceId = serviceId,
                 ConsultingRoomId = consultingRoomId,
                 Actor = "coordinator"
             }, cancellationToken);
@@ -705,13 +711,13 @@ public sealed class EventDrivenPipelineE2ETests : IAsyncLifetime
     }
 
     private async Task EnsureQueueExistsAsync(
-        string queueId,
+        string serviceId,
         string queueName,
         int maxCapacity,
         CancellationToken cancellationToken)
     {
-        var metadata = EventMetadata.CreateNew(queueId, "test-system");
-        var queue = WaitingQueue.Create(queueId, queueName, maxCapacity, metadata);
+        var metadata = EventMetadata.CreateNew(serviceId, "test-system");
+        var queue = WaitingQueue.Create(serviceId, queueName, maxCapacity, metadata);
         var eventIds = queue.UncommittedEvents
             .Select(e => Guid.Parse(e.Metadata.EventId))
             .ToArray();

@@ -4,7 +4,7 @@ namespace WaitingRoom.Application.Ports;
 /// Generates queue identifiers for check-in assignments.
 /// Backend is the single source of truth for queue id generation.
 /// </summary>
-public interface IQueueIdGenerator
+public interface IServiceIdGenerator
 {
     string Generate();
 }

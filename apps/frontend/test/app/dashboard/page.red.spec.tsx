@@ -13,13 +13,13 @@ jest.mock("@/services/AudioService", () => ({
   },
 }));
 
-// ── mock useQueueAsAppointments ──────────────────────────────────────────────
+// ── mock useAtencionAsAppointments ──────────────────────────────────────────────
 let mockAppointments: Appointment[] = [];
 let mockError: string | null = null;
 let mockIsConnecting = false;
 
-jest.mock("@/hooks/useQueueAsAppointments", () => ({
-  useQueueAsAppointments: () => ({
+jest.mock("@/hooks/useAtencionAsAppointments", () => ({
+  useAtencionAsAppointments: () => ({
     appointments: mockAppointments,
     error: mockError,
     isConnecting: mockIsConnecting,

@@ -1,18 +1,19 @@
 "use client";
 import { zodResolver } from "@hookform/resolvers/zod";
+import { useRouter } from "next/navigation";
 import React, { useState } from "react";
 import { useForm } from "react-hook-form";
 import * as z from "zod";
 
+import { filterPatients,PatientSearchInput } from "@/components/PatientSearchInput";
 import { env } from "@/config/env";
 import { useAlert } from "@/context/AlertContext";
 import {
   CONSULTATION_TYPE_LABELS,
   type ConsultationType,
 } from "@/domain/patient/ConsultationType";
-import { useWaitingRoom } from "@/hooks/useWaitingRoom";
-import { registerReception } from "@/services/api/waitingRoom";
-import { PatientSearchInput, filterPatients } from "@/components/PatientSearchInput";
+import { useAtencion } from "@/hooks/useAtencion";
+import { registerReception } from "@/services/api/atencion";
 
 import styles from "./page.module.css";
 
@@ -52,6 +53,7 @@ const CheckInSchema = z.object({
 type CheckInForm = z.infer<typeof CheckInSchema>;
 
 export default function ReceptionPage() {
+  const router = useRouter();
   const [submitting, setSubmitting] = useState(false);
   const [searchQuery, setSearchQuery] = useState("");
   const alert = useAlert();
@@ -75,8 +77,8 @@ export default function ReceptionPage() {
   });
 
   // La cola se auto-asigna siempre al valor por defecto configurado en el entorno
-  const queueId = env.DEFAULT_QUEUE_ID;
-  const { queueState } = useWaitingRoom(queueId);
+  const serviceId = env.DEFAULT_QUEUE_ID;
+  const { queueState } = useAtencion(serviceId);
 
   async function onSubmit(data: CheckInForm) {
     if (submitting) return; // evita doble submit si el estado aun no se actualiza
@@ -85,7 +87,7 @@ export default function ReceptionPage() {
 
     try {
       const result = await registerReception({
-        queueId,
+        serviceId,
         patientId: data.patientId.trim().toUpperCase(),
         patientName: data.patientName.trim(),
         priority: data.priority,
@@ -99,6 +101,11 @@ export default function ReceptionPage() {
       const turnInfo = result.turnNumber ? ` — Turno #${result.turnNumber}` : '';
       alert.showSuccess(`Paciente registrado exitosamente${turnInfo}`);
       reset();
+      
+      // Redirigir a la sala de espera para ver el turno en la cola (alineación E2E)
+      if (result.serviceId) {
+        router.push(`/atencion/${result.serviceId}`);
+      }
     } catch (e: unknown) {
       const msg = e instanceof Error ? e.message : String(e);
       alert.showError(msg ?? "Error al registrar check-in");
@@ -116,7 +123,7 @@ export default function ReceptionPage() {
       <section className={styles.statusPanel}>
         <header className={styles.panelHeader}>
           <h2 className={styles.panelTitle}>Estado de la cola</h2>
-          <span className={styles.queueBadge}>{queueId}</span>
+          <span className={styles.queueBadge}>{serviceId}</span>
         </header>
         <PatientSearchInput
           value={searchQuery}

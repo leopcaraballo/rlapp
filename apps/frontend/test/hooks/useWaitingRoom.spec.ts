@@ -1,31 +1,36 @@
 /**
  * @jest-environment jsdom
  *
- * 🧪 Tests de cobertura para useWaitingRoom (Bloque B2)
+ * 🧪 Tests de cobertura para useAtencion (Bloque B2)
  * Cubre: estado inicial, fetch al montar, datos en estado, connectionState,
  *        refresh manual, error paths, lastUpdated y evento rlapp:command-success.
  */
 import { act, renderHook, waitFor } from "@testing-library/react";
 
-// ── mock services/api/waitingRoom ─────────────────────────────────────────
+// ── mock infrastructure/adapters/HttpQueryAdapter ─────────────────────────
 const mockGetMonitor = jest.fn();
 const mockGetQueueState = jest.fn();
 const mockGetNextTurn = jest.fn();
 const mockGetRecentHistory = jest.fn();
+const mockGetFullState = jest.fn();
 
-jest.mock("@/services/api/waitingRoom", () => ({
-  getMonitor: (...args: unknown[]) => mockGetMonitor(...args),
-  getQueueState: (...args: unknown[]) => mockGetQueueState(...args),
-  getNextTurn: (...args: unknown[]) => mockGetNextTurn(...args),
-  getRecentHistory: (...args: unknown[]) => mockGetRecentHistory(...args),
+jest.mock("@/infrastructure/adapters/HttpQueryAdapter", () => ({
+  HttpQueryAdapter: class {},
+  httpQueryAdapter: {
+    getMonitor: (...args: unknown[]) => mockGetMonitor(...args),
+    getQueueState: (...args: unknown[]) => mockGetQueueState(...args),
+    getNextTurn: (...args: unknown[]) => mockGetNextTurn(...args),
+    getRecentHistory: (...args: unknown[]) => mockGetRecentHistory(...args),
+    getFullState: (...args: unknown[]) => mockGetFullState(...args),
+  },
 }));
 
-// ── mock services/signalr/waitingRoomSignalR ──────────────────────────────
+// ── mock services/signalr/atencionSignalR ─────────────────────────────────
 const mockSignalRConnect = jest.fn().mockResolvedValue(null);
 const mockSignalRDisconnect = jest.fn().mockResolvedValue(undefined);
 const mockSignalRIsConnected = jest.fn().mockReturnValue(false);
 
-jest.mock("@/services/signalr/waitingRoomSignalR", () => ({
+jest.mock("@/services/signalr/atencionSignalR", () => ({
   connect: (...args: unknown[]) => mockSignalRConnect(...args),
   disconnect: (...args: unknown[]) => mockSignalRDisconnect(...args),
   isConnected: () => mockSignalRIsConnected(),
@@ -34,7 +39,7 @@ jest.mock("@/services/signalr/waitingRoomSignalR", () => ({
 // ── mock context/AlertContext ─────────────────────────────────────────────
 const mockShowError = jest.fn();
 // Objeto estable: misma referencia en cada llamada a useAlert()
-// Necesario para que useCallback([queueId, alert]) no cambie en cada render
+// Necesario para que useCallback([serviceId, alert]) no cambie en cada render
 const mockAlert = {
   showError: mockShowError,
   showSuccess: jest.fn(),
@@ -45,17 +50,17 @@ jest.mock("@/context/AlertContext", () => ({
   useAlert: () => mockAlert,
 }));
 
-import { useWaitingRoom } from "@/hooks/useWaitingRoom";
+import { useAtencion } from "@/hooks/useAtencion";
 import type {
+  AtencionMonitorView,
+  AtencionStateView,
   NextTurnView,
-  QueueStateView,
   RecentAttentionRecordView,
-  WaitingRoomMonitorView,
 } from "@/services/api/types";
 
 // ── fixtures ────────────────────────────────────────────────────────────────
-const MONITOR: WaitingRoomMonitorView = {
-  queueId: "Q1",
+const MONITOR: AtencionMonitorView = {
+  serviceId: "Q1",
   totalPatientsWaiting: 5,
   highPriorityCount: 1,
   normalPriorityCount: 3,
@@ -66,8 +71,8 @@ const MONITOR: WaitingRoomMonitorView = {
   projectedAt: "2026-03-02T10:00:00Z",
 };
 
-const QUEUE_STATE: QueueStateView = {
-  queueId: "Q1",
+const QUEUE_STATE: AtencionStateView = {
+  serviceId: "Q1",
   currentCount: 5,
   maxCapacity: 20,
   isAtCapacity: false,
@@ -77,7 +82,7 @@ const QUEUE_STATE: QueueStateView = {
 };
 
 const NEXT_TURN: NextTurnView = {
-  queueId: "Q1",
+  serviceId: "Q1",
   patientId: "p1",
   patientName: "Juan",
   turnNumber: 1,
@@ -92,7 +97,7 @@ const NEXT_TURN: NextTurnView = {
 
 const HISTORY: RecentAttentionRecordView[] = [
   {
-    queueId: "Q1",
+    serviceId: "Q1",
     patientId: "p0",
     patientName: "Maria",
     priority: "Low",
@@ -102,12 +107,13 @@ const HISTORY: RecentAttentionRecordView[] = [
 ];
 
 // ── suite ────────────────────────────────────────────────────────────────────
-describe("useWaitingRoom", () => {
+describe("useAtencion", () => {
   beforeEach(() => {
     mockGetMonitor.mockResolvedValue(MONITOR);
     mockGetQueueState.mockResolvedValue(QUEUE_STATE);
     mockGetNextTurn.mockResolvedValue(NEXT_TURN);
     mockGetRecentHistory.mockResolvedValue(HISTORY);
+    mockGetFullState.mockResolvedValue(null);
     mockSignalRConnect.mockResolvedValue(null);
     mockShowError.mockClear();
   });
@@ -118,7 +124,7 @@ describe("useWaitingRoom", () => {
 
   // ── 1. Estado inicial ─────────────────────────────────────────────────────
   it("inicia con monitor, queueState, nextTurn null e history vacía", () => {
-    const { result, unmount } = renderHook(() => useWaitingRoom("Q1", 99999));
+    const { result, unmount } = renderHook(() => useAtencion("Q1", 99999));
     expect(result.current.monitor).toBeNull();
     expect(result.current.queueState).toBeNull();
     expect(result.current.nextTurn).toBeNull();
@@ -129,7 +135,7 @@ describe("useWaitingRoom", () => {
 
   // ── 2. Llama a los cuatro servicios al montar ─────────────────────────────
   it("llama a getMonitor, getQueueState, getNextTurn y getRecentHistory al montar", async () => {
-    renderHook(() => useWaitingRoom("Q1", 99999));
+    renderHook(() => useAtencion("Q1", 99999));
     await waitFor(() => {
       expect(mockGetMonitor).toHaveBeenCalledWith("Q1");
       expect(mockGetQueueState).toHaveBeenCalledWith("Q1");
@@ -140,7 +146,7 @@ describe("useWaitingRoom", () => {
 
   // ── 3. Actualiza estado con datos del fetch exitoso ───────────────────────
   it("actualiza monitor, queueState, nextTurn e history tras fetch exitoso", async () => {
-    const { result } = renderHook(() => useWaitingRoom("Q1", 99999));
+    const { result } = renderHook(() => useAtencion("Q1", 99999));
     await waitFor(() => {
       expect(result.current.monitor).toEqual(MONITOR);
       expect(result.current.queueState).toEqual(QUEUE_STATE);
@@ -151,7 +157,7 @@ describe("useWaitingRoom", () => {
 
   // ── 4. connectionState = online tras fetch exitoso ────────────────────────
   it("establece connectionState = 'online' cuando monitor y queueState responden bien", async () => {
-    const { result } = renderHook(() => useWaitingRoom("Q1", 99999));
+    const { result } = renderHook(() => useAtencion("Q1", 99999));
     await waitFor(() => {
       expect(result.current.connectionState).toBe("online");
     });
@@ -159,7 +165,7 @@ describe("useWaitingRoom", () => {
 
   // ── 5. Refresh manual activa re-fetch ─────────────────────────────────────
   it("llama de nuevo a los servicios al invocar refresh()", async () => {
-    const { result } = renderHook(() => useWaitingRoom("Q1", 99999));
+    const { result } = renderHook(() => useAtencion("Q1", 99999));
     await waitFor(() => expect(result.current.connectionState).toBe("online"));
 
     mockGetMonitor.mockClear();
@@ -169,7 +175,7 @@ describe("useWaitingRoom", () => {
 
   // ── 6. lastUpdated es un string ISO tras fetch exitoso ────────────────────
   it("establece lastUpdated como string ISO tras fetch exitoso", async () => {
-    const { result } = renderHook(() => useWaitingRoom("Q1", 99999));
+    const { result } = renderHook(() => useAtencion("Q1", 99999));
     await waitFor(() => {
       expect(typeof result.current.lastUpdated).toBe("string");
       expect(result.current.lastUpdated).not.toBeNull();
@@ -180,7 +186,7 @@ describe("useWaitingRoom", () => {
   it("establece connectionState = 'connecting' cuando monitor y queueState fallan (primer intento)", async () => {
     mockGetMonitor.mockRejectedValue(new Error("500 error"));
     mockGetQueueState.mockRejectedValue(new Error("500 error"));
-    const { result } = renderHook(() => useWaitingRoom("Q1", 99999));
+    const { result } = renderHook(() => useAtencion("Q1", 99999));
     await waitFor(() => {
       expect(result.current.connectionState).toBe("connecting");
     });
@@ -192,7 +198,7 @@ describe("useWaitingRoom", () => {
     mockGetQueueState.mockRejectedValue(new Error("network error"));
 
     // Intervalo grande para evitar polling automático en tests
-    const { result } = renderHook(() => useWaitingRoom("Q1", 99999));
+    const { result } = renderHook(() => useAtencion("Q1", 99999));
     await waitFor(() => expect(result.current.connectionState).toBe("connecting"));
 
     // Segundo y tercer fallo via refresh manual
@@ -207,29 +213,29 @@ describe("useWaitingRoom", () => {
     });
   });
 
-  // ── 9. Evento rlapp:command-success con mismo queueId dispara refresh ──────
-  it("dispara un refresh al recibir rlapp:command-success con el mismo queueId", async () => {
-    const { result } = renderHook(() => useWaitingRoom("Q1", 99999));
+  // ── 9. Evento rlapp:command-success con mismo serviceId dispara refresh ────
+  it("dispara un refresh al recibir rlapp:command-success con el mismo serviceId", async () => {
+    const { result } = renderHook(() => useAtencion("Q1", 99999));
     await waitFor(() => expect(result.current.connectionState).toBe("online"));
 
     mockGetMonitor.mockClear();
     await act(async () => {
       window.dispatchEvent(
-        new CustomEvent("rlapp:command-success", { detail: { queueId: "Q1" } }),
+        new CustomEvent("rlapp:command-success", { detail: { serviceId: "Q1" } }),
       );
     });
     await waitFor(() => expect(mockGetMonitor).toHaveBeenCalledTimes(1));
   });
 
-  // ── 10. Evento con queueId diferente no dispara refresh ───────────────────
-  it("no dispara refresh al recibir rlapp:command-success con queueId diferente", async () => {
-    const { result } = renderHook(() => useWaitingRoom("Q1", 99999));
+  // ── 10. Evento con serviceId diferente no dispara refresh ─────────────────
+  it("no dispara refresh al recibir rlapp:command-success con serviceId diferente", async () => {
+    const { result } = renderHook(() => useAtencion("Q1", 99999));
     await waitFor(() => expect(result.current.connectionState).toBe("online"));
 
     mockGetMonitor.mockClear();
     await act(async () => {
       window.dispatchEvent(
-        new CustomEvent("rlapp:command-success", { detail: { queueId: "OTRO-ID" } }),
+        new CustomEvent("rlapp:command-success", { detail: { serviceId: "OTRO-ID" } }),
       );
       await Promise.resolve();
     });
@@ -239,14 +245,14 @@ describe("useWaitingRoom", () => {
   // ── 11. nextTurn queda null si getNextTurn responde null ──────────────────
   it("nextTurn queda null cuando getNextTurn devuelve null (sin turno activo)", async () => {
     mockGetNextTurn.mockResolvedValue(null);
-    const { result } = renderHook(() => useWaitingRoom("Q1", 99999));
+    const { result } = renderHook(() => useAtencion("Q1", 99999));
     await waitFor(() => expect(result.current.connectionState).toBe("online"));
     expect(result.current.nextTurn).toBeNull();
   });
 
   // ── 12. desmontaje limpia el intervalo y los listeners ─────────────────────
   it("no lanza errores al desmontar el hook", async () => {
-    const { unmount } = renderHook(() => useWaitingRoom("Q1", 99999));
+    const { unmount } = renderHook(() => useAtencion("Q1", 99999));
     await waitFor(() => expect(mockGetMonitor).toHaveBeenCalled());
     expect(() => unmount()).not.toThrow();
   });
@@ -255,13 +261,13 @@ describe("useWaitingRoom", () => {
   it("registra signalRCleanup cuando connect retorna un objeto no-nulo", async () => {
     const fakeConn = { stop: jest.fn() };
     mockSignalRConnect.mockImplementation(
-      async (_queueId: string, handlers: Record<string, (() => void) | undefined>) => {
+      async (_serviceId: string, handlers: Record<string, (() => void) | undefined>) => {
         mockSignalRIsConnected.mockReturnValue(true);
         handlers.onConnected?.();
         return fakeConn;
       },
     );
-    const { unmount } = renderHook(() => useWaitingRoom("Q1", 99999));
+    const { unmount } = renderHook(() => useAtencion("Q1", 99999));
     await waitFor(() => expect(mockSignalRConnect).toHaveBeenCalled());
     // Desmontar debe llamar a disconnect (signalRCleanup es truthy)
     unmount();
@@ -271,12 +277,12 @@ describe("useWaitingRoom", () => {
   // ── 14. SignalR onDisconnected escribe en console pero no falla ────────────
   it("no lanza errores cuando signalR llama a onDisconnected", async () => {
     mockSignalRConnect.mockImplementation(
-      async (_queueId: string, handlers: Record<string, (() => void) | undefined>) => {
+      async (_serviceId: string, handlers: Record<string, (() => void) | undefined>) => {
         handlers.onDisconnected?.();
         return null;
       },
     );
-    const { unmount } = renderHook(() => useWaitingRoom("Q1", 99999));
+    const { unmount } = renderHook(() => useAtencion("Q1", 99999));
     await waitFor(() => expect(mockSignalRConnect).toHaveBeenCalled());
     expect(() => unmount()).not.toThrow();
   });
@@ -285,7 +291,7 @@ describe("useWaitingRoom", () => {
   it("establece connectionState = 'connecting' cuando un servicio lanza síncronamente", async () => {
     mockGetMonitor.mockImplementation(() => { throw new Error("sync error"); });
 
-    const { result } = renderHook(() => useWaitingRoom("Q1", 99999));
+    const { result } = renderHook(() => useAtencion("Q1", 99999));
     await waitFor(() =>
       expect(result.current.connectionState).toMatch(/connecting|degraded/),
     );
@@ -296,7 +302,7 @@ describe("useWaitingRoom", () => {
   it("llama a showError cuando failureCount alcanza 3 con errores síncronos", async () => {
     mockGetMonitor.mockImplementation(() => { throw new Error("sync error"); });
 
-    const { result } = renderHook(() => useWaitingRoom("Q1", 99999));
+    const { result } = renderHook(() => useAtencion("Q1", 99999));
     await waitFor(() => expect(result.current.connectionState).toMatch(/connecting|degraded/));
 
     await act(async () => { result.current.refresh(); });
@@ -315,7 +321,7 @@ describe("useWaitingRoom", () => {
   it("registra cleanup y ejecuta callbacks SignalR cuando conecta con éxito", async () => {
     const fakeConn = {};
     mockSignalRConnect.mockImplementation(
-      async (_queueId: string, handlers: Record<string, (() => void) | undefined>) => {
+      async (_serviceId: string, handlers: Record<string, (() => void) | undefined>) => {
         mockSignalRIsConnected.mockReturnValue(true);
         // Llamar los 5 callbacks de datos: cubre líneas 115-119 (cuerpos de arrow fn)
         handlers.onMonitor?.();
@@ -327,7 +333,7 @@ describe("useWaitingRoom", () => {
         return fakeConn;
       },
     );
-    const { unmount } = renderHook(() => useWaitingRoom("Q1", 99999));
+    const { unmount } = renderHook(() => useAtencion("Q1", 99999));
     // Carga inicial + al menos un disparo por los callbacks de arriba → observable
     await waitFor(() =>
       expect(mockGetMonitor.mock.calls.length).toBeGreaterThanOrEqual(2),
@@ -343,7 +349,7 @@ describe("useWaitingRoom", () => {
   // ── 18. SignalR IIFE catch (line 136): connect lanza excepción ─────────────
   it("no falla cuando signalRConnect lanza una excepción (catch del IIFE)", async () => {
     mockSignalRConnect.mockRejectedValue(new Error("connection refused"));
-    const { result, unmount } = renderHook(() => useWaitingRoom("Q1", 99999));
+    const { result, unmount } = renderHook(() => useAtencion("Q1", 99999));
     // El polling REST sigue activo incluso si SignalR falla
     await waitFor(() => expect(result.current.connectionState).toBe("online"));
     expect(() => unmount()).not.toThrow();

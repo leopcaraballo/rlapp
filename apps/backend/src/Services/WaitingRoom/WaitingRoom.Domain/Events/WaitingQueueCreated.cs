@@ -10,7 +10,7 @@ public sealed record WaitingQueueCreated : DomainEvent
     /// <summary>
     /// Queue unique identifier.
     /// </summary>
-    public required string QueueId { get; init; }
+    public required string ServiceId { get; init; }
 
     /// <summary>
     /// Human-readable queue name.
@@ -33,8 +33,8 @@ public sealed record WaitingQueueCreated : DomainEvent
     {
         base.ValidateInvariants();
 
-        if (string.IsNullOrWhiteSpace(QueueId))
-            throw new InvalidOperationException("QueueId is required");
+        if (string.IsNullOrWhiteSpace(ServiceId))
+            throw new InvalidOperationException("ServiceId is required");
 
         if (string.IsNullOrWhiteSpace(QueueName))
             throw new InvalidOperationException("QueueName is required");

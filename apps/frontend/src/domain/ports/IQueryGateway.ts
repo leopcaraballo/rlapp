@@ -1,8 +1,9 @@
 import type {
   NextTurnView,
-  QueueStateView,
+  AtencionStateView,
   RecentAttentionRecordView,
-  WaitingRoomMonitorView,
+  AtencionMonitorView,
+  AtencionFullStateView,
 } from "../../services/api/types";
 
 /**
@@ -10,9 +11,11 @@ import type {
  * La implementación concreta es HttpQueryAdapter.
  */
 export interface IQueryGateway {
-  getMonitor(queueId: string): Promise<WaitingRoomMonitorView>;
-  getQueueState(queueId: string): Promise<QueueStateView>;
-  getNextTurn(queueId: string): Promise<NextTurnView | null>;
-  getRecentHistory(queueId: string, limit?: number): Promise<RecentAttentionRecordView[]>;
-  rebuildProjection(queueId: string): Promise<void>;
+  getMonitor(serviceId: string): Promise<AtencionMonitorView>;
+  getFullState(serviceId: string): Promise<AtencionFullStateView | null>;
+  getQueueState(serviceId: string): Promise<AtencionStateView>;
+  getNextTurn(serviceId: string): Promise<NextTurnView | null>;
+  getRecentHistory(serviceId: string, limit?: number): Promise<RecentAttentionRecordView[]>;
+  getConsultingRoomsState(serviceId: string): Promise<{ activeRooms: string[]; allRooms: string[] }>;
+  rebuildProjection(serviceId: string): Promise<void>;
 }

@@ -57,21 +57,21 @@ public sealed class FullClinicalFlowHttpTests : IClassFixture<WaitingRoomApiFact
         };
 
         var checkInResponse = await SendPostAsync(
-            "/api/waiting-room/check-in",
+            "/api/atencion/check-in",
             checkInDto,
             additionalHeaders: new Dictionary<string, string> { ["X-User-Role"] = "Receptionist" });
 
         checkInResponse.StatusCode.Should().Be(HttpStatusCode.OK);
         var checkInResult = await DeserializeAsync(checkInResponse);
-        var queueId = checkInResult.GetProperty("queueId").GetString();
-        queueId.Should().NotBeNullOrEmpty("El check-in debe devolver un queueId generado");
+        var serviceId = checkInResult.GetProperty("serviceId").GetString();
+        serviceId.Should().NotBeNullOrEmpty("El check-in debe devolver un serviceId generado");
         checkInResult.GetProperty("success").GetBoolean().Should().BeTrue();
         checkInResult.GetProperty("eventCount").GetInt32().Should().BeGreaterThanOrEqualTo(1);
 
         // Paso 2: Activar consultorio medico
         var activateDto = new ActivateConsultingRoomDto
         {
-            QueueId = queueId!,
+            ServiceId = serviceId!,
             ConsultingRoomId = "CONS-01",
             Actor = "coordinator-01"
         };
@@ -87,7 +87,7 @@ public sealed class FullClinicalFlowHttpTests : IClassFixture<WaitingRoomApiFact
         // Paso 3: Llamar al siguiente paciente en caja
         var cashierCallDto = new CallNextCashierDto
         {
-            QueueId = queueId!,
+            ServiceId = serviceId!,
             Actor = "cashier-01",
             CashierDeskId = "DESK-01"
         };
@@ -105,7 +105,7 @@ public sealed class FullClinicalFlowHttpTests : IClassFixture<WaitingRoomApiFact
         // Paso 4: Validar pago del paciente
         var paymentDto = new ValidatePaymentDto
         {
-            QueueId = queueId!,
+            ServiceId = serviceId!,
             PatientId = patientId!,
             Actor = "cashier-01",
             PaymentReference = "PAY-REF-001"
@@ -122,7 +122,7 @@ public sealed class FullClinicalFlowHttpTests : IClassFixture<WaitingRoomApiFact
         // Paso 5: Reclamar siguiente paciente para consulta medica
         var claimDto = new ClaimNextPatientDto
         {
-            QueueId = queueId!,
+            ServiceId = serviceId!,
             Actor = "doctor-01",
             StationId = "CONS-01"
         };
@@ -140,7 +140,7 @@ public sealed class FullClinicalFlowHttpTests : IClassFixture<WaitingRoomApiFact
         // Paso 6: Iniciar consulta
         var startDto = new CallPatientDto
         {
-            QueueId = queueId!,
+            ServiceId = serviceId!,
             PatientId = claimedPatientId!,
             Actor = "nurse-01"
         };
@@ -156,7 +156,7 @@ public sealed class FullClinicalFlowHttpTests : IClassFixture<WaitingRoomApiFact
         // Paso 7: Completar atencion
         var completeDto = new CompleteAttentionDto
         {
-            QueueId = queueId!,
+            ServiceId = serviceId!,
             PatientId = claimedPatientId!,
             Actor = "doctor-01",
             Outcome = "Diagnostico completado",
@@ -196,7 +196,7 @@ public sealed class FullClinicalFlowHttpTests : IClassFixture<WaitingRoomApiFact
 
         response.StatusCode.Should().Be(HttpStatusCode.OK);
         var result = await DeserializeAsync(response);
-        result.GetProperty("queueId").GetString().Should().NotBeNullOrEmpty();
+        result.GetProperty("serviceId").GetString().Should().NotBeNullOrEmpty();
         result.GetProperty("success").GetBoolean().Should().BeTrue();
     }
 
@@ -213,13 +213,13 @@ public sealed class FullClinicalFlowHttpTests : IClassFixture<WaitingRoomApiFact
             ("MULTI-PAT-003", "Lucia Fernandez", "Low", "Dermatologia")
         };
 
-        string? queueId = null;
+        string? serviceId = null;
 
         foreach (var (patId, name, priority, consultation) in patients)
         {
             var dto = new CheckInPatientDto
             {
-                QueueId = queueId,
+                ServiceId = serviceId,
                 PatientId = patId,
                 PatientName = name,
                 Priority = priority,
@@ -228,17 +228,17 @@ public sealed class FullClinicalFlowHttpTests : IClassFixture<WaitingRoomApiFact
             };
 
             var response = await SendPostAsync(
-                "/api/waiting-room/check-in",
+                "/api/atencion/check-in",
                 dto,
                 additionalHeaders: new Dictionary<string, string> { ["X-User-Role"] = "Receptionist" });
 
             response.StatusCode.Should().Be(HttpStatusCode.OK);
             var result = await DeserializeAsync(response);
-            var returnedQueueId = result.GetProperty("queueId").GetString();
-            returnedQueueId.Should().NotBeNullOrEmpty();
+            var returnedServiceId = result.GetProperty("serviceId").GetString();
+            returnedServiceId.Should().NotBeNullOrEmpty();
 
-            // Usar el mismo queueId para los pacientes subsiguientes
-            queueId ??= returnedQueueId;
+            // Usar el mismo serviceId para los pacientes subsiguientes
+            serviceId ??= returnedServiceId;
         }
     }
 
@@ -259,17 +259,17 @@ public sealed class FullClinicalFlowHttpTests : IClassFixture<WaitingRoomApiFact
         };
 
         var checkInResponse = await SendPostAsync(
-            "/api/waiting-room/check-in",
+            "/api/atencion/check-in",
             checkInDto,
             additionalHeaders: new Dictionary<string, string> { ["X-User-Role"] = "Receptionist" });
 
         var checkInResult = await DeserializeAsync(checkInResponse);
-        var queueId = checkInResult.GetProperty("queueId").GetString()!;
+        var serviceId = checkInResult.GetProperty("serviceId").GetString()!;
 
         // Llamar en caja
         var callResponse = await SendPostAsync(
             "/api/cashier/call-next",
-            new CallNextCashierDto { QueueId = queueId, Actor = "cashier-02" },
+            new CallNextCashierDto { ServiceId = serviceId, Actor = "cashier-02" },
             additionalHeaders: new Dictionary<string, string> { ["X-User-Role"] = "Cashier" });
 
         var callResult = await DeserializeAsync(callResponse);
@@ -278,7 +278,7 @@ public sealed class FullClinicalFlowHttpTests : IClassFixture<WaitingRoomApiFact
         // Marcar como ausente en caja
         var absentDto = new MarkAbsentAtCashierDto
         {
-            QueueId = queueId,
+            ServiceId = serviceId,
             PatientId = patientId,
             Actor = "cashier-02"
         };
@@ -301,7 +301,7 @@ public sealed class FullClinicalFlowHttpTests : IClassFixture<WaitingRoomApiFact
     {
         // Registrar paciente
         var checkInResponse = await SendPostAsync(
-            "/api/waiting-room/check-in",
+            "/api/atencion/check-in",
             new CheckInPatientDto
             {
                 PatientId = "CANCEL-PAY-001",
@@ -312,14 +312,14 @@ public sealed class FullClinicalFlowHttpTests : IClassFixture<WaitingRoomApiFact
             },
             additionalHeaders: new Dictionary<string, string> { ["X-User-Role"] = "Receptionist" });
 
-        var queueId = (await DeserializeAsync(checkInResponse))
-            .GetProperty("queueId").GetString()!;
+        var serviceId = (await DeserializeAsync(checkInResponse))
+            .GetProperty("serviceId").GetString()!;
 
         // Llamar en caja
         var callResult = await DeserializeAsync(
             await SendPostAsync(
                 "/api/cashier/call-next",
-                new CallNextCashierDto { QueueId = queueId, Actor = "cashier-03" },
+                new CallNextCashierDto { ServiceId = serviceId, Actor = "cashier-03" },
                 additionalHeaders: new Dictionary<string, string> { ["X-User-Role"] = "Cashier" }));
 
         var patientId = callResult.GetProperty("patientId").GetString()!;
@@ -329,7 +329,7 @@ public sealed class FullClinicalFlowHttpTests : IClassFixture<WaitingRoomApiFact
             "/api/cashier/cancel-payment",
             new CancelByPaymentDto
             {
-                QueueId = queueId,
+                ServiceId = serviceId,
                 PatientId = patientId,
                 Actor = "cashier-03",
                 Reason = "Paciente solicita cancelacion"
@@ -348,7 +348,7 @@ public sealed class FullClinicalFlowHttpTests : IClassFixture<WaitingRoomApiFact
     public async Task CashierFlow_MarkPaymentPending_PatientMarkedPending()
     {
         var checkInResponse = await SendPostAsync(
-            "/api/waiting-room/check-in",
+            "/api/atencion/check-in",
             new CheckInPatientDto
             {
                 PatientId = "PEND-PAY-001",
@@ -359,13 +359,13 @@ public sealed class FullClinicalFlowHttpTests : IClassFixture<WaitingRoomApiFact
             },
             additionalHeaders: new Dictionary<string, string> { ["X-User-Role"] = "Receptionist" });
 
-        var queueId = (await DeserializeAsync(checkInResponse))
-            .GetProperty("queueId").GetString()!;
+        var serviceId = (await DeserializeAsync(checkInResponse))
+            .GetProperty("serviceId").GetString()!;
 
         var callResult = await DeserializeAsync(
             await SendPostAsync(
                 "/api/cashier/call-next",
-                new CallNextCashierDto { QueueId = queueId, Actor = "cashier-04" },
+                new CallNextCashierDto { ServiceId = serviceId, Actor = "cashier-04" },
                 additionalHeaders: new Dictionary<string, string> { ["X-User-Role"] = "Cashier" }));
 
         var patientId = callResult.GetProperty("patientId").GetString()!;
@@ -375,7 +375,7 @@ public sealed class FullClinicalFlowHttpTests : IClassFixture<WaitingRoomApiFact
             "/api/cashier/mark-payment-pending",
             new MarkPaymentPendingDto
             {
-                QueueId = queueId,
+                ServiceId = serviceId,
                 PatientId = patientId,
                 Actor = "cashier-04",
                 Reason = "Falta documento de aseguradora"
@@ -395,7 +395,7 @@ public sealed class FullClinicalFlowHttpTests : IClassFixture<WaitingRoomApiFact
     {
         // Flujo completo hasta consulta
         var checkInResponse = await SendPostAsync(
-            "/api/waiting-room/check-in",
+            "/api/atencion/check-in",
             new CheckInPatientDto
             {
                 PatientId = "ABSENT-MED-001",
@@ -406,15 +406,15 @@ public sealed class FullClinicalFlowHttpTests : IClassFixture<WaitingRoomApiFact
             },
             additionalHeaders: new Dictionary<string, string> { ["X-User-Role"] = "Receptionist" });
 
-        var queueId = (await DeserializeAsync(checkInResponse))
-            .GetProperty("queueId").GetString()!;
+        var serviceId = (await DeserializeAsync(checkInResponse))
+            .GetProperty("serviceId").GetString()!;
 
         // Activar consultorio
         await SendPostAsync(
             "/api/medical/consulting-room/activate",
             new ActivateConsultingRoomDto
             {
-                QueueId = queueId,
+                ServiceId = serviceId,
                 ConsultingRoomId = "CONS-MED-01",
                 Actor = "coordinator-02"
             },
@@ -424,7 +424,7 @@ public sealed class FullClinicalFlowHttpTests : IClassFixture<WaitingRoomApiFact
         var cashierResult = await DeserializeAsync(
             await SendPostAsync(
                 "/api/cashier/call-next",
-                new CallNextCashierDto { QueueId = queueId, Actor = "cashier-05" },
+                new CallNextCashierDto { ServiceId = serviceId, Actor = "cashier-05" },
                 additionalHeaders: new Dictionary<string, string> { ["X-User-Role"] = "Cashier" }));
 
         var patientId = cashierResult.GetProperty("patientId").GetString()!;
@@ -433,7 +433,7 @@ public sealed class FullClinicalFlowHttpTests : IClassFixture<WaitingRoomApiFact
             "/api/cashier/validate-payment",
             new ValidatePaymentDto
             {
-                QueueId = queueId,
+                ServiceId = serviceId,
                 PatientId = patientId,
                 Actor = "cashier-05",
                 PaymentReference = "PAY-MED-001"
@@ -446,7 +446,7 @@ public sealed class FullClinicalFlowHttpTests : IClassFixture<WaitingRoomApiFact
                 "/api/medical/call-next",
                 new ClaimNextPatientDto
                 {
-                    QueueId = queueId,
+                    ServiceId = serviceId,
                     Actor = "doctor-02",
                     StationId = "CONS-MED-01"
                 },
@@ -460,7 +460,7 @@ public sealed class FullClinicalFlowHttpTests : IClassFixture<WaitingRoomApiFact
             "/api/medical/mark-absent",
             new MarkAbsentAtConsultationDto
             {
-                QueueId = queueId,
+                ServiceId = serviceId,
                 PatientId = claimedPatientId,
                 Actor = "doctor-02"
             },
@@ -479,7 +479,7 @@ public sealed class FullClinicalFlowHttpTests : IClassFixture<WaitingRoomApiFact
     {
         // Registrar paciente para crear cola
         var checkInResponse = await SendPostAsync(
-            "/api/waiting-room/check-in",
+            "/api/atencion/check-in",
             new CheckInPatientDto
             {
                 PatientId = "DEACT-PAT-001",
@@ -490,15 +490,15 @@ public sealed class FullClinicalFlowHttpTests : IClassFixture<WaitingRoomApiFact
             },
             additionalHeaders: new Dictionary<string, string> { ["X-User-Role"] = "Receptionist" });
 
-        var queueId = (await DeserializeAsync(checkInResponse))
-            .GetProperty("queueId").GetString()!;
+        var serviceId = (await DeserializeAsync(checkInResponse))
+            .GetProperty("serviceId").GetString()!;
 
         // Activar consultorio
         var activateResponse = await SendPostAsync(
             "/api/medical/consulting-room/activate",
             new ActivateConsultingRoomDto
             {
-                QueueId = queueId,
+                ServiceId = serviceId,
                 ConsultingRoomId = "CONS-DEACT-01",
                 Actor = "coordinator-03"
             },
@@ -511,7 +511,7 @@ public sealed class FullClinicalFlowHttpTests : IClassFixture<WaitingRoomApiFact
             "/api/medical/consulting-room/deactivate",
             new DeactivateConsultingRoomDto
             {
-                QueueId = queueId,
+                ServiceId = serviceId,
                 ConsultingRoomId = "CONS-DEACT-01",
                 Actor = "coordinator-03"
             },
@@ -523,14 +523,14 @@ public sealed class FullClinicalFlowHttpTests : IClassFixture<WaitingRoomApiFact
     }
 
     /// <summary>
-    /// Tests the alternative waiting-room endpoints (claim-next, call-patient, complete-attention)
+    /// Tests the alternative atencion endpoints (claim-next, call-patient, complete-attention)
     /// as opposed to the medical module endpoints.
     /// </summary>
     [Fact]
     public async Task WaitingRoomEndpoints_AlternativeFlow_CompletesSuccessfully()
     {
         var checkInResponse = await SendPostAsync(
-            "/api/waiting-room/check-in",
+            "/api/atencion/check-in",
             new CheckInPatientDto
             {
                 PatientId = "WR-ALT-001",
@@ -541,15 +541,15 @@ public sealed class FullClinicalFlowHttpTests : IClassFixture<WaitingRoomApiFact
             },
             additionalHeaders: new Dictionary<string, string> { ["X-User-Role"] = "Receptionist" });
 
-        var queueId = (await DeserializeAsync(checkInResponse))
-            .GetProperty("queueId").GetString()!;
+        var serviceId = (await DeserializeAsync(checkInResponse))
+            .GetProperty("serviceId").GetString()!;
 
         // Activar consultorio
         await SendPostAsync(
             "/api/medical/consulting-room/activate",
             new ActivateConsultingRoomDto
             {
-                QueueId = queueId,
+                ServiceId = serviceId,
                 ConsultingRoomId = "CONS-ALT-01",
                 Actor = "coordinator-alt"
             },
@@ -559,7 +559,7 @@ public sealed class FullClinicalFlowHttpTests : IClassFixture<WaitingRoomApiFact
         var cashierResult = await DeserializeAsync(
             await SendPostAsync(
                 "/api/cashier/call-next",
-                new CallNextCashierDto { QueueId = queueId, Actor = "cashier-alt" },
+                new CallNextCashierDto { ServiceId = serviceId, Actor = "cashier-alt" },
                 additionalHeaders: new Dictionary<string, string> { ["X-User-Role"] = "Cashier" }));
         var patientId = cashierResult.GetProperty("patientId").GetString()!;
 
@@ -567,20 +567,20 @@ public sealed class FullClinicalFlowHttpTests : IClassFixture<WaitingRoomApiFact
             "/api/cashier/validate-payment",
             new ValidatePaymentDto
             {
-                QueueId = queueId,
+                ServiceId = serviceId,
                 PatientId = patientId,
                 Actor = "cashier-alt",
                 PaymentReference = "PAY-ALT-001"
             },
             additionalHeaders: new Dictionary<string, string> { ["X-User-Role"] = "Cashier" });
 
-        // Usar endpoints de waiting-room (no medical)
+        // Usar endpoints de atencion (no medical)
         var claimResult = await DeserializeAsync(
             await SendPostAsync(
-                "/api/waiting-room/claim-next",
+                "/api/atencion/claim-next",
                 new ClaimNextPatientDto
                 {
-                    QueueId = queueId,
+                    ServiceId = serviceId,
                     Actor = "doctor-alt",
                     StationId = "CONS-ALT-01"
                 },
@@ -589,10 +589,10 @@ public sealed class FullClinicalFlowHttpTests : IClassFixture<WaitingRoomApiFact
         var claimedId = claimResult.GetProperty("patientId").GetString()!;
 
         var callResponse = await SendPostAsync(
-            "/api/waiting-room/call-patient",
+            "/api/atencion/call-patient",
             new CallPatientDto
             {
-                QueueId = queueId,
+                ServiceId = serviceId,
                 PatientId = claimedId,
                 Actor = "nurse-alt"
             },
@@ -600,10 +600,10 @@ public sealed class FullClinicalFlowHttpTests : IClassFixture<WaitingRoomApiFact
         callResponse.StatusCode.Should().Be(HttpStatusCode.OK);
 
         var completeResponse = await SendPostAsync(
-            "/api/waiting-room/complete-attention",
+            "/api/atencion/complete-attention",
             new CompleteAttentionDto
             {
-                QueueId = queueId,
+                ServiceId = serviceId,
                 PatientId = claimedId,
                 Actor = "doctor-alt",
                 Outcome = "Alta medica"

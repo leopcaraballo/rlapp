@@ -5,20 +5,20 @@ import React, { useEffect } from "react";
 import { useForm } from "react-hook-form";
 import * as z from "zod";
 
+import { filterPatients,PatientSearchInput } from "@/components/PatientSearchInput";
 import { env } from "@/config/env";
 import { useAlert } from "@/context/AlertContext";
 import { useAuth } from "@/context/AuthContext";
 import { useConsultingRooms } from "@/hooks/useConsultingRooms";
 import { useMedicalStation } from "@/hooks/useMedicalStation";
-import { useWaitingRoom } from "@/hooks/useWaitingRoom";
-import { PatientSearchInput, filterPatients } from "@/components/PatientSearchInput";
+import { useAtencion } from "@/hooks/useAtencion";
 
 import styles from "./page.module.css";
 
 // stationId es opcional en el claim: el backend auto-asigna el consultorio disponible.
 // Es requerido solo para activar/desactivar un consultorio específico.
 const MedicalSchema = z.object({
-  queueId: z.string().min(1, "La cola es obligatoria"),
+  serviceId: z.string().min(1, "La cola es obligatoria"),
   stationId: z.string().optional(),
   patientId: z.string().optional(),
   outcome: z.string().optional().nullable(),
@@ -34,7 +34,7 @@ export default function MedicalPage() {
   const { role } = useAuth();
   const busy = medical.busy || rooms.busy;
 
-  const initialQueueId = search?.get("queue") || env.DEFAULT_QUEUE_ID;
+  const initialServiceId = search?.get("queue") || env.DEFAULT_QUEUE_ID;
 
   const {
     register,
@@ -45,16 +45,16 @@ export default function MedicalPage() {
   } = useForm<MedicalForm>({
     resolver: zodResolver(MedicalSchema),
     defaultValues: {
-      queueId: initialQueueId,
+      serviceId: initialServiceId,
       stationId: "",
       patientId: "",
       outcome: null,
     },
   });
 
-  const watchedQueueId = watch("queueId");
-  const { nextTurn, refresh, queueState } = useWaitingRoom(
-    watchedQueueId || env.DEFAULT_QUEUE_ID,
+  const watchedServiceId = watch("serviceId");
+  const { nextTurn, refresh, queueState } = useAtencion(
+    watchedServiceId || env.DEFAULT_QUEUE_ID,
   );
 
   const [searchQuery, setSearchQuery] = React.useState("");
@@ -79,7 +79,7 @@ export default function MedicalPage() {
 
   function onCallNext(data: MedicalForm) {
     // stationId no se pasa: el backend auto-asigna el primer consultorio activo disponible
-    void medical.claim({ queueId: data.queueId, stationId: null });
+    void medical.claim({ serviceId: data.serviceId, stationId: null });
     setTimeout(() => refresh(), 500);
   }
 
@@ -88,7 +88,7 @@ export default function MedicalPage() {
       alert.showError("Seleccione un consultorio para activar");
       return;
     }
-    rooms.activate(data.queueId, data.stationId);
+    rooms.activate(data.serviceId, data.stationId);
   }
 
   function onDeactivate(data: MedicalForm) {
@@ -96,7 +96,7 @@ export default function MedicalPage() {
       alert.showError("Seleccione un consultorio para desactivar");
       return;
     }
-    rooms.deactivate(data.queueId, data.stationId);
+    rooms.deactivate(data.serviceId, data.stationId);
   }
 
   function onStartConsult(data: MedicalForm) {
@@ -104,7 +104,7 @@ export default function MedicalPage() {
       alert.showError("El ID de paciente es obligatorio");
       return;
     }
-    void medical.call({ queueId: data.queueId, patientId: data.patientId });
+    void medical.call({ serviceId: data.serviceId, patientId: data.patientId });
     setTimeout(() => refresh(), 500);
   }
 
@@ -114,7 +114,7 @@ export default function MedicalPage() {
       return;
     }
     void medical.complete({
-      queueId: data.queueId,
+      serviceId: data.serviceId,
       patientId: data.patientId,
       outcome: data.outcome || null,
     });
@@ -127,7 +127,7 @@ export default function MedicalPage() {
       return;
     }
     void medical.markAbsent({
-      queueId: data.queueId,
+      serviceId: data.serviceId,
       patientId: data.patientId,
     });
     setTimeout(() => refresh(), 500);
@@ -156,18 +156,18 @@ export default function MedicalPage() {
 
         <div className={styles.panelBody}>
           <div className={styles.formGroup}>
-            <label className={styles.label} htmlFor="queueId">
+            <label className={styles.label} htmlFor="serviceId">
               Cola
             </label>
             <input
-              id="queueId"
+              id="serviceId"
               className={styles.input}
               placeholder="ej. QUEUE-01"
-              {...register("queueId")}
+              {...register("serviceId")}
             />
-            {errors.queueId && (
+            {errors.serviceId && (
               <div className={styles.fieldError} role="alert">
-                {errors.queueId.message}
+                {errors.serviceId.message}
               </div>
             )}
           </div>

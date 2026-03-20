@@ -80,7 +80,7 @@ public sealed class SmokeTests : IClassFixture<WaitingRoomApiFactory>
     public async Task SMK003_CheckInEndpoint_IsRegisteredAndResponds()
     {
         // Arrange: enviar sin body para obtener 400 (validation) — NO 404 ni 500
-        var request = new HttpRequestMessage(HttpMethod.Post, "/api/waiting-room/check-in");
+        var request = new HttpRequestMessage(HttpMethod.Post, "/api/atencion/check-in");
         request.Headers.Add("X-User-Role", "Receptionist");
         request.Headers.Add("Idempotency-Key", Guid.NewGuid().ToString("D"));
 

@@ -76,7 +76,7 @@ const DOMAIN_MESSAGE_TRANSLATIONS: Record<string, string> = {
   "Patient name cannot be empty":
     "El nombre del paciente no puede estar vacío.",
   "PatientId cannot be empty": "El ID del paciente no puede estar vacío.",
-  "WaitingQueueId cannot be empty": "El ID de la cola no puede estar vacío.",
+  "WaitingServiceId cannot be empty": "El ID de la cola no puede estar vacío.",
   "Queue name cannot be empty": "El nombre de la cola no puede estar vacío.",
   "MaxCapacity must be greater than 0":
     "La capacidad máxima debe ser mayor a 0.",

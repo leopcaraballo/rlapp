@@ -19,18 +19,21 @@ public sealed class PostgresPatientIdentityRegistry : IPatientIdentityRegistry
 
     public async Task EnsureRegisteredAsync(
         string patientId,
+        string patientIdentity,
         string patientName,
         string actor,
         CancellationToken cancellationToken = default)
     {
         if (string.IsNullOrWhiteSpace(patientId))
             throw new ArgumentException("PatientId is required", nameof(patientId));
+        if (string.IsNullOrWhiteSpace(patientIdentity))
+            throw new ArgumentException("PatientIdentity is required", nameof(patientIdentity));
 
         var canonicalPatientId = patientId.Trim().ToUpperInvariant();
 
         const string insertSql = @"
-INSERT INTO waiting_room_patients (patient_id, patient_name, created_at, created_by)
-VALUES (@PatientId, @PatientName, @CreatedAt, @CreatedBy)
+INSERT INTO waiting_room_patients (patient_id, patient_identity, patient_name, registration_date, created_at, created_by)
+VALUES (@PatientId, @PatientIdentity, @PatientName, CURRENT_DATE, @CreatedAt, @CreatedBy)
 ON CONFLICT (patient_id) DO NOTHING;";
 
         const string selectSql = @"
@@ -45,6 +48,7 @@ LIMIT 1;";
             new
             {
                 PatientId = canonicalPatientId,
+                PatientIdentity = patientIdentity.Trim(),
                 PatientName = patientName,
                 CreatedAt = DateTime.UtcNow,
                 CreatedBy = actor
@@ -65,5 +69,23 @@ LIMIT 1;";
         {
             throw new PatientIdentityConflictException(canonicalPatientId, persistedName, patientName);
         }
+    }
+
+    public async Task<string?> GetPatientIdByIdentityAsync(string identity, CancellationToken ct = default)
+    {
+        if (string.IsNullOrWhiteSpace(identity)) return null;
+
+        const string sql = @"
+SELECT patient_id 
+FROM waiting_room_patients 
+WHERE patient_identity = @Identity 
+  AND registration_date = CURRENT_DATE
+LIMIT 1;";
+
+        await using var connection = new NpgsqlConnection(_connectionString);
+        return await connection.QuerySingleOrDefaultAsync<string>(new CommandDefinition(
+            sql,
+            new { Identity = identity },
+            cancellationToken: ct));
     }
 }

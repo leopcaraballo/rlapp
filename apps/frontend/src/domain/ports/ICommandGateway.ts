@@ -6,7 +6,7 @@ import type { ConsultationType } from "../patient/ConsultationType";
 // ---------------------------------------------------------------------------
 
 export interface CheckInPatientCommand {
-  queueId: string;
+  serviceId: string;
   patientId: string;
   patientName: string;
   priority: AppointmentPriority;
@@ -18,53 +18,53 @@ export interface CheckInPatientCommand {
 }
 
 export interface CallNextAtCashierCommand {
-  queueId: string;
+  serviceId: string;
   actor: string;
   cashierDeskId?: string | null;
 }
 
 export interface ValidatePaymentCommand {
-  queueId: string;
+  serviceId: string;
   patientId: string;
   actor: string;
   paymentReference?: string | null;
 }
 
 export interface MarkPaymentPendingCommand {
-  queueId: string;
+  serviceId: string;
   patientId: string;
   actor: string;
   reason?: string | null;
 }
 
 export interface MarkAbsentAtCashierCommand {
-  queueId: string;
+  serviceId: string;
   patientId: string;
   actor: string;
 }
 
 export interface CancelByPaymentCommand {
-  queueId: string;
+  serviceId: string;
   patientId: string;
   actor: string;
   reason?: string | null;
 }
 
 export interface ClaimNextPatientCommand {
-  queueId: string;
+  serviceId: string;
   actor: string;
   stationId?: string | null;
 }
 
 export interface CallPatientCommand {
-  queueId: string;
+  serviceId: string;
   patientId: string;
   actor: string;
   stationId?: string | null;
 }
 
 export interface CompleteAttentionCommand {
-  queueId: string;
+  serviceId: string;
   patientId: string;
   actor: string;
   outcome?: string | null;
@@ -72,19 +72,19 @@ export interface CompleteAttentionCommand {
 }
 
 export interface MarkAbsentAtMedicalCommand {
-  queueId: string;
+  serviceId: string;
   patientId: string;
   actor: string;
 }
 
 export interface ActivateConsultingRoomCommand {
-  queueId: string;
+  serviceId: string;
   stationId: string;
   actor: string;
 }
 
 export interface DeactivateConsultingRoomCommand {
-  queueId: string;
+  serviceId: string;
   stationId: string;
   actor: string;
 }

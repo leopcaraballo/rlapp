@@ -83,7 +83,7 @@ describe("LoginPage", () => {
     await user.click(screen.getByRole("button", { name: "Ingresar" }));
 
     await waitFor(() => expect(mockSignIn).toHaveBeenCalledWith("patient", 120));
-    expect(mockRouterReplace).toHaveBeenCalledWith("/patient" === "/patient" ? "/display/QUEUE-01" : "/display/QUEUE-01");
+    expect(mockRouterReplace).toHaveBeenCalledWith("/monitor/QUEUE-01");
   });
 
   it("muestra error si la identificación tiene menos de 6 caracteres", async () => {
@@ -110,7 +110,7 @@ describe("LoginPage", () => {
     await user.click(screen.getByRole("button", { name: "Ingresar" }));
 
     await waitFor(() => expect(mockSignIn).toHaveBeenCalledWith("cashier", 120));
-    expect(mockRouterReplace).toHaveBeenCalledWith("/cashier");
+    expect(mockRouterReplace).toHaveBeenCalledWith("/payment");
   });
 
   it("redirige a /reception cuando el rol es reception", async () => {
@@ -154,7 +154,7 @@ describe("LoginPage", () => {
     await user.click(screen.getByRole("button", { name: "Ingresar" }));
 
     await waitFor(() => expect(mockSignIn).toHaveBeenCalledWith("admin", 120));
-    expect(mockRouterReplace).toHaveBeenCalledWith("/consulting-rooms");
+    expect(mockRouterReplace).toHaveBeenCalledWith("/stations");
   });
 
   // ── Parámetro next ─────────────────────────────────────────────────────────

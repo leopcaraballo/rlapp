@@ -12,8 +12,8 @@ export interface ConsultingRoomsState {
   busy: boolean;
   error: string | null;
   lastResult: CommandResult | null;
-  activate: (queueId: string, stationId: string, actor?: string) => Promise<boolean>;
-  deactivate: (queueId: string, stationId: string, actor?: string) => Promise<boolean>;
+  activate: (serviceId: string, stationId: string, actor?: string) => Promise<boolean>;
+  deactivate: (serviceId: string, stationId: string, actor?: string) => Promise<boolean>;
   clearError: () => void;
 }
 
@@ -44,17 +44,17 @@ export function useConsultingRooms(): ConsultingRoomsState {
   }
 
   const activate = useCallback(
-    (queueId: string, stationId: string, actor = DEFAULT_ACTOR) =>
+    (serviceId: string, stationId: string, actor = DEFAULT_ACTOR) =>
       execute(() =>
-        activateConsultingRoom(httpCommandAdapter, { queueId, stationId, actor }),
+        activateConsultingRoom(httpCommandAdapter, { serviceId, stationId, actor }),
       ),
     [],
   );
 
   const deactivate = useCallback(
-    (queueId: string, stationId: string, actor = DEFAULT_ACTOR) =>
+    (serviceId: string, stationId: string, actor = DEFAULT_ACTOR) =>
       execute(() =>
-        deactivateConsultingRoom(httpCommandAdapter, { queueId, stationId, actor }),
+        deactivateConsultingRoom(httpCommandAdapter, { serviceId, stationId, actor }),
       ),
     [],
   );

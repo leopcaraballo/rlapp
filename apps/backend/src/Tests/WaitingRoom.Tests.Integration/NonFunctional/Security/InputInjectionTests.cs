@@ -61,7 +61,7 @@ public sealed class InputInjectionTests : IClassFixture<WaitingRoomApiFactory>
 
         // Act
         var response = await PostWithAuthAsync(
-            "/api/waiting-room/check-in", dto, "Receptionist");
+            "/api/atencion/check-in", dto, "Receptionist");
 
         // Assert: debe rechazarse (400) o procesarse sin ejecutar SQL
         // El dominio valida PatientId (longitud, caracteres) antes de llegar a SQL
@@ -91,7 +91,7 @@ public sealed class InputInjectionTests : IClassFixture<WaitingRoomApiFactory>
         };
 
         var response = await PostWithAuthAsync(
-            "/api/waiting-room/check-in", dto, "Receptionist");
+            "/api/atencion/check-in", dto, "Receptionist");
 
         var statusCode = (int)response.StatusCode;
         statusCode.Should().NotBe(500,
@@ -120,7 +120,7 @@ public sealed class InputInjectionTests : IClassFixture<WaitingRoomApiFactory>
         };
 
         var response = await PostWithAuthAsync(
-            "/api/waiting-room/check-in", dto, "Receptionist");
+            "/api/atencion/check-in", dto, "Receptionist");
 
         // Assert
         var statusCode = (int)response.StatusCode;
@@ -136,7 +136,7 @@ public sealed class InputInjectionTests : IClassFixture<WaitingRoomApiFactory>
     }
 
     // ============================================================
-    // SEC-INJ-004: Command Injection en QueueId
+    // SEC-INJ-004: Command Injection en ServiceId
     // ============================================================
 
     [Theory]
@@ -144,11 +144,11 @@ public sealed class InputInjectionTests : IClassFixture<WaitingRoomApiFactory>
     [InlineData("`cat /etc/passwd`")]
     [InlineData("| ls -la")]
     [InlineData("; rm -rf /")]
-    public async Task SEC_INJ_004_CommandInjection_InQueueId_IsRejected(string maliciousQueueId)
+    public async Task SEC_INJ_004_CommandInjection_InServiceId_IsRejected(string maliciousServiceId)
     {
         var dto = new CallNextCashierDto
         {
-            QueueId = maliciousQueueId,
+            ServiceId = maliciousServiceId,
             Actor = "cashier-sec"
         };
 
@@ -157,7 +157,7 @@ public sealed class InputInjectionTests : IClassFixture<WaitingRoomApiFactory>
 
         var statusCode = (int)response.StatusCode;
         statusCode.Should().NotBe(500,
-            $"La inyeccion de comando '{maliciousQueueId}' no debe causar error de servidor");
+            $"La inyeccion de comando '{maliciousServiceId}' no debe causar error de servidor");
     }
 
     // ============================================================
@@ -180,7 +180,7 @@ public sealed class InputInjectionTests : IClassFixture<WaitingRoomApiFactory>
         };
 
         var response = await PostWithAuthAsync(
-            "/api/waiting-room/check-in", dto, "Receptionist");
+            "/api/atencion/check-in", dto, "Receptionist");
 
         var statusCode = (int)response.StatusCode;
         statusCode.Should().NotBe(500,
@@ -198,7 +198,7 @@ public sealed class InputInjectionTests : IClassFixture<WaitingRoomApiFactory>
     [InlineData("")]                                     // Body vacio
     public async Task SEC_INJ_006_MalformedJson_IsRejected(string malformedBody)
     {
-        var request = new HttpRequestMessage(HttpMethod.Post, "/api/waiting-room/check-in")
+        var request = new HttpRequestMessage(HttpMethod.Post, "/api/atencion/check-in")
         {
             Content = new StringContent(malformedBody, Encoding.UTF8, "application/json")
         };
@@ -232,7 +232,7 @@ public sealed class InputInjectionTests : IClassFixture<WaitingRoomApiFactory>
         };
 
         var response = await PostWithAuthAsync(
-            "/api/waiting-room/check-in", dto, "Receptionist");
+            "/api/atencion/check-in", dto, "Receptionist");
 
         var statusCode = (int)response.StatusCode;
         statusCode.Should().NotBe(500,
@@ -250,7 +250,7 @@ public sealed class InputInjectionTests : IClassFixture<WaitingRoomApiFactory>
     public async Task SEC_INJ_008_WrongContentType_IsRejected(string contentType)
     {
         var body = "{\"PatientId\": \"test\", \"PatientName\": \"test\"}";
-        var request = new HttpRequestMessage(HttpMethod.Post, "/api/waiting-room/check-in")
+        var request = new HttpRequestMessage(HttpMethod.Post, "/api/atencion/check-in")
         {
             Content = new StringContent(body, Encoding.UTF8, contentType)
         };

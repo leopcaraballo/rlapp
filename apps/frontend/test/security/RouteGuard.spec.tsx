@@ -155,11 +155,11 @@ describe("RouteGuard.tsx — Route Protection Component", () => {
       expect(mockReplace).not.toHaveBeenCalled();
     });
 
-    it("should render content for patient on display route", async () => {
+    it("should render content for patient on monitor route", async () => {
       const session = authModule.buildSession("patient", 120);
       localStorageMock.setItem("rlapp_auth", JSON.stringify(session));
 
-      mockUsePathname.mockReturnValue("/display/QUEUE-01");
+      mockUsePathname.mockReturnValue("/monitor/QUEUE-01");
 
       render(
         <AuthProvider>
@@ -201,7 +201,7 @@ describe("RouteGuard.tsx — Route Protection Component", () => {
       const session = authModule.buildSession("admin", 120);
       localStorageMock.setItem("rlapp_auth", JSON.stringify(session));
 
-      mockUsePathname.mockReturnValue("/consulting-rooms");
+      mockUsePathname.mockReturnValue("/stations");
 
       render(
         <AuthProvider>
@@ -236,7 +236,7 @@ describe("RouteGuard.tsx — Route Protection Component", () => {
 
       await waitFor(() => {
         expect(mockReplace).toHaveBeenCalledWith(
-          expect.stringContaining("/display"),
+          expect.stringContaining("/monitor"),
         );
       });
 
@@ -259,16 +259,16 @@ describe("RouteGuard.tsx — Route Protection Component", () => {
 
       await waitFor(() => {
         expect(mockReplace).toHaveBeenCalledWith(
-          expect.stringContaining("/display"),
+          expect.stringContaining("/monitor"),
         );
       });
     });
 
-    it("should redirect reception trying to access cashier route", async () => {
+    it("should redirect reception trying to access payment route", async () => {
       const session = authModule.buildSession("reception", 120);
       localStorageMock.setItem("rlapp_auth", JSON.stringify(session));
 
-      mockUsePathname.mockReturnValue("/cashier");
+      mockUsePathname.mockReturnValue("/payment");
 
       render(
         <AuthProvider>
@@ -300,9 +300,9 @@ describe("RouteGuard.tsx — Route Protection Component", () => {
       );
 
       await waitFor(() => {
-        // Cashier should redirect to /cashier (their default route)
+        // Cashier should redirect to /payment (their default route)
         expect(mockReplace).toHaveBeenCalledWith(
-          expect.stringContaining("/cashier"),
+          expect.stringContaining("/payment"),
         );
       });
     });
@@ -364,7 +364,7 @@ describe("RouteGuard.tsx — Route Protection Component", () => {
 
       await waitFor(() => {
         const callArgs = mockReplace.mock.calls[0]?.[0] ?? "";
-        expect(callArgs.toString()).toMatch(/\/display/);
+        expect(callArgs.toString()).toMatch(/\/monitor/);
       });
     });
 

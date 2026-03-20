@@ -24,7 +24,7 @@ public sealed class EventSerializationRoundtripTests
     {
         var original = new PatientCheckedIn
         {
-            QueueId = "Q-001",
+            ServiceId = "Q-001",
             PatientId = "PAT-001",
             PatientName = "Maria Fernanda Lopez",
             Priority = "Alta",
@@ -51,7 +51,7 @@ public sealed class EventSerializationRoundtripTests
     {
         var original = new PatientCalledAtCashier
         {
-            QueueId = "Q-002",
+            ServiceId = "Q-002",
             PatientId = "PAT-002",
             PatientName = "Carlos Perez",
             Priority = "Normal",
@@ -76,7 +76,7 @@ public sealed class EventSerializationRoundtripTests
     {
         var original = new PatientPaymentValidated
         {
-            QueueId = "Q-003",
+            ServiceId = "Q-003",
             PatientId = "PAT-003",
             PatientName = "Ana Martinez",
             Priority = "Normal",
@@ -101,7 +101,7 @@ public sealed class EventSerializationRoundtripTests
     {
         var original = new PatientAttentionCompleted
         {
-            QueueId = "Q-004",
+            ServiceId = "Q-004",
             PatientId = "PAT-004",
             PatientName = "Luis Rodriguez",
             Priority = "Normal",
@@ -127,8 +127,9 @@ public sealed class EventSerializationRoundtripTests
     {
         var original = new ConsultingRoomActivated
         {
-            QueueId = "Q-005",
-            ConsultingRoomId = "CONS-01",
+            ServiceId = "Q-005",
+            RoomId = "CONS-01",
+            ActivatedBy = "doctor-1",
             ActivatedAt = DateTime.UtcNow,
             Metadata = CreateMetadata()
         };
@@ -138,7 +139,8 @@ public sealed class EventSerializationRoundtripTests
 
         restored.Should().BeOfType<ConsultingRoomActivated>();
         var typed = (ConsultingRoomActivated)restored;
-        typed.ConsultingRoomId.Should().Be(original.ConsultingRoomId);
+        typed.RoomId.Should().Be(original.RoomId);
+        typed.ActivatedBy.Should().Be(original.ActivatedBy);
     }
 
     [Fact]
@@ -146,7 +148,7 @@ public sealed class EventSerializationRoundtripTests
     {
         var evt = new PatientCheckedIn
         {
-            QueueId = "Q-JSON",
+            ServiceId = "Q-JSON",
             PatientId = "PAT-JSON",
             PatientName = "Test JSON",
             Priority = "Normal",
@@ -188,20 +190,32 @@ public sealed class EventSerializationRoundtripTests
 
     [Theory]
     [InlineData(nameof(WaitingQueueCreated))]
-    [InlineData(nameof(ConsultingRoomActivated))]
-    [InlineData(nameof(ConsultingRoomDeactivated))]
-    [InlineData(nameof(PatientCheckedIn))]
-    [InlineData(nameof(PatientCalledAtCashier))]
+    [InlineData(nameof(PatientRegistered))]
+    [InlineData(nameof(PatientMarkedAsWaiting))]
+    [InlineData(nameof(PatientConsultingRoomAssigned))]
+    [InlineData(nameof(PatientConsultationStarted))]
+    [InlineData(nameof(PatientConsultationFinished))]
+    [InlineData(nameof(PatientArrivedAtCashier))]
     [InlineData(nameof(PatientPaymentValidated))]
     [InlineData(nameof(PatientPaymentPending))]
-    [InlineData(nameof(PatientAbsentAtCashier))]
-    [InlineData(nameof(PatientCancelledByPayment))]
-    [InlineData(nameof(PatientClaimedForAttention))]
+    [InlineData(nameof(PatientCompleted))]
     [InlineData(nameof(PatientAbsentAtConsultation))]
+    [InlineData(nameof(PatientMarkedAbsentAtConsultation))]
+    [InlineData(nameof(PatientAbsentAtCashier))]
+    [InlineData(nameof(PatientMarkedAbsentAtCashier))]
+    [InlineData(nameof(PatientCancelledByPayment))]
+    [InlineData(nameof(PatientCancelledByAbsence))]
+    [InlineData(nameof(PatientCheckedIn))]
+    [InlineData(nameof(PatientCalledAtCashier))]
+    [InlineData(nameof(PatientClaimedForAttention))]
     [InlineData(nameof(PatientCalled))]
     [InlineData(nameof(PatientAttentionCompleted))]
-    [InlineData(nameof(PatientCancelledByAbsence))]
-    public void EventTypeRegistry_ContieneTodosLos14TiposDeEvento(string eventName)
+    [InlineData(nameof(ConsultingRoomCreated))]
+    [InlineData(nameof(ConsultingRoomActivated))]
+    [InlineData(nameof(ConsultingRoomDeactivated))]
+    [InlineData(nameof(ConsultingRoomPatientAssigned))]
+    [InlineData(nameof(ConsultingRoomPatientLeft))]
+    public void EventTypeRegistry_ContieneTodosLos26TiposDeEvento(string eventName)
     {
         var registry = EventTypeRegistry.CreateDefault();
         var eventType = registry.GetType(eventName);

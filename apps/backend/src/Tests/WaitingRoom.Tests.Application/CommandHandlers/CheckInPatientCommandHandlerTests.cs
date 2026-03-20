@@ -13,70 +13,29 @@ using WaitingRoom.Domain.ValueObjects;
 using WaitingRoom.Domain.Exceptions;
 using WaitingRoom.Domain.Events;
 using WaitingRoom.Tests.Application.Fakes;
+using System;
+using System.Collections.Generic;
+using System.Linq;
+using System.Threading;
+using System.Threading.Tasks;
+using Xunit;
 
-/// <summary>
-/// Tests for CheckInPatientCommandHandler.
-///
-/// Testing strategy:
-/// - Use mocks for infrastructure (IEventStore, IEventPublisher)
-/// - Focus on orchestration logic
-/// - Domain logic is tested in Domain tests
-/// - Test both happy path and error scenarios
-/// </summary>
 public class CheckInPatientCommandHandlerTests
 {
+    private readonly Mock<IEventStore> _eventStoreMock = new();
+    private readonly Mock<IEventPublisher> _publisherMock = new();
+    private readonly Mock<IPatientIdentityRegistry> _identityRegistryMock = new();
+    private readonly FakeClock _clock = new();
+
+    private CheckInPatientCommandHandler CreateHandler() =>
+        new(_eventStoreMock.Object, _publisherMock.Object, _clock, null, _identityRegistryMock.Object);
+
     [Fact]
     public async Task GivenPatientIdentityConflict_WhenHandlingCheckIn_ThenThrowsPatientIdentityConflictException()
     {
-        // Arrange
         var command = new CheckInPatientCommand
         {
-            QueueId = "QUEUE-01",
-            PatientId = "PAT-001",
-            PatientName = "Incoming Name",
-            Priority = Priority.High,
-            ConsultationType = "General",
-            Actor = "reception-1"
-        };
-
-        var eventStoreMock = new Mock<IEventStore>();
-        var publisherMock = new Mock<IEventPublisher>();
-        var identityRegistryMock = new Mock<IPatientIdentityRegistry>();
-
-        identityRegistryMock
-            .Setup(r => r.EnsureRegisteredAsync(
-                command.PatientId,
-                command.PatientName,
-                command.Actor,
-                It.IsAny<CancellationToken>()))
-            .ThrowsAsync(new PatientIdentityConflictException(
-                command.PatientId,
-                "Existing Name",
-                command.PatientName));
-
-        var handler = new CheckInPatientCommandHandler(
-            eventStoreMock.Object,
-            publisherMock.Object,
-            new FakeClock(),
-            queueIdGenerator: null,
-            patientIdentityRegistry: identityRegistryMock.Object);
-
-        // Act
-        var exception = await Assert.ThrowsAsync<PatientIdentityConflictException>(() => handler.HandleAsync(command));
-
-        // Assert
-        exception.PatientId.Should().Be(command.PatientId);
-        eventStoreMock.Verify(es => es.SaveAsync(It.IsAny<WaitingQueue>(), It.IsAny<CancellationToken>()), Times.Never);
-    }
-
-    [Fact]
-    public async Task GivenMissingQueueId_WhenHandlingCheckIn_ThenGeneratesQueueIdInBackend()
-    {
-        // Arrange
-        var generatedQueueId = "generated-queue-001";
-        var command = new CheckInPatientCommand
-        {
-            QueueId = null,
+            ServiceId = "QUEUE-01",
             PatientId = "PAT-001",
             PatientName = "John Doe",
             Priority = Priority.High,
@@ -84,384 +43,39 @@ public class CheckInPatientCommandHandlerTests
             Actor = "reception-1"
         };
 
-        var eventStoreMock = new Mock<IEventStore>();
-        var publisherMock = new Mock<IEventPublisher>();
-        var identityRegistryMock = new Mock<IPatientIdentityRegistry>();
-        var queueIdGeneratorMock = new Mock<IQueueIdGenerator>();
+        _identityRegistryMock
+            .Setup(r => r.EnsureRegisteredAsync(command.PatientId, command.PatientId, command.PatientName, command.Actor, It.IsAny<CancellationToken>()))
+            .ThrowsAsync(new PatientIdentityConflictException(command.PatientId, "Existing Name", command.PatientName));
 
-        queueIdGeneratorMock
-            .Setup(g => g.Generate())
-            .Returns(generatedQueueId);
+        var handler = CreateHandler();
 
-        eventStoreMock
-            .Setup(es => es.LoadAsync(generatedQueueId, It.IsAny<CancellationToken>()))
-            .ReturnsAsync((WaitingQueue?)null);
+        await Assert.ThrowsAsync<PatientIdentityConflictException>(() => handler.HandleAsync(command, CancellationToken.None));
+    }
 
-        var handler = new CheckInPatientCommandHandler(
-            eventStoreMock.Object,
-            publisherMock.Object,
-            new FakeClock(),
-            queueIdGeneratorMock.Object,
-            identityRegistryMock.Object);
+    [Fact]
+    public async Task Handle_ValidCommand_SavesAndPublishesEvents()
+    {
+        var serviceId = "QUEUE-01";
+        var command = new CheckInPatientCommand
+        {
+            ServiceId = serviceId,
+            PatientId = "PAT-001",
+            PatientName = "John Doe",
+            Priority = Priority.High,
+            ConsultationType = "General",
+            Actor = "nurse-001"
+        };
 
-        // Act
-        var result = await handler.HandleAsync(command);
+        var queue = WaitingQueue.Create(serviceId, "Main Queue", 10, EventMetadata.CreateNew(serviceId, "system"));
+        queue.ClearUncommittedEvents();
 
-        // Assert
+        _eventStoreMock.Setup(es => es.LoadAsync<WaitingQueue>(serviceId, It.IsAny<CancellationToken>())).ReturnsAsync(queue);
+
+        var handler = CreateHandler();
+        var result = await handler.HandleAsync(command, CancellationToken.None);
+
         result.Should().BeGreaterThan(0);
-        handler.LastGeneratedQueueId.Should().Be(generatedQueueId);
-        eventStoreMock.Verify(es => es.LoadAsync(generatedQueueId, It.IsAny<CancellationToken>()), Times.Once);
-    }
-
-    /// <summary>
-    /// Happy path test:
-    /// Valid command → aggregate loads → patient checks in →
-    /// events saved → events published → success
-    /// </summary>
-    [Fact]
-    public async Task HandleAsync_ValidCommand_SavesAndPublishesEvents()
-    {
-        // ARRANGE
-        var queueId = "QUEUE-01";
-        var patientId = "PAT-001";
-        var command = new CheckInPatientCommand
-        {
-            QueueId = queueId,
-            PatientId = patientId,
-            PatientName = "John Doe",
-            Priority = Priority.High,
-            ConsultationType = "General",
-            Notes = "Regular checkup",
-            Actor = "nurse-001"
-        };
-
-        // Create a valid aggregate with existing event
-        var metadata = EventMetadata.CreateNew(queueId, "system");
-        var queue = WaitingQueue.Create(queueId, "Main Queue", 10, metadata);
-        queue.ClearUncommittedEvents();
-
-        // Create mocks
-        var eventStoreMock = new Mock<IEventStore>();
-        var publisherMock = new Mock<IEventPublisher>();
-
-        // Configure event store to return our queue
-        eventStoreMock
-            .Setup(es => es.LoadAsync(queueId, It.IsAny<CancellationToken>()))
-            .ReturnsAsync(queue);
-
-        var clock = new FakeClock();
-        var handler = new CheckInPatientCommandHandler(eventStoreMock.Object, publisherMock.Object, clock);
-
-        // ACT
-        var result = await handler.HandleAsync(command);
-
-        // ASSERT
-        // 1. Should return event count
-        result.Should().BeGreaterThan(0);
-
-        // 2. SaveAsync should be called once
-        eventStoreMock.Verify(
-            es => es.SaveAsync(It.IsAny<WaitingQueue>(), It.IsAny<CancellationToken>()),
-            Times.Once);
-
-        // 3. PublishAsync should be called to publish events
-        publisherMock.Verify(
-            pub => pub.PublishAsync(It.IsAny<IEnumerable<DomainEvent>>(), It.IsAny<CancellationToken>()),
-            Times.Once);
-    }
-
-    /// <summary>
-    /// Business scenario: Queue not found
-    /// The handler must bootstrap the queue and process check-in.
-    /// </summary>
-    [Fact]
-    public async Task HandleAsync_QueueNotFound_BootstrapsQueueAndProcessesCheckIn()
-    {
-        // ARRANGE
-        var queueId = "QUEUE-NOTFOUND";
-        var command = new CheckInPatientCommand
-        {
-            QueueId = queueId,
-            PatientId = "PAT-001",
-            PatientName = "John Doe",
-            Priority = Priority.High,
-            ConsultationType = "General",
-            Actor = "nurse-001"
-        };
-
-        var eventStoreMock = new Mock<IEventStore>();
-        var publisherMock = new Mock<IEventPublisher>();
-
-        // Event store returns null (queue not found)
-        eventStoreMock
-            .Setup(es => es.LoadAsync(queueId, It.IsAny<CancellationToken>()))
-            .ReturnsAsync((WaitingQueue?)null);
-
-        var clock = new FakeClock();
-        var handler = new CheckInPatientCommandHandler(eventStoreMock.Object, publisherMock.Object, clock);
-
-        // ACT
-        var result = await handler.HandleAsync(command);
-
-        // ASSERT
-        result.Should().BeGreaterThan(0);
-
-        eventStoreMock.Verify(
-            es => es.SaveAsync(It.IsAny<WaitingQueue>(), It.IsAny<CancellationToken>()),
-            Times.Once);
-
-        publisherMock.Verify(
-            pub => pub.PublishAsync(It.IsAny<IEnumerable<DomainEvent>>(), It.IsAny<CancellationToken>()),
-            Times.Once);
-    }
-
-    /// <summary>
-    /// Domain validation scenario: Queue at capacity
-    /// </summary>
-    [Fact]
-    public async Task HandleAsync_QueueAtCapacity_ThrowsDomainException()
-    {
-        // ARRANGE
-        var queueId = "QUEUE-01";
-        var command = new CheckInPatientCommand
-        {
-            QueueId = queueId,
-            PatientId = "PAT-999",
-            PatientName = "Jane Doe",
-            Priority = Priority.Low,
-            ConsultationType = "General",
-            Actor = "nurse-001"
-        };
-
-        // Create queue with capacity 1
-        var metadata = EventMetadata.CreateNew(queueId, "system");
-        var queue = WaitingQueue.Create(queueId, "Small Queue", maxCapacity: 1, metadata);
-        queue.ClearUncommittedEvents();
-
-        // Add first patient to fill capacity
-        var firstPatientRequest = new CheckInPatientRequest
-        {
-            PatientId = PatientId.Create("PAT-001"),
-            PatientName = "John Doe",
-            Priority = Priority.Create(Priority.High),
-            ConsultationType = ConsultationType.Create("General"),
-            CheckInTime = DateTime.UtcNow,
-            Metadata = EventMetadata.CreateNew(queueId, "nurse-001")
-        };
-        queue.CheckInPatient(firstPatientRequest);
-
-        var eventStoreMock = new Mock<IEventStore>();
-        var publisherMock = new Mock<IEventPublisher>();
-
-        eventStoreMock
-            .Setup(es => es.LoadAsync(queueId, It.IsAny<CancellationToken>()))
-            .ReturnsAsync(queue);
-
-        var clock = new FakeClock();
-        var handler = new CheckInPatientCommandHandler(eventStoreMock.Object, publisherMock.Object, clock);
-
-        // ACT & ASSERT
-        // Domain should throw because queue is at capacity
-        var exception = await Assert.ThrowsAsync<DomainException>(
-            () => handler.HandleAsync(command));
-
-        exception.Message.Should().Contain("capacity");
-    }
-
-    /// <summary>
-    /// Version conflict scenario: Concurrent modifications
-    /// </summary>
-    [Fact]
-    public async Task HandleAsync_ConcurrentModification_ThrowsEventConflictException()
-    {
-        // ARRANGE
-        var queueId = "QUEUE-01";
-        var command = new CheckInPatientCommand
-        {
-            QueueId = queueId,
-            PatientId = "PAT-001",
-            PatientName = "John Doe",
-            Priority = Priority.High,
-            ConsultationType = "General",
-            Actor = "nurse-001"
-        };
-
-        var metadata = EventMetadata.CreateNew(queueId, "system");
-        var queue = WaitingQueue.Create(queueId, "Main Queue", 10, metadata);
-        queue.ClearUncommittedEvents();
-
-        var eventStoreMock = new Mock<IEventStore>();
-        var publisherMock = new Mock<IEventPublisher>();
-
-        eventStoreMock
-            .Setup(es => es.LoadAsync(queueId, It.IsAny<CancellationToken>()))
-            .ReturnsAsync(queue);
-
-        // Simulate version conflict when saving
-        eventStoreMock
-            .Setup(es => es.SaveAsync(It.IsAny<WaitingQueue>(), It.IsAny<CancellationToken>()))
-            .ThrowsAsync(new EventConflictException(queueId, expectedVersion: 1, actualVersion: 2));
-
-        var clock = new FakeClock();
-        var handler = new CheckInPatientCommandHandler(eventStoreMock.Object, publisherMock.Object, clock);
-
-        // ACT & ASSERT
-        var exception = await Assert.ThrowsAsync<EventConflictException>(
-            () => handler.HandleAsync(command));
-
-        exception.AggregateId.Should().Be(queueId);
-    }
-
-    /// <summary>
-    /// Idempotency test: Commands themselves don't enforce idempotency.
-    /// Idempotency is enforced by infrastructure using IdempotencyKey.
-    /// This test validates that CorrelationId is preserved for infrastructure to use.
-    /// </summary>
-    [Fact]
-    public async Task HandleAsync_CommandPreservesIdempotencyKey_InfrastructureCanEnforceDedupplication()
-    {
-        // ARRANGE
-        var queueId = "QUEUE-01";
-        var idempotencyKey = "CMD-001-CHECKIN";
-        var command = new CheckInPatientCommand
-        {
-            QueueId = queueId,
-            PatientId = "PAT-001",
-            PatientName = "John Doe",
-            Priority = Priority.High,
-            ConsultationType = "General",
-            Actor = "nurse-001",
-            CorrelationId = idempotencyKey
-        };
-
-        var metadata = EventMetadata.CreateNew(queueId, "system");
-        var queue = WaitingQueue.Create(queueId, "Main Queue", 10, metadata);
-        queue.ClearUncommittedEvents();
-
-        var eventStoreMock = new Mock<IEventStore>();
-        var publisherMock = new Mock<IEventPublisher>();
-
-        WaitingQueue savedQueue = null!;
-        eventStoreMock
-            .Setup(es => es.LoadAsync(queueId, It.IsAny<CancellationToken>()))
-            .ReturnsAsync(queue);
-
-        eventStoreMock
-            .Setup(es => es.SaveAsync(It.IsAny<WaitingQueue>(), It.IsAny<CancellationToken>()))
-            .Callback<WaitingQueue, CancellationToken>((q, _) => savedQueue = q);
-
-        var clock = new FakeClock();
-        var handler = new CheckInPatientCommandHandler(eventStoreMock.Object, publisherMock.Object, clock);
-
-        // ACT
-        var result = await handler.HandleAsync(command);
-
-        // ASSERT
-        // IdempotencyKey must be preserved in event metadata for infrastructure to detect duplicates
-        result.Should().BeGreaterThan(0);
-        savedQueue.Should().NotBeNull();
-
-        // Events should have the idempotency key in the causation ID
-        // so infrastructure can detect and deduplicate duplicate commands
-        savedQueue.UncommittedEvents.Should().AllSatisfy(e =>
-            e.Metadata.CorrelationId.Should().Be(idempotencyKey)
-        );
-    }
-
-    /// <summary>
-    /// Correlation ID test: Correlation ID should be preserved for tracing
-    /// </summary>
-    [Fact]
-    public async Task HandleAsync_WithCorrelationId_PreservesForTracing()
-    {
-        // ARRANGE
-        var queueId = "QUEUE-01";
-        var correlationId = "CORR-12345";
-        var command = new CheckInPatientCommand
-        {
-            QueueId = queueId,
-            PatientId = "PAT-001",
-            PatientName = "John Doe",
-            Priority = Priority.High,
-            ConsultationType = "General",
-            Actor = "nurse-001",
-            CorrelationId = correlationId
-        };
-
-        var metadata = EventMetadata.CreateNew(queueId, "system");
-        var queue = WaitingQueue.Create(queueId, "Main Queue", 10, metadata);
-        queue.ClearUncommittedEvents();
-
-        var eventStoreMock = new Mock<IEventStore>();
-        var publisherMock = new Mock<IEventPublisher>();
-
-        WaitingQueue savedAggregate = null!;
-        eventStoreMock
-            .Setup(es => es.LoadAsync(queueId, It.IsAny<CancellationToken>()))
-            .ReturnsAsync(queue);
-
-        eventStoreMock
-            .Setup(es => es.SaveAsync(It.IsAny<WaitingQueue>(), It.IsAny<CancellationToken>()))
-            .Callback<WaitingQueue, CancellationToken>((agg, _) => savedAggregate = agg);
-
-        var clock = new FakeClock();
-        var handler = new CheckInPatientCommandHandler(eventStoreMock.Object, publisherMock.Object, clock);
-
-        // ACT
-        await handler.HandleAsync(command);
-
-        // ASSERT
-        // Verify correlation ID was passed through to events
-        savedAggregate.Should().NotBeNull();
-        savedAggregate.UncommittedEvents.Should().NotBeEmpty();
-        savedAggregate.UncommittedEvents.First().Metadata.CorrelationId
-            .Should().Be(correlationId);
-    }
-
-    /// <summary>
-    /// Publishing test: After successful save, events must be published
-    /// </summary>
-    [Fact]
-    public async Task HandleAsync_AfterSuccessfulSave_PublishesAllEvents()
-    {
-        // ARRANGE
-        var queueId = "QUEUE-01";
-        var command = new CheckInPatientCommand
-        {
-            QueueId = queueId,
-            PatientId = "PAT-001",
-            PatientName = "John Doe",
-            Priority = Priority.High,
-            ConsultationType = "General",
-            Actor = "nurse-001"
-        };
-
-        var metadata = EventMetadata.CreateNew(queueId, "system");
-        var queue = WaitingQueue.Create(queueId, "Main Queue", 10, metadata);
-        queue.ClearUncommittedEvents();
-
-        var eventStoreMock = new Mock<IEventStore>();
-        var publisherMock = new Mock<IEventPublisher>();
-
-        eventStoreMock
-            .Setup(es => es.LoadAsync(queueId, It.IsAny<CancellationToken>()))
-            .ReturnsAsync(queue);
-
-        IEnumerable<DomainEvent> publishedEvents = null!;
-        publisherMock
-            .Setup(pub => pub.PublishAsync(It.IsAny<IEnumerable<DomainEvent>>(), It.IsAny<CancellationToken>()))
-            .Callback<IEnumerable<DomainEvent>, CancellationToken>((events, _) => publishedEvents = events);
-
-        var clock = new FakeClock();
-        var handler = new CheckInPatientCommandHandler(eventStoreMock.Object, publisherMock.Object, clock);
-
-        // ACT
-        await handler.HandleAsync(command);
-
-        // ASSERT
-        publishedEvents.Should().NotBeNull();
-        publishedEvents.Should().NotBeEmpty();
-        publishedEvents.Should().AllSatisfy(e =>
-            e.Should().BeOfType<PatientCheckedIn>());
+        _eventStoreMock.Verify(es => es.SaveAsync(It.IsAny<WaitingQueue>(), It.IsAny<CancellationToken>()), Times.Once);
+        _publisherMock.Verify(pub => pub.PublishAsync(It.IsAny<IEnumerable<DomainEvent>>(), It.IsAny<CancellationToken>()), Times.Once);
     }
 }

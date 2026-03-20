@@ -20,19 +20,19 @@ using Xunit;
 /// </summary>
 public sealed class WaitingQueueBoundaryValueTests
 {
-    private const string QueueId = "BVA-Q-01";
+    private const string ServiceId = "BVA-Q-01";
 
     // ============================================================
     // Helpers
     // ============================================================
 
     private static WaitingQueue CreateQueue(
-        string queueId = QueueId,
+        string serviceId = ServiceId,
         string queueName = "BVA Queue",
         int maxCapacity = 10)
     {
-        var metadata = EventMetadata.CreateNew(queueId, "system");
-        var queue = WaitingQueue.Create(queueId, queueName, maxCapacity, metadata);
+        var metadata = EventMetadata.CreateNew(serviceId, "system");
+        var queue = WaitingQueue.Create(serviceId, queueName, maxCapacity, metadata);
         queue.ClearUncommittedEvents();
         return queue;
     }
@@ -50,7 +50,7 @@ public sealed class WaitingQueueBoundaryValueTests
             Priority = Priority.Create(priority),
             ConsultationType = ConsultationType.Create(consultationType),
             CheckInTime = DateTime.UtcNow,
-            Metadata = EventMetadata.CreateNew(QueueId, "nurse")
+            Metadata = EventMetadata.CreateNew(ServiceId, "nurse")
         };
     }
 
@@ -212,7 +212,7 @@ public sealed class WaitingQueueBoundaryValueTests
         queue.CallNextAtCashier(new CallNextCashierRequest
         {
             CalledAt = DateTime.UtcNow,
-            Metadata = EventMetadata.CreateNew(QueueId, "cashier-01")
+            Metadata = EventMetadata.CreateNew(ServiceId, "cashier-01")
         });
         queue.ClearUncommittedEvents();
 
@@ -221,7 +221,7 @@ public sealed class WaitingQueueBoundaryValueTests
         {
             PatientId = PatientId.Create("PAT-ABS-01"),
             AbsentAt = DateTime.UtcNow,
-            Metadata = EventMetadata.CreateNew(QueueId, "cashier-01")
+            Metadata = EventMetadata.CreateNew(ServiceId, "cashier-01")
         });
         queue.ClearUncommittedEvents();
 
@@ -242,7 +242,7 @@ public sealed class WaitingQueueBoundaryValueTests
         queue.CallNextAtCashier(new CallNextCashierRequest
         {
             CalledAt = DateTime.UtcNow,
-            Metadata = EventMetadata.CreateNew(QueueId, "cashier-01")
+            Metadata = EventMetadata.CreateNew(ServiceId, "cashier-01")
         });
         queue.ClearUncommittedEvents();
 
@@ -250,7 +250,7 @@ public sealed class WaitingQueueBoundaryValueTests
         {
             PatientId = PatientId.Create("PAT-ABS-02"),
             AbsentAt = DateTime.UtcNow,
-            Metadata = EventMetadata.CreateNew(QueueId, "cashier-01")
+            Metadata = EventMetadata.CreateNew(ServiceId, "cashier-01")
         });
         queue.ClearUncommittedEvents();
 
@@ -258,7 +258,7 @@ public sealed class WaitingQueueBoundaryValueTests
         queue.CallNextAtCashier(new CallNextCashierRequest
         {
             CalledAt = DateTime.UtcNow,
-            Metadata = EventMetadata.CreateNew(QueueId, "cashier-01")
+            Metadata = EventMetadata.CreateNew(ServiceId, "cashier-01")
         });
         queue.ClearUncommittedEvents();
 
@@ -266,7 +266,7 @@ public sealed class WaitingQueueBoundaryValueTests
         {
             PatientId = PatientId.Create("PAT-ABS-02"),
             AbsentAt = DateTime.UtcNow,
-            Metadata = EventMetadata.CreateNew(QueueId, "cashier-01")
+            Metadata = EventMetadata.CreateNew(ServiceId, "cashier-01")
         });
         queue.ClearUncommittedEvents();
 
@@ -286,14 +286,14 @@ public sealed class WaitingQueueBoundaryValueTests
         queue.CallNextAtCashier(new CallNextCashierRequest
         {
             CalledAt = DateTime.UtcNow,
-            Metadata = EventMetadata.CreateNew(QueueId, "cashier-01")
+            Metadata = EventMetadata.CreateNew(ServiceId, "cashier-01")
         });
         queue.ClearUncommittedEvents();
         queue.MarkAbsentAtCashier(new MarkAbsentAtCashierRequest
         {
             PatientId = PatientId.Create("PAT-ABS-03"),
             AbsentAt = DateTime.UtcNow,
-            Metadata = EventMetadata.CreateNew(QueueId, "cashier-01")
+            Metadata = EventMetadata.CreateNew(ServiceId, "cashier-01")
         });
         queue.ClearUncommittedEvents();
 
@@ -301,14 +301,14 @@ public sealed class WaitingQueueBoundaryValueTests
         queue.CallNextAtCashier(new CallNextCashierRequest
         {
             CalledAt = DateTime.UtcNow,
-            Metadata = EventMetadata.CreateNew(QueueId, "cashier-01")
+            Metadata = EventMetadata.CreateNew(ServiceId, "cashier-01")
         });
         queue.ClearUncommittedEvents();
         queue.MarkAbsentAtCashier(new MarkAbsentAtCashierRequest
         {
             PatientId = PatientId.Create("PAT-ABS-03"),
             AbsentAt = DateTime.UtcNow,
-            Metadata = EventMetadata.CreateNew(QueueId, "cashier-01")
+            Metadata = EventMetadata.CreateNew(ServiceId, "cashier-01")
         });
         queue.ClearUncommittedEvents();
 
@@ -316,7 +316,7 @@ public sealed class WaitingQueueBoundaryValueTests
         queue.CallNextAtCashier(new CallNextCashierRequest
         {
             CalledAt = DateTime.UtcNow,
-            Metadata = EventMetadata.CreateNew(QueueId, "cashier-01")
+            Metadata = EventMetadata.CreateNew(ServiceId, "cashier-01")
         });
         queue.ClearUncommittedEvents();
 
@@ -324,7 +324,7 @@ public sealed class WaitingQueueBoundaryValueTests
         {
             PatientId = PatientId.Create("PAT-ABS-03"),
             AbsentAt = DateTime.UtcNow,
-            Metadata = EventMetadata.CreateNew(QueueId, "cashier-01")
+            Metadata = EventMetadata.CreateNew(ServiceId, "cashier-01")
         });
 
         act.Should().Throw<DomainException>()
@@ -350,7 +350,8 @@ public sealed class WaitingQueueBoundaryValueTests
         {
             ConsultingRoomId = "CONS-BVA-01",
             ActivatedAt = DateTime.UtcNow,
-            Metadata = EventMetadata.CreateNew(QueueId, "coordinator")
+            Actor = "coordinator",
+            Metadata = EventMetadata.CreateNew(ServiceId, "coordinator")
         });
         queue.ClearUncommittedEvents();
 
@@ -358,7 +359,7 @@ public sealed class WaitingQueueBoundaryValueTests
         queue.ClaimNextPatient(new ClaimNextPatientRequest
         {
             ClaimedAt = DateTime.UtcNow,
-            Metadata = EventMetadata.CreateNew(QueueId, "doctor-01"),
+            Metadata = EventMetadata.CreateNew(ServiceId, "doctor-01"),
             StationId = "CONS-BVA-01"
         });
         queue.ClearUncommittedEvents();
@@ -368,7 +369,7 @@ public sealed class WaitingQueueBoundaryValueTests
         {
             PatientId = PatientId.Create("PAT-CONS-01"),
             AbsentAt = DateTime.UtcNow,
-            Metadata = EventMetadata.CreateNew(QueueId, "doctor-01")
+            Metadata = EventMetadata.CreateNew(ServiceId, "doctor-01")
         });
         queue.ClearUncommittedEvents();
 
@@ -392,7 +393,8 @@ public sealed class WaitingQueueBoundaryValueTests
         {
             ConsultingRoomId = "CONS-BVA-02",
             ActivatedAt = DateTime.UtcNow,
-            Metadata = EventMetadata.CreateNew(QueueId, "coordinator")
+            Actor = "coordinator",
+            Metadata = EventMetadata.CreateNew(ServiceId, "coordinator")
         });
         queue.ClearUncommittedEvents();
 
@@ -400,7 +402,7 @@ public sealed class WaitingQueueBoundaryValueTests
         queue.ClaimNextPatient(new ClaimNextPatientRequest
         {
             ClaimedAt = DateTime.UtcNow,
-            Metadata = EventMetadata.CreateNew(QueueId, "doctor-01"),
+            Metadata = EventMetadata.CreateNew(ServiceId, "doctor-01"),
             StationId = "CONS-BVA-02"
         });
         queue.ClearUncommittedEvents();
@@ -409,7 +411,7 @@ public sealed class WaitingQueueBoundaryValueTests
         {
             PatientId = PatientId.Create("PAT-CONS-02"),
             AbsentAt = DateTime.UtcNow,
-            Metadata = EventMetadata.CreateNew(QueueId, "doctor-01")
+            Metadata = EventMetadata.CreateNew(ServiceId, "doctor-01")
         });
         queue.ClearUncommittedEvents();
 
@@ -417,7 +419,7 @@ public sealed class WaitingQueueBoundaryValueTests
         queue.ClaimNextPatient(new ClaimNextPatientRequest
         {
             ClaimedAt = DateTime.UtcNow,
-            Metadata = EventMetadata.CreateNew(QueueId, "doctor-01"),
+            Metadata = EventMetadata.CreateNew(ServiceId, "doctor-01"),
             StationId = "CONS-BVA-02"
         });
         queue.ClearUncommittedEvents();
@@ -426,7 +428,7 @@ public sealed class WaitingQueueBoundaryValueTests
         {
             PatientId = PatientId.Create("PAT-CONS-02"),
             AbsentAt = DateTime.UtcNow,
-            Metadata = EventMetadata.CreateNew(QueueId, "doctor-01")
+            Metadata = EventMetadata.CreateNew(ServiceId, "doctor-01")
         });
         queue.ClearUncommittedEvents();
 

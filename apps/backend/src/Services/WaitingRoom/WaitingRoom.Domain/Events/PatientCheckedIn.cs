@@ -18,7 +18,7 @@ public sealed record PatientCheckedIn : DomainEvent
     /// <summary>
     /// Queue where patient checked in.
     /// </summary>
-    public required string QueueId { get; init; }
+    public required string ServiceId { get; init; }
 
     /// <summary>
     /// Patient identifier.
@@ -69,8 +69,8 @@ public sealed record PatientCheckedIn : DomainEvent
     {
         base.ValidateInvariants();
 
-        if (string.IsNullOrWhiteSpace(QueueId))
-            throw new InvalidOperationException("QueueId is required");
+        if (string.IsNullOrWhiteSpace(ServiceId))
+            throw new InvalidOperationException("ServiceId is required");
 
         if (string.IsNullOrWhiteSpace(PatientId))
             throw new InvalidOperationException("PatientId is required");

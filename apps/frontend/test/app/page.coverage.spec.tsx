@@ -33,8 +33,8 @@ jest.mock("@/services/AudioService", () => ({
   },
 }));
 
-jest.mock("@/hooks/useQueueAsAppointments", () => ({
-  useQueueAsAppointments: () => mockHookReturn,
+jest.mock("@/hooks/useAtencionAsAppointments", () => ({
+  useAtencionAsAppointments: () => mockHookReturn,
 }));
 
 describe("AppointmentsScreen coverage", () => {

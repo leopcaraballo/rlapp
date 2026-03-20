@@ -2,22 +2,21 @@ namespace WaitingRoom.Domain.Events;
 
 using BuildingBlocks.EventSourcing;
 
+/// <summary>
+/// Domain event: Consulting room activated.
+/// </summary>
 public sealed record ConsultingRoomActivated : DomainEvent
 {
-    public required string QueueId { get; init; }
-    public required string ConsultingRoomId { get; init; }
+    public required string RoomId { get; init; }
+    public string? ServiceId { get; init; }
     public required DateTime ActivatedAt { get; init; }
+    public required string ActivatedBy { get; init; }
 
-    public override string EventName => nameof(ConsultingRoomActivated);
+    public override string EventName => "ConsultingRoomActivated";
 
     protected override void ValidateInvariants()
     {
         base.ValidateInvariants();
-
-        if (string.IsNullOrWhiteSpace(QueueId))
-            throw new InvalidOperationException("QueueId is required");
-
-        if (string.IsNullOrWhiteSpace(ConsultingRoomId))
-            throw new InvalidOperationException("ConsultingRoomId is required");
+        if (string.IsNullOrWhiteSpace(RoomId)) throw new InvalidOperationException("RoomId is required");
     }
 }

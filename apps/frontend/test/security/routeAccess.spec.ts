@@ -2,7 +2,7 @@ import { env } from "@/config/env";
 import type { UserRole } from "@/security/auth";
 import {
   getDefaultRoute,
-  isDisplayPath,
+  isMonitorPath,
   isPublicPath,
   isRouteAllowed,
 } from "@/security/routeAccess";
@@ -26,40 +26,40 @@ describe("routeAccess.ts — Role-Based Access Control", () => {
     });
   });
 
-  describe("isDisplayPath()", () => {
-    it("should return true for display paths", () => {
-      expect(isDisplayPath("/display/QUEUE-01")).toBe(true);
-      expect(isDisplayPath("/display/ANY-QUEUE")).toBe(true);
-      expect(isDisplayPath("/display")).toBe(true);
+  describe("isMonitorPath()", () => {
+    it("should return true for monitor paths", () => {
+      expect(isMonitorPath("/monitor/QUEUE-01")).toBe(true);
+      expect(isMonitorPath("/monitor/ANY-QUEUE")).toBe(true);
+      expect(isMonitorPath("/monitor")).toBe(true);
     });
 
-    it("should return false for non-display paths", () => {
-      expect(isDisplayPath("/waiting-room")).toBe(false);
-      expect(isDisplayPath("/reception")).toBe(false);
-      expect(isDisplayPath("/cashier")).toBe(false);
-      expect(isDisplayPath("/medical")).toBe(false);
-      expect(isDisplayPath("/")).toBe(false);
+    it("should return false for non-monitor paths", () => {
+      expect(isMonitorPath("/atencion")).toBe(false);
+      expect(isMonitorPath("/reception")).toBe(false);
+      expect(isMonitorPath("/payment")).toBe(false);
+      expect(isMonitorPath("/medical")).toBe(false);
+      expect(isMonitorPath("/")).toBe(false);
     });
   });
 
   describe("isRouteAllowed() — Patient role", () => {
     const role: UserRole = "patient";
 
-    it("should allow display routes", () => {
-      expect(isRouteAllowed(role, "/display/QUEUE-01")).toBe(true);
-      expect(isRouteAllowed(role, "/display")).toBe(true);
+    it("should allow monitor routes", () => {
+      expect(isRouteAllowed(role, "/monitor/QUEUE-01")).toBe(true);
+      expect(isRouteAllowed(role, "/monitor")).toBe(true);
     });
 
     it("should forbid staff routes", () => {
       expect(isRouteAllowed(role, "/reception")).toBe(false);
-      expect(isRouteAllowed(role, "/cashier")).toBe(false);
+      expect(isRouteAllowed(role, "/payment")).toBe(false);
       expect(isRouteAllowed(role, "/medical")).toBe(false);
       expect(isRouteAllowed(role, "/dashboard")).toBe(false);
-      expect(isRouteAllowed(role, "/consulting-rooms")).toBe(false);
+      expect(isRouteAllowed(role, "/stations")).toBe(false);
     });
 
-    it("should forbid waiting-room for patient", () => {
-      expect(isRouteAllowed(role, "/waiting-room/QUEUE-01")).toBe(false);
+    it("should forbid atencion for patient", () => {
+      expect(isRouteAllowed(role, "/atencion/QUEUE-01")).toBe(false);
     });
 
     it("should forbid root for patient", () => {
@@ -79,20 +79,20 @@ describe("routeAccess.ts — Role-Based Access Control", () => {
       expect(isRouteAllowed(role, "/dashboard")).toBe(true);
     });
 
-    it("should allow waiting-room", () => {
-      expect(isRouteAllowed(role, "/waiting-room/QUEUE-01")).toBe(true);
+    it("should allow atencion", () => {
+      expect(isRouteAllowed(role, "/atencion/QUEUE-01")).toBe(true);
     });
 
-    it("should allow display", () => {
-      expect(isRouteAllowed(role, "/display/QUEUE-01")).toBe(true);
+    it("should allow monitor", () => {
+      expect(isRouteAllowed(role, "/monitor/QUEUE-01")).toBe(true);
     });
 
     it("should allow root", () => {
       expect(isRouteAllowed(role, "/")).toBe(true);
     });
 
-    it("should forbid cashier routes", () => {
-      expect(isRouteAllowed(role, "/cashier")).toBe(false);
+    it("should forbid payment routes", () => {
+      expect(isRouteAllowed(role, "/payment")).toBe(false);
     });
 
     it("should forbid medical routes", () => {
@@ -103,17 +103,17 @@ describe("routeAccess.ts — Role-Based Access Control", () => {
   describe("isRouteAllowed() — Cashier role", () => {
     const role: UserRole = "cashier";
 
-    it("should allow cashier routes", () => {
-      expect(isRouteAllowed(role, "/cashier")).toBe(true);
-      expect(isRouteAllowed(role, "/cashier/payments")).toBe(true);
+    it("should allow payment routes", () => {
+      expect(isRouteAllowed(role, "/payment")).toBe(true);
+      expect(isRouteAllowed(role, "/payment/receipts")).toBe(true);
     });
 
     it("should allow dashboard", () => {
       expect(isRouteAllowed(role, "/dashboard")).toBe(true);
     });
 
-    it("should allow waiting-room", () => {
-      expect(isRouteAllowed(role, "/waiting-room/QUEUE-01")).toBe(true);
+    it("should allow atencion", () => {
+      expect(isRouteAllowed(role, "/atencion/QUEUE-01")).toBe(true);
     });
 
     it("should forbid reception routes", () => {
@@ -133,24 +133,24 @@ describe("routeAccess.ts — Role-Based Access Control", () => {
       expect(isRouteAllowed(role, "/medical/patients")).toBe(true);
     });
 
-    it("should forbid consulting-rooms (admin only)", () => {
-      expect(isRouteAllowed(role, "/consulting-rooms")).toBe(false);
+    it("should forbid stations (admin only)", () => {
+      expect(isRouteAllowed(role, "/stations")).toBe(false);
     });
 
     it("should allow dashboard", () => {
       expect(isRouteAllowed(role, "/dashboard")).toBe(true);
     });
 
-    it("should allow waiting-room", () => {
-      expect(isRouteAllowed(role, "/waiting-room/QUEUE-01")).toBe(true);
+    it("should allow atencion", () => {
+      expect(isRouteAllowed(role, "/atencion/QUEUE-01")).toBe(true);
     });
 
     it("should forbid reception routes", () => {
       expect(isRouteAllowed(role, "/reception")).toBe(false);
     });
 
-    it("should forbid cashier routes", () => {
-      expect(isRouteAllowed(role, "/cashier")).toBe(false);
+    it("should forbid payment routes", () => {
+      expect(isRouteAllowed(role, "/payment")).toBe(false);
     });
   });
 
@@ -159,13 +159,13 @@ describe("routeAccess.ts — Role-Based Access Control", () => {
 
     it("should allow all staff routes", () => {
       expect(isRouteAllowed(role, "/reception")).toBe(true);
-      expect(isRouteAllowed(role, "/cashier")).toBe(true);
+      expect(isRouteAllowed(role, "/payment")).toBe(true);
       expect(isRouteAllowed(role, "/medical")).toBe(true);
     });
 
     it("should allow all display and monitoring routes", () => {
-      expect(isRouteAllowed(role, "/display/QUEUE-01")).toBe(true);
-      expect(isRouteAllowed(role, "/consulting-rooms")).toBe(true);
+      expect(isRouteAllowed(role, "/monitor/QUEUE-01")).toBe(true);
+      expect(isRouteAllowed(role, "/stations")).toBe(true);
       expect(isRouteAllowed(role, "/dashboard")).toBe(true);
     });
 
@@ -173,23 +173,23 @@ describe("routeAccess.ts — Role-Based Access Control", () => {
       expect(isRouteAllowed(role, "/")).toBe(true);
     });
 
-    it("should allow waiting-room", () => {
-      expect(isRouteAllowed(role, "/waiting-room/QUEUE-01")).toBe(true);
+    it("should allow atencion", () => {
+      expect(isRouteAllowed(role, "/atencion/QUEUE-01")).toBe(true);
     });
 
-    it("should allow test and registration routes", () => {
+    it("should allow test and register routes", () => {
       expect(isRouteAllowed(role, "/test")).toBe(true);
-      expect(isRouteAllowed(role, "/registration")).toBe(true);
+      expect(isRouteAllowed(role, "/register")).toBe(true);
     });
   });
 
   describe("getDefaultRoute()", () => {
-    it("should return display route for patient", () => {
+    it("should return monitor route for patient", () => {
       const route = getDefaultRoute(
         "patient",
         env.DEFAULT_QUEUE_ID || "QUEUE-01",
       );
-      expect(route).toMatch(/^\/display/);
+      expect(route).toMatch(/^\/monitor/);
     });
 
     it("should return reception route for reception role", () => {
@@ -200,12 +200,12 @@ describe("routeAccess.ts — Role-Based Access Control", () => {
       expect(route).toBe("/reception");
     });
 
-    it("should return cashier route for cashier role", () => {
+    it("should return payment route for cashier role", () => {
       const route = getDefaultRoute(
         "cashier",
         env.DEFAULT_QUEUE_ID || "QUEUE-01",
       );
-      expect(route).toBe("/cashier");
+      expect(route).toBe("/payment");
     });
 
     it("should return medical route for doctor role", () => {
@@ -216,18 +216,18 @@ describe("routeAccess.ts — Role-Based Access Control", () => {
       expect(route).toBe("/medical");
     });
 
-    it("should return consulting-rooms for admin role", () => {
+    it("should return stations for admin role", () => {
       const route = getDefaultRoute(
         "admin",
         env.DEFAULT_QUEUE_ID || "QUEUE-01",
       );
-      expect(route).toBe("/consulting-rooms");
+      expect(route).toBe("/stations");
     });
 
     it("should encode queue ID for patient route", () => {
       const queueId = "QUEUE WITH SPACES";
       const route = getDefaultRoute("patient", queueId);
-      expect(route).toBe(`/display/${encodeURIComponent(queueId)}`);
+      expect(route).toBe(`/monitor/${encodeURIComponent(queueId)}`);
     });
 
     it("should use provided defaultQueueId parameter", () => {
@@ -241,9 +241,9 @@ describe("routeAccess.ts — Role-Based Access Control", () => {
     it("should not allow patient to access any staff route", () => {
       const staffRoutes = [
         "/reception",
-        "/cashier",
+        "/payment",
         "/medical",
-        "/consulting-rooms",
+        "/stations",
         "/dashboard",
       ];
 
@@ -254,11 +254,11 @@ describe("routeAccess.ts — Role-Based Access Control", () => {
 
     it("should allow each role their primary routes", () => {
       const roleRoutes: Record<UserRole, string[]> = {
-        patient: ["/display/QUEUE-01"],
+        patient: ["/monitor/QUEUE-01"],
         reception: ["/reception"],
-        cashier: ["/cashier"],
+        cashier: ["/payment"],
         doctor: ["/medical"],
-        admin: ["/reception", "/cashier", "/medical"],
+        admin: ["/reception", "/payment", "/medical"],
       };
 
       Object.entries(roleRoutes).forEach(([role, routes]) => {
@@ -279,8 +279,8 @@ describe("routeAccess.ts — Role-Based Access Control", () => {
 
       roles.forEach((role) => {
         if (role !== "patient") {
-          expect(isRouteAllowed(role, "/waiting-room/QUEUE-01")).toBe(true);
-          expect(isRouteAllowed(role, "/display/QUEUE-01")).toBe(true);
+          expect(isRouteAllowed(role, "/atencion/QUEUE-01")).toBe(true);
+          expect(isRouteAllowed(role, "/monitor/QUEUE-01")).toBe(true);
         }
       });
     });

@@ -4,6 +4,7 @@ using System.Data;
 using Dapper;
 using EventStore;
 using Idempotency;
+using Projections;
 using Microsoft.Extensions.Logging;
 using Npgsql;
 
@@ -48,7 +49,6 @@ public sealed class DatabaseInitializer
 
             _logger.LogInformation("Initializing database schemas...");
 
-            // 1. EventStore schema (events, outbox, patients)
             _logger.LogInformation("Creating event store schema...");
             await connection.ExecuteAsync(new CommandDefinition(
                 EventStoreSchema.CreateEventsTableSql,
@@ -64,7 +64,27 @@ public sealed class DatabaseInitializer
 
             _logger.LogInformation("Event store schema initialized successfully.");
 
-            // 2. Idempotency schema (operational requirement)
+            // 2. Projections and Read Models schema (new)
+            _logger.LogInformation("Creating projection schemas...");
+            await connection.ExecuteAsync(new CommandDefinition(
+                ProjectionSchema.CreateConsultingRoomsTableSql,
+                cancellationToken: cancellationToken));
+
+            await connection.ExecuteAsync(new CommandDefinition(
+                ProjectionSchema.CreatePatientStateViewSql,
+                cancellationToken: cancellationToken));
+
+            await connection.ExecuteAsync(new CommandDefinition(
+                ProjectionSchema.CreateRoomOccupancyViewSql,
+                cancellationToken: cancellationToken));
+
+            await connection.ExecuteAsync(new CommandDefinition(
+                ProjectionSchema.CreateCashierQueueViewSql,
+                cancellationToken: cancellationToken));
+
+            _logger.LogInformation("Projection schemas initialized successfully.");
+
+            // 3. Idempotency schema (operational requirement)
             _logger.LogInformation("Creating idempotency schema...");
             await connection.ExecuteAsync(new CommandDefinition(
                 IdempotencySchema.CreateIdempotencyTableSql,

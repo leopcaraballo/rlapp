@@ -21,7 +21,7 @@ export interface CashierStationState {
   busy: boolean;
   error: string | null;
   lastResult: CommandResult | null;
-  callNext: (queueId: string, actor?: string, cashierDeskId?: string) => Promise<void>;
+  callNext: (serviceId: string, actor?: string, cashierDeskId?: string) => Promise<void>;
   validate: (cmd: Omit<ValidatePaymentCommand, "actor"> & { actor?: string }) => Promise<void>;
   markPending: (cmd: Omit<MarkPaymentPendingCommand, "actor"> & { actor?: string }) => Promise<void>;
   markAbsent: (cmd: Omit<MarkAbsentAtCashierCommand, "actor"> & { actor?: string }) => Promise<void>;
@@ -57,9 +57,9 @@ export function useCashierStation(): CashierStationState {
   }
 
   const callNext = useCallback(
-    (queueId: string, actor = DEFAULT_ACTOR, cashierDeskId?: string) =>
+    (serviceId: string, actor = DEFAULT_ACTOR, cashierDeskId?: string) =>
       execute(() =>
-        callNextAtCashier(httpCommandAdapter, { queueId, actor, cashierDeskId: cashierDeskId ?? null }),
+        callNextAtCashier(httpCommandAdapter, { serviceId, actor, cashierDeskId: cashierDeskId ?? null }),
       ),
     [],
   );

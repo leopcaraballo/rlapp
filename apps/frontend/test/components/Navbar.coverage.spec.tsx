@@ -60,8 +60,8 @@ describe("Navbar", () => {
     expect(container.firstChild).toBeNull();
   });
 
-  it("es null cuando la ruta comienza con '/display'", () => {
-    mockUsePathname.mockReturnValue("/display/QUEUE-01");
+  it("es null cuando la ruta comienza con '/monitor'", () => {
+    mockUsePathname.mockReturnValue("/monitor/QUEUE-01");
     const { container } = render(<Navbar />);
     expect(container.firstChild).toBeNull();
   });

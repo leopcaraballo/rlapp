@@ -18,7 +18,7 @@ using Xunit;
 /// - PatientId: longitud [1..20], caracteres [a-zA-Z0-9.-]
 /// - ConsultationType: longitud [2..100]
 /// - Priority: enumeracion exacta {Low, Medium, High, Urgent}
-/// - WaitingQueueId: no vacio
+/// - WaitingServiceId: no vacio
 /// </summary>
 public sealed class BoundaryValueAnalysisTests
 {
@@ -260,40 +260,40 @@ public sealed class BoundaryValueAnalysisTests
     }
 
     // ============================================================
-    // WaitingQueueId — Fronteras
+    // WaitingServiceId — Fronteras
     // ============================================================
 
     [Fact]
-    public void WaitingQueueId_Valido_RetornaValor()
+    public void WaitingServiceId_Valido_RetornaValor()
     {
         // BVA: Limite inferior — 1 caracter
-        var result = WaitingQueueId.Create("Q");
+        var result = WaitingServiceId.Create("Q");
         result.Value.Should().Be("Q");
     }
 
     [Fact]
-    public void WaitingQueueId_Vacio_LanzaExcepcion()
+    public void WaitingServiceId_Vacio_LanzaExcepcion()
     {
         // BVA: Fuera del limite — vacio
-        var act = () => WaitingQueueId.Create("");
+        var act = () => WaitingServiceId.Create("");
         act.Should().Throw<DomainException>()
             .WithMessage("*cannot be empty*");
     }
 
     [Fact]
-    public void WaitingQueueId_Nulo_LanzaExcepcion()
+    public void WaitingServiceId_Nulo_LanzaExcepcion()
     {
         // BVA: Fuera del limite — null
-        var act = () => WaitingQueueId.Create(null!);
+        var act = () => WaitingServiceId.Create(null!);
         act.Should().Throw<DomainException>()
             .WithMessage("*cannot be empty*");
     }
 
     [Fact]
-    public void WaitingQueueId_ConEspacios_TrimeaCorrectamente()
+    public void WaitingServiceId_ConEspacios_TrimeaCorrectamente()
     {
         // BVA: En el limite — whitespace que trim produce un valor valido
-        var result = WaitingQueueId.Create("  QUEUE-001  ");
+        var result = WaitingServiceId.Create("  QUEUE-001  ");
         result.Value.Should().Be("QUEUE-001");
     }
 }

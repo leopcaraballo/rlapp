@@ -41,8 +41,8 @@ public sealed class CheckInIdempotencyTests : IClassFixture<WaitingRoomApiFactor
 
         var body1 = await response1.Content.ReadAsStringAsync();
         var result1 = JsonSerializer.Deserialize<JsonElement>(body1);
-        var queueId1 = result1.GetProperty("queueId").GetString();
-        queueId1.Should().NotBeNullOrEmpty();
+        var serviceId1 = result1.GetProperty("serviceId").GetString();
+        serviceId1.Should().NotBeNullOrEmpty();
 
         // Act 2: Petición idéntica con la misma clave — debe devolver respuesta cacheada
         var response2 = await SendCheckInAsync(dto, idempotencyKey);
@@ -50,10 +50,10 @@ public sealed class CheckInIdempotencyTests : IClassFixture<WaitingRoomApiFactor
 
         var body2 = await response2.Content.ReadAsStringAsync();
         var result2 = JsonSerializer.Deserialize<JsonElement>(body2);
-        var queueId2 = result2.GetProperty("queueId").GetString();
+        var serviceId2 = result2.GetProperty("serviceId").GetString();
 
         // Assert: Las dos respuestas deben ser idénticas
-        queueId1.Should().Be(queueId2, "La misma clave de idempotencia debe devolver el mismo queueId");
+        serviceId1.Should().Be(serviceId2, "La misma clave de idempotencia debe devolver el mismo serviceId");
         body1.Should().Be(body2, "El middleware debe devolver exactamente la respuesta cacheada");
         response2.Headers.Contains("Idempotency-Replayed")
             .Should().BeTrue("La segunda respuesta debe marcarse como reproducida desde caché");
@@ -65,7 +65,7 @@ public sealed class CheckInIdempotencyTests : IClassFixture<WaitingRoomApiFactor
         // Arrange
         var dto = BuildCheckInDto("PAT-NOIDEM-001", "No Idempotency", "High");
 
-        var request = new HttpRequestMessage(HttpMethod.Post, "/api/waiting-room/check-in")
+        var request = new HttpRequestMessage(HttpMethod.Post, "/api/atencion/check-in")
         {
             Content = JsonContent.Create(dto),
             Headers = { { "X-User-Role", "Receptionist" } }
@@ -101,10 +101,10 @@ public sealed class CheckInIdempotencyTests : IClassFixture<WaitingRoomApiFactor
         var body1 = await response1.Content.ReadAsStringAsync();
         var body2 = await response2.Content.ReadAsStringAsync();
 
-        var queueId1 = JsonSerializer.Deserialize<JsonElement>(body1).GetProperty("queueId").GetString();
-        var queueId2 = JsonSerializer.Deserialize<JsonElement>(body2).GetProperty("queueId").GetString();
+        var serviceId1 = JsonSerializer.Deserialize<JsonElement>(body1).GetProperty("serviceId").GetString();
+        var serviceId2 = JsonSerializer.Deserialize<JsonElement>(body2).GetProperty("serviceId").GetString();
 
-        queueId1.Should().NotBe(queueId2, "Claves distintas deben generar colas distintas");
+        serviceId1.Should().NotBe(serviceId2, "Claves distintas deben generar colas distintas");
     }
 
     [Fact]
@@ -152,7 +152,7 @@ public sealed class CheckInIdempotencyTests : IClassFixture<WaitingRoomApiFactor
         CheckInPatientDto dto,
         string idempotencyKey)
     {
-        var request = new HttpRequestMessage(HttpMethod.Post, "/api/waiting-room/check-in")
+        var request = new HttpRequestMessage(HttpMethod.Post, "/api/atencion/check-in")
         {
             Content = JsonContent.Create(dto),
             Headers =

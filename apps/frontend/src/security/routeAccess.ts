@@ -2,48 +2,48 @@ import type { UserRole } from "./auth";
 
 export const LOGIN_PATH = "/login";
 
-const DISPLAY_PREFIX = "/display";
-const WAITING_ROOM_PREFIX = "/waiting-room";
+const MONITOR_PREFIX = "/monitor";
+const ATENCION_PREFIX = "/atencion";
 
 const ROLE_ROUTES: Record<UserRole, (path: string) => boolean> = {
-  patient: (path) => isDisplayPath(path),
+  patient: (path) => isMonitorPath(path),
   reception: (path) =>
-    isDisplayPath(path) ||
+    isMonitorPath(path) ||
     path === "/" ||
     path.startsWith("/reception") ||
-    path.startsWith(WAITING_ROOM_PREFIX) ||
+    path.startsWith(ATENCION_PREFIX) ||
     path.startsWith("/dashboard"),
   cashier: (path) =>
-    isDisplayPath(path) ||
+    isMonitorPath(path) ||
     path === "/" ||
-    path.startsWith("/cashier") ||
-    path.startsWith(WAITING_ROOM_PREFIX) ||
+    path.startsWith("/payment") ||
+    path.startsWith(ATENCION_PREFIX) ||
     path.startsWith("/dashboard"),
   doctor: (path) =>
-    isDisplayPath(path) ||
+    isMonitorPath(path) ||
     path === "/" ||
     path.startsWith("/medical") ||
-    path.startsWith(WAITING_ROOM_PREFIX) ||
+    path.startsWith(ATENCION_PREFIX) ||
     path.startsWith("/dashboard"),
   admin: (path) =>
-    isDisplayPath(path) ||
+    isMonitorPath(path) ||
     path === "/" ||
-    path.startsWith("/consulting-rooms") ||
+    path.startsWith("/stations") ||
     path.startsWith("/reception") ||
-    path.startsWith("/cashier") ||
+    path.startsWith("/payment") ||
     path.startsWith("/medical") ||
-    path.startsWith(WAITING_ROOM_PREFIX) ||
+    path.startsWith(ATENCION_PREFIX) ||
     path.startsWith("/dashboard") ||
-    path.startsWith("/registration") ||
+    path.startsWith("/register") ||
     path.startsWith("/test"),
 };
 
 export function isPublicPath(path: string): boolean {
-  return path === LOGIN_PATH;
+  return path === LOGIN_PATH || path === "/register";
 }
 
-export function isDisplayPath(path: string): boolean {
-  return path.startsWith(DISPLAY_PREFIX);
+export function isMonitorPath(path: string): boolean {
+  return path.startsWith(MONITOR_PREFIX);
 }
 
 export function isRouteAllowed(role: UserRole, path: string): boolean {
@@ -53,19 +53,19 @@ export function isRouteAllowed(role: UserRole, path: string): boolean {
 
 export function getDefaultRoute(
   role: UserRole,
-  defaultQueueId: string,
+  defaultServiceId: string,
 ): string {
   switch (role) {
     case "patient":
-      return `${DISPLAY_PREFIX}/${encodeURIComponent(defaultQueueId)}`;
+      return `${MONITOR_PREFIX}/${encodeURIComponent(defaultServiceId)}`;
     case "reception":
       return "/reception";
     case "cashier":
-      return "/cashier";
+      return "/payment";
     case "doctor":
       return "/medical";
     case "admin":
     default:
-      return "/consulting-rooms";
+      return "/stations";
   }
 }

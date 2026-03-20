@@ -8,7 +8,7 @@ import type { CommandResult } from "@/domain/ports/ICommandGateway";
 import { httpCommandAdapter } from "@/infrastructure/adapters/HttpCommandAdapter";
 
 export interface CheckInInput {
-  queueId: string;
+  serviceId: string;
   patientId: string;
   patientName: string;
   priority?: AppointmentPriority;
@@ -41,7 +41,7 @@ export function useCheckIn(): CheckInState {
     setError(null);
     try {
       const result = await checkInPatient(httpCommandAdapter, {
-        queueId: input.queueId,
+        serviceId: input.serviceId,
         patientId: input.patientId,
         patientName: input.patientName,
         priority: input.priority ?? "Medium",

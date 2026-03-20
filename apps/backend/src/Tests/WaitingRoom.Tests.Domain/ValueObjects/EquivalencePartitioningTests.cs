@@ -38,7 +38,7 @@ using Xunit;
 ///   EP-CT4: Invalido por debajo de longitud minima
 ///   EP-CT5: Invalido por encima de longitud maxima
 ///
-/// C4. WaitingQueueId — Clases de equivalencia:
+/// C4. WaitingServiceId — Clases de equivalencia:
 ///   EP-QI1: Valido con formato tipico
 ///   EP-QI2: Invalido vacio/null
 ///   EP-QI3: Valido con whitespace (se triemea)
@@ -279,40 +279,40 @@ public sealed class EquivalencePartitioningTests
     }
 
     // ============================================================
-    // EP — WaitingQueueId
+    // EP — WaitingServiceId
     // ============================================================
 
     [Fact]
-    public void EP_QI1_WaitingQueueId_FormatoTipico_EsValido()
+    public void EP_QI1_WaitingServiceId_FormatoTipico_EsValido()
     {
         // Clase EP-QI1: Formato UUID o identificador tipico
-        var result = WaitingQueueId.Create("QUEUE-MAIN-001");
+        var result = WaitingServiceId.Create("QUEUE-MAIN-001");
         result.Value.Should().Be("QUEUE-MAIN-001");
     }
 
     [Fact]
-    public void EP_QI2_WaitingQueueId_Vacio_LanzaExcepcion()
+    public void EP_QI2_WaitingServiceId_Vacio_LanzaExcepcion()
     {
         // Clase EP-QI2: Cadena vacia
-        var act = () => WaitingQueueId.Create("");
+        var act = () => WaitingServiceId.Create("");
         act.Should().Throw<DomainException>()
             .WithMessage("*cannot be empty*");
     }
 
     [Fact]
-    public void EP_QI2_WaitingQueueId_Nulo_LanzaExcepcion()
+    public void EP_QI2_WaitingServiceId_Nulo_LanzaExcepcion()
     {
         // Clase EP-QI2: Valor nulo
-        var act = () => WaitingQueueId.Create(null!);
+        var act = () => WaitingServiceId.Create(null!);
         act.Should().Throw<DomainException>()
             .WithMessage("*cannot be empty*");
     }
 
     [Fact]
-    public void EP_QI3_WaitingQueueId_ConWhitespace_Trimea()
+    public void EP_QI3_WaitingServiceId_ConWhitespace_Trimea()
     {
         // Clase EP-QI3: Whitespace se elimina, valor interno es valido
-        var result = WaitingQueueId.Create("  QUEUE-001  ");
+        var result = WaitingServiceId.Create("  QUEUE-001  ");
         result.Value.Should().Be("QUEUE-001");
     }
 }

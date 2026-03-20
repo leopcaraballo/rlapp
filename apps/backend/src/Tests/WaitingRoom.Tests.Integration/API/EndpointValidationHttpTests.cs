@@ -39,7 +39,7 @@ public sealed class EndpointValidationHttpTests : IClassFixture<WaitingRoomApiFa
     // ============================================================
 
     [Theory]
-    [InlineData("/api/waiting-room/check-in")]
+    [InlineData("/api/atencion/check-in")]
     [InlineData("/api/reception/register")]
     public async Task CheckInEndpoints_WithoutIdempotencyKey_ReturnBadRequest(string endpoint)
     {
@@ -79,14 +79,14 @@ public sealed class EndpointValidationHttpTests : IClassFixture<WaitingRoomApiFa
     [InlineData("/api/medical/mark-absent")]
     [InlineData("/api/medical/consulting-room/activate")]
     [InlineData("/api/medical/consulting-room/deactivate")]
-    [InlineData("/api/waiting-room/claim-next")]
-    [InlineData("/api/waiting-room/call-patient")]
-    [InlineData("/api/waiting-room/complete-attention")]
+    [InlineData("/api/atencion/claim-next")]
+    [InlineData("/api/atencion/call-patient")]
+    [InlineData("/api/atencion/complete-attention")]
     public async Task CommandEndpoints_WithoutIdempotencyKey_ReturnBadRequest(string endpoint)
     {
         var request = new HttpRequestMessage(HttpMethod.Post, endpoint)
         {
-            Content = JsonContent.Create(new { QueueId = "q-1", PatientId = "p-1", Actor = "a-1" })
+            Content = JsonContent.Create(new { ServiceId = "q-1", PatientId = "p-1", Actor = "a-1" })
             // Sin Idempotency-Key
         };
 
@@ -106,7 +106,7 @@ public sealed class EndpointValidationHttpTests : IClassFixture<WaitingRoomApiFa
     /// cuando no se proporciona autenticacion (sin header X-User-Role).
     /// </summary>
     [Theory]
-    [InlineData("/api/waiting-room/check-in")]
+    [InlineData("/api/atencion/check-in")]
     [InlineData("/api/reception/register")]
     public async Task ReceptionEndpoints_WithoutAuthentication_ReturnUnauthorized(string endpoint)
     {
@@ -154,7 +154,7 @@ public sealed class EndpointValidationHttpTests : IClassFixture<WaitingRoomApiFa
             Actor = "test-actor"
         };
 
-        var request = new HttpRequestMessage(HttpMethod.Post, "/api/waiting-room/check-in")
+        var request = new HttpRequestMessage(HttpMethod.Post, "/api/atencion/check-in")
         {
             Content = JsonContent.Create(dto),
             Headers =
@@ -187,7 +187,7 @@ public sealed class EndpointValidationHttpTests : IClassFixture<WaitingRoomApiFa
             Actor = "test-actor"
         };
 
-        var request = new HttpRequestMessage(HttpMethod.Post, "/api/waiting-room/check-in")
+        var request = new HttpRequestMessage(HttpMethod.Post, "/api/atencion/check-in")
         {
             Content = JsonContent.Create(dto),
             Headers =
@@ -220,7 +220,7 @@ public sealed class EndpointValidationHttpTests : IClassFixture<WaitingRoomApiFa
         };
 
         var response = await SendPostWithRoleAsync(
-            "/api/waiting-room/check-in", dto, "Receptionist");
+            "/api/atencion/check-in", dto, "Receptionist");
 
         response.StatusCode.Should().Be(HttpStatusCode.OK);
 
@@ -247,7 +247,7 @@ public sealed class EndpointValidationHttpTests : IClassFixture<WaitingRoomApiFa
         };
 
         var response = await SendPostWithRoleAsync(
-            "/api/waiting-room/check-in", dto, "Receptionist");
+            "/api/atencion/check-in", dto, "Receptionist");
 
         response.StatusCode.Should().Be(HttpStatusCode.OK);
 
@@ -258,7 +258,7 @@ public sealed class EndpointValidationHttpTests : IClassFixture<WaitingRoomApiFa
         result.TryGetProperty("message", out _).Should().BeTrue("Debe contener 'message'");
         result.TryGetProperty("correlationId", out _).Should().BeTrue("Debe contener 'correlationId'");
         result.TryGetProperty("eventCount", out _).Should().BeTrue("Debe contener 'eventCount'");
-        result.TryGetProperty("queueId", out _).Should().BeTrue("Debe contener 'queueId'");
+        result.TryGetProperty("serviceId", out _).Should().BeTrue("Debe contener 'serviceId'");
 
         result.GetProperty("success").GetBoolean().Should().BeTrue();
         result.GetProperty("eventCount").GetInt32().Should().BeGreaterThan(0);
@@ -269,7 +269,7 @@ public sealed class EndpointValidationHttpTests : IClassFixture<WaitingRoomApiFa
     {
         // Primero check-in un paciente
         var checkInResponse = await SendPostWithRoleAsync(
-            "/api/waiting-room/check-in",
+            "/api/atencion/check-in",
             new CheckInPatientDto
             {
                 PatientId = "VAL-CASHRESP-001",
@@ -280,13 +280,13 @@ public sealed class EndpointValidationHttpTests : IClassFixture<WaitingRoomApiFa
             },
             "Receptionist");
 
-        var queueId = (await DeserializeAsync(checkInResponse))
-            .GetProperty("queueId").GetString()!;
+        var serviceId = (await DeserializeAsync(checkInResponse))
+            .GetProperty("serviceId").GetString()!;
 
         // Llamar en caja con rol de Cashier
         var cashierResponse = await SendPostWithRoleAsync(
             "/api/cashier/call-next",
-            new CallNextCashierDto { QueueId = queueId, Actor = "cashier-resp" },
+            new CallNextCashierDto { ServiceId = serviceId, Actor = "cashier-resp" },
             "Cashier");
 
         cashierResponse.StatusCode.Should().Be(HttpStatusCode.OK);

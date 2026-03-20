@@ -26,36 +26,45 @@ jest.mock("@/hooks/useCashierStation", () => ({
 
 const mockNextTurn: { current: import("@/services/api/types").NextTurnView | null } = { current: null };
 
-jest.mock("@/hooks/useWaitingRoom", () => ({
-  useWaitingRoom: () => ({
+jest.mock("@/hooks/useAtencion", () => ({
+  useAtencion: () => ({
+    monitor: null,
     queueState: { patientsInQueue: [] },
+    fullState: null,
     nextTurn: mockNextTurn.current,
+    history: [],
+    connectionState: "online",
+    lastUpdated: null,
     refresh: jest.fn(),
+    setMonitor: jest.fn(),
+    setQueueState: jest.fn(),
+    setFullState: jest.fn(),
+    setNextTurn: jest.fn(),
   }),
 }));
 
-import CashierPage from "@/app/cashier/page";
+import PaymentPage from "@/app/payment/page";
 
-describe("CashierPage", () => {
+describe("PaymentPage", () => {
   beforeEach(() => {
     mockNextTurn.current = null;
   });
 
-  it("renders cashier controls", () => {
-    render(<CashierPage />);
-    expect(screen.queryByText(/Caja/)).toBeTruthy();
+  it("renders payment controls", () => {
+    render(<PaymentPage />);
+    expect(screen.queryByText(/Pagos/)).toBeTruthy();
     expect(screen.queryByText(/Llamar siguiente/)).toBeTruthy();
   });
 
   it("no muestra el turno activo cuando nextTurn es null", () => {
     mockNextTurn.current = null;
-    render(<CashierPage />);
+    render(<PaymentPage />);
     expect(screen.queryByText(/Turno activo en caja/)).toBeNull();
   });
 
   it("muestra el turno activo cuando nextTurn.status es 'cashier-called'", () => {
     mockNextTurn.current = {
-      queueId: "Q-1",
+      serviceId: "Q-1",
       patientId: "CC-001",
       patientName: "Juan Prueba",
       priority: "High",
@@ -65,8 +74,9 @@ describe("CashierPage", () => {
       calledAt: new Date().toISOString(),
       stationId: null,
       projectedAt: new Date().toISOString(),
+      turnNumber: 1,
     };
-    render(<CashierPage />);
+    render(<PaymentPage />);
     expect(screen.queryByText(/Turno activo en caja/)).toBeTruthy();
     expect(screen.queryAllByText("Juan Prueba").length).toBeGreaterThan(0);
     expect(screen.queryAllByText("CC-001").length).toBeGreaterThan(0);
@@ -74,7 +84,7 @@ describe("CashierPage", () => {
 
   it("no muestra el turno activo cuando nextTurn.status no es 'cashier-called'", () => {
     mockNextTurn.current = {
-      queueId: "Q-1",
+      serviceId: "Q-1",
       patientId: "CC-002",
       patientName: "Pedro Test",
       priority: "Medium",
@@ -84,8 +94,9 @@ describe("CashierPage", () => {
       calledAt: null,
       stationId: null,
       projectedAt: new Date().toISOString(),
+      turnNumber: 2,
     };
-    render(<CashierPage />);
+    render(<PaymentPage />);
     expect(screen.queryByText(/Turno activo en caja/)).toBeNull();
   });
 });

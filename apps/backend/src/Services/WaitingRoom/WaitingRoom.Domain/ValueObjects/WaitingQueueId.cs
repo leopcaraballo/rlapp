@@ -5,16 +5,16 @@ using Exceptions;
 /// <summary>
 /// Value object representing a waiting queue identifier.
 /// </summary>
-public sealed record WaitingQueueId
+public sealed record WaitingServiceId
 {
     public string Value { get; }
 
-    private WaitingQueueId(string value) => Value = value;
+    private WaitingServiceId(string value) => Value = value;
 
-    public static WaitingQueueId Create(string value)
+    public static WaitingServiceId Create(string value)
     {
         if (string.IsNullOrWhiteSpace(value))
-            throw new DomainException("WaitingQueueId cannot be empty");
+            throw new DomainException("WaitingServiceId cannot be empty");
 
         return new(value.Trim());
     }

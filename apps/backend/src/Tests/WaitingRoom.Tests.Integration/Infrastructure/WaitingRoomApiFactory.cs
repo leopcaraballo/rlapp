@@ -6,6 +6,7 @@ using Microsoft.AspNetCore.Hosting;
 using Microsoft.AspNetCore.Mvc.Testing;
 using Microsoft.Extensions.DependencyInjection;
 using WaitingRoom.Application.Ports;
+using WaitingRoom.Projections.Abstractions;
 using WaitingRoom.Tests.Integration.Fakes;
 
 /// <summary>
@@ -37,6 +38,13 @@ public sealed class WaitingRoomApiFactory : WebApplicationFactory<global::Progra
             RemoveService<IPatientIdentityRegistry>(services);
             RemoveService<IEventPublisher>(services);
             RemoveService<IEventLagTracker>(services);
+            RemoveService<IPatientStateRepository>(services);
+            RemoveService<IConsultingRoomOccupancyRepository>(services);
+            RemoveService<ICashierQueueRepository>(services);
+            RemoveService<IPatientRepository>(services);
+            RemoveService<IConsultingRoomRepository>(services);
+            // IProjection is NOT replaced: WaitingRoomProjectionEngine is resolved from Program.cs
+            // using all in-memory fakes below, so it correctly populates IAtencionProjectionContext.
 
             // Register per-test in-memory fakes (Singleton = shared within one test factory instance)
             services.AddSingleton<IEventStore, InMemoryEventStore>();
@@ -45,6 +53,11 @@ public sealed class WaitingRoomApiFactory : WebApplicationFactory<global::Progra
             services.AddSingleton<IPatientIdentityRegistry, InMemoryPatientIdentityRegistry>();
             services.AddSingleton<IEventPublisher, NoOpEventPublisher>();
             services.AddSingleton<IEventLagTracker, NoOpEventLagTracker>();
+            services.AddSingleton<IPatientStateRepository, InMemoryPatientStateRepository>();
+            services.AddSingleton<IConsultingRoomOccupancyRepository, InMemoryConsultingRoomOccupancyRepository>();
+            services.AddSingleton<ICashierQueueRepository, InMemoryCashierQueueRepository>();
+            services.AddSingleton<IPatientRepository, InMemoryPatientRepository>();
+            services.AddSingleton<IConsultingRoomRepository, InMemoryConsultingRoomRepository>();
 
             // Reemplazar JWT Bearer con TestAuthHandler para tests de integracion.
             // TestAuthHandler lee el header X-User-Role y genera claims equivalentes

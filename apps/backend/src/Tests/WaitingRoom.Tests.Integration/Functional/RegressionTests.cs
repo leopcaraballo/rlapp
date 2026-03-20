@@ -39,23 +39,23 @@ public sealed class RegressionTests : IClassFixture<WaitingRoomApiFactory>
 
     // ============================================================
     // REG-001: S-05 — Generic endpoints sin proteccion (corregido)
-    // Hallazgo auditoria: /api/waiting-room/claim-next era accesible sin autenticacion
+    // Hallazgo auditoria: /api/atencion/claim-next era accesible sin autenticacion
     // ============================================================
 
     /// <summary>
-    /// Regresion: Los endpoints genericos de waiting-room deben requerir autenticacion
+    /// Regresion: Los endpoints genericos de atencion deben requerir autenticacion
     /// (hallazgo S-05 de auditoria de seguridad).
     /// </summary>
     [Theory]
-    [InlineData("/api/waiting-room/claim-next")]
-    [InlineData("/api/waiting-room/call-patient")]
-    [InlineData("/api/waiting-room/complete-attention")]
+    [InlineData("/api/atencion/claim-next")]
+    [InlineData("/api/atencion/call-patient")]
+    [InlineData("/api/atencion/complete-attention")]
     public async Task REG001_GenericEndpoints_RequireAuthentication(string endpoint)
     {
         // Arrange: sin header X-User-Role
         var request = new HttpRequestMessage(HttpMethod.Post, endpoint)
         {
-            Content = JsonContent.Create(new { QueueId = "REG-Q-01", PatientId = "REG-P-01", Actor = "a", StationId = "S-01" })
+            Content = JsonContent.Create(new { ServiceId = "REG-Q-01", PatientId = "REG-P-01", Actor = "a", StationId = "S-01", Outcome = "Completed" })
         };
         request.Headers.Add("Idempotency-Key", Guid.NewGuid().ToString("D"));
 
@@ -87,8 +87,9 @@ public sealed class RegressionTests : IClassFixture<WaitingRoomApiFactory>
         {
             Content = JsonContent.Create(new
             {
-                QueueId = "REG-Q-02", PatientId = "REG-P-02",
-                Actor = "test", StationId = "S-01"
+                ServiceId = "REG-Q-02", PatientId = "REG-P-02",
+                Actor = "test", StationId = "S-01",
+                Outcome = "Completed"
             })
         };
         request.Headers.Add("Idempotency-Key", Guid.NewGuid().ToString("D"));
@@ -109,7 +110,7 @@ public sealed class RegressionTests : IClassFixture<WaitingRoomApiFactory>
     /// sin el header Idempotency-Key.
     /// </summary>
     [Theory]
-    [InlineData("/api/waiting-room/check-in", "Receptionist")]
+    [InlineData("/api/atencion/check-in", "Receptionist")]
     [InlineData("/api/cashier/call-next", "Cashier")]
     [InlineData("/api/medical/call-next", "Doctor")]
     public async Task REG003_MissingIdempotencyKey_Returns400(
@@ -119,7 +120,7 @@ public sealed class RegressionTests : IClassFixture<WaitingRoomApiFactory>
         {
             Content = JsonContent.Create(new
             {
-                QueueId = "REG-Q-03", PatientId = "REG-P-03",
+                ServiceId = "REG-Q-03", PatientId = "REG-P-03",
                 PatientName = "Test", Priority = "Low",
                 ConsultationType = "General", Actor = "test",
                 StationId = "S-01"
@@ -166,14 +167,14 @@ public sealed class RegressionTests : IClassFixture<WaitingRoomApiFactory>
 
         // Act
         var response1 = await PostWithAuthAsync(
-            "/api/waiting-room/check-in", lowerCaseDto, "Receptionist");
+            "/api/atencion/check-in", lowerCaseDto, "Receptionist");
         var result1 = await DeserializeAsync(response1);
-        var queueId = result1.GetProperty("queueId").GetString()!;
+        var serviceId = result1.GetProperty("serviceId").GetString()!;
 
         // Intentar registrar con el mismo PatientId en mayusculas en la misma cola
-        upperCaseDto = upperCaseDto with { QueueId = queueId };
+        upperCaseDto = upperCaseDto with { ServiceId = serviceId };
         var response2 = await PostWithAuthAsync(
-            "/api/waiting-room/check-in", upperCaseDto, "Receptionist");
+            "/api/atencion/check-in", upperCaseDto, "Receptionist");
 
         // Assert: el segundo debe fallar como duplicado o tener el mismo resultado
         var statusCode = (int)response2.StatusCode;
@@ -194,7 +195,7 @@ public sealed class RegressionTests : IClassFixture<WaitingRoomApiFactory>
     public async Task REG005_QueueCapacity_IsEnforced()
     {
         // Arrange: crear cola y llenarla (la capacidad default es configurable)
-        string? queueId = null;
+        string? serviceId = null;
         var responses = new List<HttpResponseMessage>();
 
         // Registrar 200 pacientes (deberia exceder la capacidad en algun momento)
@@ -202,7 +203,7 @@ public sealed class RegressionTests : IClassFixture<WaitingRoomApiFactory>
         {
             var dto = new CheckInPatientDto
             {
-                QueueId = queueId,
+                ServiceId = serviceId,
                 PatientId = $"REG-CAP-{i:D4}",
                 PatientName = $"Paciente Capacidad {i}",
                 Priority = "Low",
@@ -211,13 +212,13 @@ public sealed class RegressionTests : IClassFixture<WaitingRoomApiFactory>
             };
 
             var response = await PostWithAuthAsync(
-                "/api/waiting-room/check-in", dto, "Receptionist");
+                "/api/atencion/check-in", dto, "Receptionist");
             responses.Add(response);
 
-            if (queueId == null && response.StatusCode == HttpStatusCode.OK)
+            if (serviceId == null && response.StatusCode == HttpStatusCode.OK)
             {
                 var result = await DeserializeAsync(response);
-                queueId = result.GetProperty("queueId").GetString();
+                serviceId = result.GetProperty("serviceId").GetString();
             }
 
             // Si ya empezo a fallar, terminamos el ciclo

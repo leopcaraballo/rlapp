@@ -87,6 +87,7 @@ test.describe("Frontend hardening y alineacion backend", () => {
   }) => {
     await mockWaitingRoomReads(page);
     await page.goto("/login");
+    await page.fill("#idCard", "123456");
     await page.selectOption("#role", "patient");
     await page.click('button:has-text("Ingresar")');
 
@@ -111,7 +112,7 @@ test.describe("Frontend hardening y alineacion backend", () => {
     await setSession(page, "reception");
     await mockWaitingRoomReads(page, "QUEUE-BE-01");
 
-    await page.route("**/api/reception/register", async (route) => {
+    await page.route("**/api/patients/register", async (route) => {
       await route.fulfill({
         status: 200,
         contentType: "application/json",
@@ -126,6 +127,7 @@ test.describe("Frontend hardening y alineacion backend", () => {
     });
 
     await page.goto("/reception");
+    await page.fill("#patientId", "PAT-E2E-001");
     await page.fill("#patientName", "Paciente E2E");
     await page.click('button:has-text("Registrar check-in")');
 
@@ -204,7 +206,7 @@ test.describe("Frontend hardening y alineacion backend", () => {
       },
     );
 
-    await page.route("**/api/cashier/call-next", async (route) => {
+    await page.route("**/api/queues/*/call-next", async (route) => {
       await route.fulfill({
         status: 200,
         contentType: "application/json",
@@ -218,6 +220,7 @@ test.describe("Frontend hardening y alineacion backend", () => {
     });
 
     await page.goto("/cashier");
+    await page.waitForTimeout(500); // Wait for initial load
     await page.click('button:has-text("Llamar siguiente")');
     await expect(page.getByText("No hay pacientes en la cola.")).toBeVisible();
   });
@@ -228,7 +231,7 @@ test.describe("Frontend hardening y alineacion backend", () => {
     await setSession(page, "doctor");
     await mockWaitingRoomReads(page);
 
-    await page.route("**/api/medical/start-consultation", async (route) => {
+    await page.route("**/api/patients/*/start-consultation", async (route) => {
       await route.fulfill({
         status: 200,
         contentType: "application/json",
@@ -246,7 +249,7 @@ test.describe("Frontend hardening y alineacion backend", () => {
     await page.fill("#patientId", "p-123");
 
     const requestPromise = page.waitForRequest(
-      "**/api/medical/start-consultation",
+      "**/api/patients/*/start-consultation",
     );
     await page.click('button:has-text("Iniciar consulta")');
     const request = await requestPromise;
@@ -259,7 +262,7 @@ test.describe("Frontend hardening y alineacion backend", () => {
     await setSession(page, "doctor");
     await mockWaitingRoomReads(page);
 
-    await page.route("**/api/medical/finish-consultation", async (route) => {
+    await page.route("**/api/patients/*/finish-consultation", async (route) => {
       await route.fulfill({
         status: 409,
         contentType: "application/json",
@@ -292,7 +295,7 @@ test.describe("Frontend hardening y alineacion backend", () => {
     await setSession(page, "reception");
     await mockWaitingRoomReads(page);
 
-    await page.route("**/api/reception/register", async (route) => {
+    await page.route("**/api/patients/register", async (route) => {
       await route.fulfill({
         status: 500,
         contentType: "application/json",
@@ -304,6 +307,7 @@ test.describe("Frontend hardening y alineacion backend", () => {
     });
 
     await page.goto("/reception");
+    await page.fill("#patientId", "PAT-ERR-500");
     await page.fill("#patientName", "Paciente Error");
     await page.click('button:has-text("Registrar check-in")');
 

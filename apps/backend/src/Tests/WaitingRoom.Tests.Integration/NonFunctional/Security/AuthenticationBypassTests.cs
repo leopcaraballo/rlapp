@@ -39,7 +39,7 @@ public sealed class AuthenticationBypassTests : IClassFixture<WaitingRoomApiFact
     // ============================================================
 
     [Theory]
-    [InlineData("/api/waiting-room/check-in")]
+    [InlineData("/api/atencion/check-in")]
     [InlineData("/api/cashier/call-next")]
     [InlineData("/api/cashier/validate-payment")]
     [InlineData("/api/cashier/mark-absent")]
@@ -51,9 +51,9 @@ public sealed class AuthenticationBypassTests : IClassFixture<WaitingRoomApiFact
     [InlineData("/api/medical/start-consultation")]
     [InlineData("/api/medical/finish-consultation")]
     [InlineData("/api/medical/mark-absent")]
-    [InlineData("/api/waiting-room/claim-next")]
-    [InlineData("/api/waiting-room/call-patient")]
-    [InlineData("/api/waiting-room/complete-attention")]
+    [InlineData("/api/atencion/claim-next")]
+    [InlineData("/api/atencion/call-patient")]
+    [InlineData("/api/atencion/complete-attention")]
     [InlineData("/api/reception/register")]
     public async Task SEC_AUTH_001_AllCommandEndpoints_RejectUnauthenticatedRequests(
         string endpoint)
@@ -63,9 +63,11 @@ public sealed class AuthenticationBypassTests : IClassFixture<WaitingRoomApiFact
         {
             Content = JsonContent.Create(new
             {
-                QueueId = "SEC-Q", PatientId = "SEC-P", PatientName = "Test",
+                ServiceId = "SEC-Q", PatientId = "SEC-P", PatientName = "Test",
                 Priority = "Low", ConsultationType = "General", Actor = "attacker",
-                StationId = "S-01", ConsultingRoomId = "C-01"
+                StationId = "S-01", ConsultingRoomId = "C-01",
+                Outcome = "Completed", Reason = "Insufficient funds",
+                PaymentReference = "REF-123"
             })
         };
         request.Headers.Add("Idempotency-Key", Guid.NewGuid().ToString("D"));
@@ -83,7 +85,7 @@ public sealed class AuthenticationBypassTests : IClassFixture<WaitingRoomApiFact
     // ============================================================
 
     [Theory]
-    [InlineData("/api/waiting-room/check-in")]
+    [InlineData("/api/atencion/check-in")]
     [InlineData("/api/cashier/call-next")]
     [InlineData("/api/medical/call-next")]
     public async Task SEC_AUTH_002_EmptyRoleHeader_IsRejected(string endpoint)
@@ -92,9 +94,9 @@ public sealed class AuthenticationBypassTests : IClassFixture<WaitingRoomApiFact
         {
             Content = JsonContent.Create(new
             {
-                QueueId = "SEC-Q2", PatientId = "SEC-P2", PatientName = "Test",
+                ServiceId = "SEC-Q2", PatientId = "SEC-P2", PatientName = "Test",
                 Priority = "Low", ConsultationType = "General", Actor = "attacker",
-                StationId = "S-01"
+                StationId = "S-01", Reason = "Testing"
             })
         };
         request.Headers.Add("Idempotency-Key", Guid.NewGuid().ToString("D"));
@@ -111,9 +113,9 @@ public sealed class AuthenticationBypassTests : IClassFixture<WaitingRoomApiFact
     // ============================================================
 
     [Theory]
-    [InlineData("/api/waiting-room/check-in", "SuperAdmin")]
-    [InlineData("/api/waiting-room/check-in", "Root")]
-    [InlineData("/api/waiting-room/check-in", "System")]
+    [InlineData("/api/atencion/check-in", "SuperAdmin")]
+    [InlineData("/api/atencion/check-in", "Root")]
+    [InlineData("/api/atencion/check-in", "System")]
     [InlineData("/api/cashier/call-next", "Janitor")]
     [InlineData("/api/medical/call-next", "Patient")]
     public async Task SEC_AUTH_003_InventedRoles_AreRejected(
@@ -123,7 +125,7 @@ public sealed class AuthenticationBypassTests : IClassFixture<WaitingRoomApiFact
         {
             Content = JsonContent.Create(new
             {
-                QueueId = "SEC-Q3", PatientId = "SEC-P3", PatientName = "Test",
+                ServiceId = "SEC-Q3", PatientId = "SEC-P3", PatientName = "Test",
                 Priority = "Low", ConsultationType = "General", Actor = "attacker",
                 StationId = "S-01"
             })
@@ -153,7 +155,7 @@ public sealed class AuthenticationBypassTests : IClassFixture<WaitingRoomApiFact
         {
             Content = JsonContent.Create(new
             {
-                QueueId = "SEC-Q4", Actor = "attacker", StationId = "S-01"
+                ServiceId = "SEC-Q4", Actor = "attacker", StationId = "S-01"
             })
         };
         request.Headers.Add("Idempotency-Key", Guid.NewGuid().ToString("D"));
@@ -180,7 +182,7 @@ public sealed class AuthenticationBypassTests : IClassFixture<WaitingRoomApiFact
         {
             Content = JsonContent.Create(new CallNextCashierDto
             {
-                QueueId = "NONEXISTENT-QUEUE-ID",
+                ServiceId = "NONEXISTENT-QUEUE-ID",
                 Actor = "cashier-sec"
             })
         };

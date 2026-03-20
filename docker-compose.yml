@@ -194,20 +194,21 @@ services:
   frontend:
     build:
       context: ./apps/frontend
-      dockerfile: Dockerfile
+      dockerfile: Dockerfile.dev
     container_name: rlapp-frontend
     environment:
       NEXT_PUBLIC_API_BASE_URL: http://localhost:5000
       NEXT_PUBLIC_WS_URL: http://localhost:5000
+      NEXT_PUBLIC_DEFAULT_QUEUE_ID: QUEUE-01
       NEXT_PUBLIC_WS_DISABLED: "false"
       NODE_ENV: development
     ports:
-      - "3001:3000"
+      - "3011:3000"
     volumes:
       - ./apps/frontend:/app:delegated
       - frontend_node_modules:/app/node_modules
     working_dir: /app
-    command: ["npm", "run", "dev", "--", "-p", "3000", "-H", "0.0.0.0"]
+    command: ["./node_modules/.bin/next", "dev", "-p", "3000", "-H", "0.0.0.0"]
     depends_on:
       api:
         condition: service_healthy

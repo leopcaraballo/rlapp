@@ -42,7 +42,7 @@ public class ProjectionWorkerTests
 
         var @event = new PatientCheckedIn
         {
-            QueueId = "queue-1",
+            ServiceId = "queue-1",
             PatientId = "PAT-1",
             PatientName = "Test",
             Priority = "High",

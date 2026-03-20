@@ -17,10 +17,10 @@ using System.ComponentModel.DataAnnotations;
 public sealed record CheckInPatientDto
 {
     /// <summary>
-    /// Optional waiting queue identifier. When omitted, the backend generates one.
-    /// Use "QUEUE-01" for the default clinic queue.
+    /// Optional service identifier. When omitted, the backend generates one.
+    /// Use "QUEUE-01" for the default clinic service.
     /// </summary>
-    public string? QueueId { get; init; }
+    public string? ServiceId { get; init; }
 
     /// <summary>
     /// Unique patient identifier.

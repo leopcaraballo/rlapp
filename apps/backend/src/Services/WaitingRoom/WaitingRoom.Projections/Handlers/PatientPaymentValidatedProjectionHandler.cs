@@ -17,31 +17,33 @@ public sealed class PatientPaymentValidatedProjectionHandler : IProjectionHandle
         if (@event is not PatientPaymentValidated evt)
             throw new ArgumentException($"Expected {nameof(PatientPaymentValidated)}, got {@event.GetType().Name}");
 
-        if (context is not IWaitingRoomProjectionContext waitingContext)
-            throw new InvalidOperationException($"Context must implement {nameof(IWaitingRoomProjectionContext)}");
+        if (context is not IAtencionProjectionContext atencionContext)
+            throw new InvalidOperationException($"Context must implement {nameof(IAtencionProjectionContext)}");
 
-        var idempotencyKey = $"patient-payment-validated:{evt.QueueId}:{evt.Metadata.AggregateId}:{evt.Metadata.EventId}";
+        var serviceId = evt.ServiceId ?? "unknown-queue";
+        var idempotencyKey = $"patient-payment-validated:{serviceId}:{evt.Metadata.AggregateId}:{evt.Metadata.EventId}";
 
         if (await context.AlreadyProcessedAsync(idempotencyKey, cancellationToken))
             return;
 
-        var normalizedPriority = NormalizePriority(evt.Priority);
+        var normalizedPriority = NormalizePriority(evt.Priority ?? "normal");
 
-        await waitingContext.UpdateMonitorViewAsync(evt.QueueId, normalizedPriority, "increment", cancellationToken);
-        await waitingContext.AddPatientToQueueAsync(
-            evt.QueueId,
+        await atencionContext.UpdateMonitorViewAsync(serviceId, normalizedPriority, "increment", cancellationToken);
+        await atencionContext.AddPatientToQueueAsync(
+            serviceId,
             new PatientInQueueDto
             {
                 PatientId = evt.PatientId,
-                PatientName = evt.PatientName,
+                PatientName = evt.PatientName ?? "Unknown",
                 Priority = normalizedPriority,
                 CheckInTime = evt.ValidatedAt,
                 WaitTimeMinutes = 0,
-                TurnNumber = evt.TurnNumber
+                TurnNumber = evt.TurnNumber ?? 0
             },
             cancellationToken);
 
-        await waitingContext.SetNextTurnViewAsync(evt.QueueId, null, cancellationToken);
+        await atencionContext.RemovePatientFromPaymentAsync(serviceId, evt.PatientId, cancellationToken);
+        await atencionContext.SetNextTurnViewAsync(serviceId, null, cancellationToken);
         await context.MarkProcessedAsync(idempotencyKey, cancellationToken);
     }
 

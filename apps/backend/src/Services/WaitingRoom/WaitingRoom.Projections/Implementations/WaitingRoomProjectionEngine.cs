@@ -28,33 +28,64 @@ public sealed class WaitingRoomProjectionEngine : IProjection
 {
     public string ProjectionId => "waiting-room-projection";
 
-    private readonly IWaitingRoomProjectionContext _context;
+    private readonly IAtencionProjectionContext _context;
     private readonly IEventStore _eventStore;
+    private readonly IPatientStateRepository _patientStateRepository;
+    private readonly IConsultingRoomOccupancyRepository _roomOccupancyRepository;
+    private readonly ICashierQueueRepository _cashierQueueRepository;
     private readonly ILogger<WaitingRoomProjectionEngine> _logger;
     private readonly Dictionary<string, IProjectionHandler> _handlers;
 
     public WaitingRoomProjectionEngine(
-        IWaitingRoomProjectionContext context,
+        IAtencionProjectionContext context,
         IEventStore eventStore,
+        IPatientStateRepository patientStateRepository,
+        IConsultingRoomOccupancyRepository roomOccupancyRepository,
+        ICashierQueueRepository cashierQueueRepository,
         ILogger<WaitingRoomProjectionEngine> logger)
     {
         _context = context ?? throw new ArgumentNullException(nameof(context));
         _eventStore = eventStore ?? throw new ArgumentNullException(nameof(eventStore));
+        _patientStateRepository = patientStateRepository ?? throw new ArgumentNullException(nameof(patientStateRepository));
+        _roomOccupancyRepository = roomOccupancyRepository ?? throw new ArgumentNullException(nameof(roomOccupancyRepository));
+        _cashierQueueRepository = cashierQueueRepository ?? throw new ArgumentNullException(nameof(cashierQueueRepository));
         _logger = logger ?? throw new ArgumentNullException(nameof(logger));
 
-        // Register all handlers
-        // Each handler processes a specific domain event type
+        // Registry of consolidated handlers
+        var patientStateHandler = new PatientStateProjectionHandler(_patientStateRepository);
+        var roomOccupancyHandler = new ConsultingRoomOccupancyProjectionHandler(_roomOccupancyRepository, _patientStateRepository);
+        var cashierQueueHandler = new CashierQueueProjectionHandler(_cashierQueueRepository, _patientStateRepository);
+
+        // Register all handlers for their respective events
+        // Each handler processes a specific set of domain event types
         _handlers = new Dictionary<string, IProjectionHandler>
         {
+            // Legacy / Shared Events
             [nameof(Domain.Events.WaitingQueueCreated)] = new WaitingQueueCreatedProjectionHandler(),
             [nameof(Domain.Events.PatientCheckedIn)] = new PatientCheckedInProjectionHandler(),
-            [nameof(Domain.Events.PatientCalledAtCashier)] = new PatientCalledAtCashierProjectionHandler(),
-            [nameof(Domain.Events.PatientPaymentValidated)] = new PatientPaymentValidatedProjectionHandler(),
-            [nameof(Domain.Events.ConsultingRoomActivated)] = new ConsultingRoomActivatedProjectionHandler(),
-            [nameof(Domain.Events.ConsultingRoomDeactivated)] = new ConsultingRoomDeactivatedProjectionHandler(),
-            [nameof(Domain.Events.PatientClaimedForAttention)] = new PatientClaimedForAttentionProjectionHandler(),
-            [nameof(Domain.Events.PatientCalled)] = new PatientCalledProjectionHandler(),
-            [nameof(Domain.Events.PatientAttentionCompleted)] = new PatientAttentionCompletedProjectionHandler(),
+
+            // New Patient-Centric Events
+            [nameof(Domain.Events.PatientRegistered)] = patientStateHandler,
+            [nameof(Domain.Events.PatientMarkedAsWaiting)] = patientStateHandler,
+            [nameof(Domain.Events.PatientConsultingRoomAssigned)] = patientStateHandler,
+            [nameof(Domain.Events.PatientConsultationStarted)] = patientStateHandler,
+            [nameof(Domain.Events.PatientConsultationFinished)] = patientStateHandler,
+
+            // Events that affect both Patient State and Cashier Queue
+            [nameof(Domain.Events.PatientArrivedAtCashier)] = new CompositeProjectionHandler(patientStateHandler, cashierQueueHandler),
+            [nameof(Domain.Events.PatientPaymentValidated)] = new CompositeProjectionHandler(patientStateHandler, cashierQueueHandler),
+            [nameof(Domain.Events.PatientCompleted)] = new CompositeProjectionHandler(patientStateHandler, cashierQueueHandler),
+            [nameof(Domain.Events.PatientMarkedAbsentAtCashier)] = new CompositeProjectionHandler(patientStateHandler, cashierQueueHandler),
+
+            // Events that only affect Patient State
+            [nameof(Domain.Events.PatientMarkedAbsentAtConsultation)] = patientStateHandler,
+
+            // New Room-Centric Events (Room Occupancy)
+            [nameof(Domain.Events.ConsultingRoomCreated)] = roomOccupancyHandler,
+            [nameof(Domain.Events.ConsultingRoomActivated)] = roomOccupancyHandler,
+            [nameof(Domain.Events.ConsultingRoomDeactivated)] = roomOccupancyHandler,
+            [nameof(Domain.Events.ConsultingRoomPatientAssigned)] = roomOccupancyHandler,
+            [nameof(Domain.Events.ConsultingRoomPatientLeft)] = roomOccupancyHandler,
         };
     }
 
@@ -220,10 +251,10 @@ public sealed class WaitingRoomProjectionEngine : IProjection
         try
         {
             // Cast context to extended interface
-            if (_context is not IWaitingRoomProjectionContext waitingRoomContext)
-                throw new InvalidOperationException($"Context must implement {nameof(IWaitingRoomProjectionContext)}");
+            if (_context is not IAtencionProjectionContext atencionContext)
+                throw new InvalidOperationException($"Context must implement {nameof(IAtencionProjectionContext)}");
 
-            await handler.HandleAsync(@event, waitingRoomContext, cancellationToken);
+            await handler.HandleAsync(@event, atencionContext, cancellationToken);
         }
         catch (Exception ex)
         {

@@ -24,18 +24,24 @@ jest.mock("@/context/AlertContext", () => ({
   }),
 }));
 
-jest.mock("@/hooks/useWaitingRoom", () => ({
-  useWaitingRoom: () => ({
-    queueState: {
-      patientsInQueue: [],
-      currentCount: 0,
-      maxCapacity: 10,
-      availableSpots: 10,
-    },
+jest.mock("@/hooks/useAtencion", () => ({
+  useAtencion: () => ({
+    queueState: { serviceId: "QUEUE-01", patientsInQueue: [], currentCount: 0, maxCapacity: 10, availableSpots: 10 },
+    monitor: null,
+    fullState: null,
+    nextTurn: null,
+    history: [],
+    connectionState: "online",
+    lastUpdated: null,
+    refresh: jest.fn(),
+    setMonitor: jest.fn(),
+    setQueueState: jest.fn(),
+    setFullState: jest.fn(),
+    setNextTurn: jest.fn(),
   }),
 }));
 
-jest.mock("@/services/api/waitingRoom", () => ({
+jest.mock("@/services/api/atencion", () => ({
   registerReception: (...args: unknown[]) => mockRegisterReception(...args),
 }));
 
